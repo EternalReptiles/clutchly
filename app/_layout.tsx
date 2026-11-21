@@ -36,7 +36,10 @@ export default function Root() {
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="forgot" options={{ title: 'Forgot password' }} />
       </Stack.Protected>
+      {/* Reachable signed in or out: the reset link signs the user in, then they set a new password here. */}
+      <Stack.Screen name="reset-password" options={{ title: 'New password' }} />
     </Stack>
   </>);
 }
