@@ -27,10 +27,12 @@ export const Label = ({ t }: { t: string }) => <Text style={[s.mu, { marginTop: 
 export const Input = (p: TextInputProps & { label?: string }) => (
   <View style={{ marginTop: 8 }}>{p.label && <Text style={s.mu}>{p.label}</Text>}
     <TextInput placeholderTextColor={C.mu} keyboardAppearance="light" selectionColor={C.ink} cursorColor={C.ink} accessibilityLabel={p.label ?? p.placeholder} {...p} style={[s.in, p.style]} /></View>);
-export const Chips = ({ opts, v, on }: { opts: string[]; v: string; on: (x: string) => void }) => (
+/** Option buttons. `v` is the selected option, or a list of them for multi-select. */
+export const Chips = ({ opts, v, on }: { opts: string[]; v: string | string[]; on: (x: string) => void }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-    {opts.map(o => <Pressable key={o} onPress={() => on(o)} accessibilityRole="button" aria-selected={v === o} style={[s.btn, v === o && { backgroundColor: C.ink, borderColor: C.ink }]}>
-      <Text style={{ color: v === o ? C.bg : C.ink }}>{o}</Text></Pressable>)}</View>);
+    {opts.map(o => { const sel = Array.isArray(v) ? v.includes(o) : v === o;
+      return <Pressable key={o} onPress={() => on(o)} accessibilityRole="button" aria-selected={sel} style={[s.btn, sel && { backgroundColor: C.ink, borderColor: C.ink }]}>
+      <Text style={{ color: sel ? C.bg : C.ink }}>{o}</Text></Pressable>; })}</View>);
 
 /**
  * Date picker field.

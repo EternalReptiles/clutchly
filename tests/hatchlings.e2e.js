@@ -23,7 +23,7 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up, add a female and a male, pair them', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click();
+    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await addAnimal('DM-F1', 'Female'); await addAnimal('DM-M1', 'Male');
     await tab('Pairings'); await T('+ New pairing').click(); await B('DM-F1').click(); await B('DM-M1').click(); await B('Create').click();

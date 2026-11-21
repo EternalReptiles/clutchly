@@ -33,7 +33,7 @@ const SB = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).host;
   const d1 = await mkPage(); const { pg, T, L, tab, back } = d1;
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step(pg, 'online: sign up, add two animals, synced', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click();
+    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     for (const nm of ['F1', 'F2']) { await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill(nm); await pickCarpet(d1); await T('Save', { exact: true }).click(); await T(nm, { exact: true }).waitFor({ timeout: 8000 }); }
     await api.auth.signInWithPassword({ email, password: pw });

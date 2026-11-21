@@ -1,4 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { seasonFromTemplate, type Hemisphere } from '../../lib/templates';
+import { useTemplates } from '../../lib/useTemplates';
 import { ScrollView, Text, View } from 'react-native';
 import { useCollection } from '../../lib/derived';
 import { remove, saveSeason } from '../../lib/store';
@@ -29,6 +32,11 @@ export default function Settings() {
     SEASON_KEYS.forEach(k => { body[k] = k in patch ? (patch as any)[k] : (cur as any)[k] ?? null; });
     saveSeason(body);
   };
+  const templates = useTemplates(); const [hemi, setHemi] = useState<Hemisphere>('south');
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setHemi(data.session?.user.user_metadata?.hemisphere === 'north' ? 'north' : 'south')); }, []);
+  const applyStarting = (sp: string) => { const tp = templates?.find(x => x.species === sp); if (!tp) return;
+    const go = () => saveSeason(seasonFromTemplate(tp, hemi));
+    if (rows?.some(r0 => r0.species === sp)) confirm(`Use starting values for ${sp}?`, 'This replaces the dates and numbers you set for this species.', 'Replace', go); else go(); };
   const reset = (sp: string) => confirm(`Clear ${sp} routine?`, 'Removes the dates and numbers you set for this species.', 'Clear', () => remove('season_settings', sp));
   if (!rows) return <View style={s.page} />;
   // Species shown: ones the user keeps, has a routine for, or just added here; in the species-list order.
@@ -42,12 +50,14 @@ export default function Settings() {
       <Text style={[s.mu, { marginTop: 6 }]}>Until you do, feeds are due every {FALLBACK.female_every} days for females and {FALLBACK.male_every} for males, all year round.</Text></View>}
     <Text style={[s.h, { marginTop: 14 }]}>Your routine</Text>
     <Text style={s.mu}>One routine per species you keep. Animals of that species are hidden from Today during the feeding pause. Blank numbers use the suggestion shown in grey (with the typical range); an animal's own feed interval overrides them.</Text>
+    <Text style={[s.mu, { marginTop: 4 }]}>Starting values (where offered) come from an experienced breeder's routine for the {hemi === 'north' ? 'northern' : 'southern'} hemisphere. They are starting points: adjust them to your own experience. Your changes are private and never alter the shared values.</Text>
     {!shown.length && !unknown.length && <Text style={[s.mu, { marginTop: 8 }]}>No species yet. Add animals, or add a species below.</Text>}
     {[...shown, ...unknown].map(sp => { const c = get(sp); const saved = rows.some(r => r.species === sp);
       const info = speciesInfo(sp); const sg = suggested(sp);
       return (<Card key={sp}><View style={s.row}><View style={{ flex: 1 }}><Text style={s.h}>{sp}</Text>
           {info.latin ? <Text style={[s.mu, { fontStyle: 'italic' }]}>{info.latin}</Text> : null}</View>
         {saved ? <Btn t="Clear" onPress={() => reset(sp)} /> : <Text style={s.mu}>Not set</Text>}</View>
+        {templates?.some(x => x.species === sp) && <View style={{ marginTop: 6 }}><Btn t="Use starting values" onPress={() => applyStarting(sp)} /></View>}
         <DateField mode="monthDay" optional label="Feeding pause from" value={c.pause_from} onChange={v => save(sp, { pause_from: v })} />
         <DateField mode="monthDay" optional label="Feeding resumes after" value={c.pause_to} onChange={v => save(sp, { pause_to: v })} />
         <DateField mode="monthDay" optional label={info.repro === 'python' ? 'Pairing starts' : 'Breeding starts'} value={c.pair_start} onChange={v => save(sp, { pair_start: v })} />

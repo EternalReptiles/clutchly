@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
@@ -26,6 +27,13 @@ export default function Root() {
   useEffect(() => { if (uid) start(uid); else if (session === null) stop(); }, [uid, session === null]);
 
   useEffect(() => { applyDateFormat(session?.user.user_metadata?.date_format); }, [session?.user.user_metadata?.date_format]);
+  // First run: send new users to the welcome screen once (remembered on the account, and on the phone for offline).
+  const router = useRouter(); const segments = useSegments();
+  const onboarded = !!session?.user.user_metadata?.onboarded;
+  useEffect(() => {
+    if (!uid || onboarded || segments[0] === 'welcome' || segments[0] === 'reset-password') return;
+    AsyncStorage.getItem(`clutchly.onboarded.${uid}`).then(v => { if (!v) router.replace('/welcome'); }, () => {});
+  }, [uid, onboarded, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const signedIn = !!session;
   return (<>
     <StatusBar style="dark" />
@@ -41,6 +49,7 @@ export default function Root() {
         <Stack.Screen name="pairing/[id]" options={{ title: '' }} />
         <Stack.Screen name="import" options={{ title: 'Bulk add' }} />
         <Stack.Screen name="account" options={{ title: 'Account' }} />
+        <Stack.Screen name="welcome" options={{ title: 'Welcome' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

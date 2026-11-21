@@ -82,6 +82,13 @@ x = await B.from('animals').insert({ name: 'stolen-clutch', sex: 'Unknown', pair
 x = await B.from('animals').update({ mother_id: f.data.id }).eq('id', bf.data.id).select(); ok(!!x.error || !x.data?.length, "B cannot re-parent own animal onto A's");
 x = await A.from('animals').insert({ name: 'bad-sex', sex: 'Hermaphrodite' }); ok(!!x.error, 'sex must be Female, Male or Unknown');
 
+// Species templates: readable by signed-in users, writable by nobody through the API.
+x = await A.from('species_templates').select('species'); ok(!x.error && x.data.length >= 4, 'signed-in user reads species templates');
+x = await anonClient().from('species_templates').select('species'); ok(!!x.error || x.data.length === 0, 'logged-out cannot read templates');
+x = await A.from('species_templates').update({ male_every: 1 }).eq('species', 'Carpet').select(); ok(!!x.error || !x.data?.length, 'user cannot change a template');
+x = await A.from('species_templates').insert({ species: 'Fake' }); ok(!!x.error, 'user cannot add a template');
+x = await A.from('species_templates').delete().eq('species', 'Carpet').select(); ok(!!x.error || !x.data?.length, 'user cannot delete a template');
+
 // Delete accounts
 x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.error?.message || ''));
 x = await A.from('animals').select('id'); ok(x.data?.length === 3, 'A data survives B deletion (2 animals + 1 hatchling)');

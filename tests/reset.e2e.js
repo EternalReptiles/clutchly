@@ -37,7 +37,7 @@ const SP = process.argv[2];
     await pg.screenshot({ path: `${SP}/rst-c-new.png` });
     await T('Save password').click(); await pg.waitForTimeout(500);
     if (!logs.some(l => l.includes("don't match"))) throw new Error('mismatch not caught');
-    await L('Confirm new password').fill(newPw); await T('Save password').click();
+    await L('Confirm new password').fill(newPw); await T('Save password').click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
   });
   await run(pg, 'old password rejected, new password works', async () => {

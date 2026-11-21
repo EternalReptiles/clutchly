@@ -26,7 +26,7 @@ const jpegSize = buf => { // width/height from the JPEG's SOF marker
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up, add an animal', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click();
+    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('PH1');
     await L('Species').click(); await L('Search species').fill('carpet'); await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();

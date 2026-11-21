@@ -11,6 +11,18 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 Latin names, aliases (used by CSV import and search) and typical days from ovulation/mating to lay, pre-lay shed to lay,
 and lay to hatch. The Season tab suggests the middle of each range; each user can set their own numbers per species.
 
+## Species templates and onboarding
+`species_templates` (migration 008) holds shared starting values per species: feed intervals, feeding pause, pairing
+start, and days from pre-lay shed / ovulation to lay and from lay to hatch. Every signed-in user can read it; nobody can
+change it from the app (edit it with a new migration or in the Supabase dashboard). Seeded for Carpet, Bredli, Diamond
+and Antaresia. Dates are for the southern hemisphere; northern-hemisphere users get them shifted by six months
+(`lib/templates.ts`, tested in `tests/templates.test.js`).
+
+New users see a one-time Welcome screen (`app/welcome.tsx`): hemisphere (guessed from the phone's timezone) and the
+species they keep, with a preview; "Use these starting values" copies the templates into their own season settings
+(never overwriting a routine they already have), or they can skip. The Season tab offers "Use starting values" per
+species later. Users' edits are private and never change the templates. The app name comes from `brand.json`.
+
 ## Logo, icon and splash
 The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, so it can be tweaked and regenerated:
 1. `python3 scripts/draw_logo.py` writes `assets/source/clutchly-mark.svg`
@@ -103,7 +115,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - `node --experimental-strip-types tests/digest.test.mjs`: notification rules. `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js` and `tests/hatchlings.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js` and `tests/onboarding.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
