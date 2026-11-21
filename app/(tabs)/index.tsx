@@ -1,22 +1,19 @@
 import { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { supabase } from '../../lib/supabase';
-import { Animal, FALLBACK, Season, isPaused, nextFeed, seasonFor, today, diffDays, fmt } from '../../lib/logic';
-import { Btn, Card, notify, s } from '../../lib/ui';
+import { FALLBACK, isPaused, nextFeed, seasonFor, today, diffDays, fmt } from '../../lib/logic';
+import { useCollection } from '../../lib/derived';
+import { insert, sync } from '../../lib/store';
+import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Today() {
-  const [rows, setRows] = useState<Animal[]>([]); const [cfg, setCfg] = useState<Season[] | null>(null); const r = useRouter();
-  const [askPush, setAskPush] = useState(false);
-  const load = useCallback(async () => {
-    const [a, c] = await Promise.all([supabase.from('animal_status').select('*').neq('status', 'Sold'), supabase.from('season_settings').select('*')]);
-    if (a.error || c.error) notify('Could not load', (a.error || c.error)!.message);
-    setRows((a.data as Animal[]) || []); setCfg((c.data as Season[]) || []);
-  }, []);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const r = useRouter(); const { ready, animals, seasons } = useCollection();
+  const rows = animals.filter(a => a.status !== 'Sold'); const cfg = ready ? seasons : null;
+  const [askPush, setAskPush] = useState(false); const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   // Offer reminders once the user has animals (not on first launch), until they turn them on or say no.
   useFocusEffect(useCallback(() => { (async () => {
     if (!pushSupported) return;
@@ -29,11 +26,10 @@ export default function Today() {
   const due = rows.map(a => ({ a, sc: seasonFor(cfg || [], a.species) })).filter(({ sc }) => !isPaused(sc, t))
     .map(({ a, sc }) => ({ a, n: nextFeed(a, sc) }))
     .filter(x => diffDays(x.n, t) <= 3).sort((x, y) => x.n.localeCompare(y.n) || x.a.name.localeCompare(y.a.name));
-  const log = async (id: string, ok: boolean) => {
-    const { error } = await supabase.from('events').insert({ animal_id: id, kind: 'feed', ok, on_date: t });
-    if (error) notify('Error', error.message); load();
-  };
+  const log = (id: string, ok: boolean) => { insert('events', { animal_id: id, kind: 'feed', ok, on_date: t }); };
+  if (!ready) return <View style={s.page}><Text style={s.mu}>Loading your collection…</Text></View>;
   return (<View style={s.page}><FlatList data={due} keyExtractor={x => x.a.id}
+    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
     ListHeaderComponent={<>
       {cfg && cfg.length === 0 ? <Card onPress={() => r.navigate('/settings')}>
         <Text style={s.h}>Set up your routine</Text>

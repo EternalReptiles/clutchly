@@ -15,7 +15,8 @@ const SP = process.argv[2];
   const ctx = () => b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-AU' });
   let fails = 0, n = 0; const logs = [];
   const run = async (page, name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await page.screenshot({ path: `${SP}/rst-${++n}-FAIL.png` }); } };
-  const helpers = pg => { const live = pg.locator(':not([inert] *)'); pg.on('dialog', d => { logs.push('DIALOG: ' + d.message().replace(/\n+/g, ' | ')); d.accept(); });
+  const helpers = pg => { const live = pg.locator(':not([inert] *)'); pg.on('console', m => { if (m.text().startsWith('[sync]')) logs.push('SYNC: ' + m.text()); });
+  pg.on('dialog', d => { logs.push('DIALOG: ' + d.message().replace(/\n+/g, ' | ')); d.accept(); });
     return { T: (t, o) => pg.getByText(t, o).and(live).first(), L: t => pg.getByLabel(t, { exact: true }).and(live).first() }; };
 
   let pg = await (await ctx()).newPage(); let { T, L } = helpers(pg);

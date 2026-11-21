@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { supabase } from '../../lib/supabase';
-import { Pairing, Season, estimates, fmt, pairStatus, seasonFor, today } from '../../lib/logic';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCollection } from '../../lib/derived';
+import { insert, remove, update } from '../../lib/store';
+import { Pairing, estimates, fmt, pairStatus, seasonFor, today } from '../../lib/logic';
 import { Repro, speciesInfo, words } from '../../lib/species';
 import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
 
@@ -15,40 +16,29 @@ const datesFor = (r: Repro): [DateKey, string][] => {
     ...(r !== 'live' ? [['hatched', 'Hatched'] as [DateKey, string]] : [])];
 };
 const FIELDS = ['female_id', 'male_id', 'intro', 'removed', 'ovulation', 'prelay_shed', 'laid', 'hatched', 'clutch', 'fertile', 'locks', 'notes'] as const;
-type A = { id: string; name: string; sex: string; species: string; status: string };
 
 export default function PairingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
-  const [p, setP] = useState<Pairing>({ locks: [], intro: today() }); const [animals, setAnimals] = useState<A[]>([]);
-  const [cfg, setCfg] = useState<Season[]>([]); const [lockDay, setLockDay] = useState(today()); const [loaded, setLoaded] = useState(false);
-  const load = useCallback(async () => {
-    const [a, c, x] = await Promise.all([supabase.from('animals').select('id,name,sex,species,status').order('name'),
-      supabase.from('season_settings').select('*'),
-      isNew ? Promise.resolve(null) : supabase.from('pairings').select('*').eq('id', id).maybeSingle()]);
-    const err = a.error || c.error || x?.error; if (err) notify('Could not load', err.message);
-    setAnimals((a.data as A[]) || []); setCfg((c.data as Season[]) || []); if (x?.data) setP(x.data as Pairing);
-    if (!isNew && !x?.data && !err) { notify('Pairing not found'); r.back(); return; }
-    setLoaded(true);
-  }, [id, isNew, r]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const { ready, animals, pairings, seasons: cfg } = useCollection();
+  const stored = isNew ? null : pairings.find(x => x.id === id);
+  const [p, setP] = useState<Pairing>({ locks: [], intro: today() });
+  const [lockDay, setLockDay] = useState(today()); const [loaded, setLoaded] = useState(isNew);
+  // Load the pairing from the local store once; after that the screen edits its own copy.
+  useEffect(() => { if (stored && !loaded) { setP(stored); setLoaded(true); } }, [stored, loaded]);
 
   // Sold animals are hidden from the pickers, except the ones already in this pairing.
   const pick = (sex: string) => animals.filter(a => a.sex === sex && (a.status !== 'Sold' || a.id === p.female_id || a.id === p.male_id));
   const nm = (i?: string) => animals.find(a => a.id === i)?.name || '';
   const byName = (n: string, sex: string) => animals.find(a => a.name === n && a.sex === sex)?.id;
-  const save = async (patch: Partial<Pairing> = {}) => {
+  const save = (patch: Partial<Pairing> = {}) => {
     const next = { ...p, ...patch }; const body: any = {};
     FIELDS.forEach(k => { body[k] = (next as any)[k] ?? null; }); body.locks = next.locks || [];
     if (!body.female_id || !body.male_id) return notify('Pick a female and a male');
-    const res = isNew ? await supabase.from('pairings').insert(body) : await supabase.from('pairings').update(body).eq('id', id);
-    if (res.error) return notify('Error', res.error.message);
-    if (isNew) r.back(); else setP(next);
+    if (isNew) { insert('pairings', body); r.back(); } else { update('pairings', id, body); setP(next); }
   };
   const addLock = () => save({ locks: [...(p.locks || []), lockDay].sort() });
   const delLock = (i: number) => confirm(`Remove ${w.lock}?`, fmt(p.locks[i]), 'Remove', () => save({ locks: p.locks.filter((_, j) => j !== i) }));
-  const del = () => confirm('Delete pairing?', 'This cannot be undone.', 'Delete', async () => {
-    const { error } = await supabase.from('pairings').delete().eq('id', id); error ? notify('Error', error.message) : r.back();
-  });
+  const del = () => confirm('Delete pairing?', 'This cannot be undone.', 'Delete', () => { remove('pairings', id); r.back(); });
   const female = animals.find(a => a.id === p.female_id);
   const repro = speciesInfo(female?.species).repro; const w = words(repro);
   const est = estimates(p, seasonFor(cfg, female?.species || 'Other'));
@@ -56,6 +46,7 @@ export default function PairingScreen() {
   const females = pick('Female'), males = pick('Male');
 
   // Don't show controls until the pairing has loaded, or a quick tap would save an empty pairing.
+  if (!isNew && !stored && ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This pairing has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page}><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} /></View>;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
     <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { C, serif } from '../../lib/ui';
+import { SyncPill } from '../../lib/SyncPill';
 
 // Round button in the top-right of every tab: the user's initial (a profile photo can replace it later). Opens Account.
 function AccountButton() {
@@ -20,7 +21,7 @@ export default function T() {
     tabBarStyle: { backgroundColor: C.bg, borderTopColor: C.bd }, tabBarIcon: () => null, tabBarIconStyle: { display: 'none' },
     tabBarLabelStyle: { fontSize: 14, fontFamily: serif },
     headerStyle: { backgroundColor: C.bg }, headerShadowVisible: false, headerTitleStyle: { fontFamily: serif, color: C.ink },
-    headerRight: () => <AccountButton />,
+    headerRight: () => <View style={{ flexDirection: 'row', alignItems: 'center' }}><SyncPill /><AccountButton /></View>,
     sceneStyle: { backgroundColor: C.bg },
   }}>
     <Tabs.Screen name="index" options={{ title: 'Today' }} />

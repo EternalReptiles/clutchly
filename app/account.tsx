@@ -2,10 +2,11 @@ import { useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
-import { DATE_FORMATS, DateFormat, fmt, setDateFormat, today } from '../lib/logic';
+import { DATE_FORMATS, DateFormat, fmt, today } from '../lib/logic';
 import { Btn, C, Card, Chips, Input, confirm, notify, s } from '../lib/ui';
 import { NotificationSettings } from '../lib/NotificationSettings';
 import { disablePushHere, signOutAndForgetDevice } from '../lib/notifications';
+import { applyDateFormat, clearCache, getState, start, stop } from '../lib/store';
 
 export default function Account() {
   const [email, setEmail] = useState(''); const [df, setDf] = useState<DateFormat>('auto');
@@ -17,7 +18,7 @@ export default function Account() {
   }, []));
 
   const changeFormat = async (f: DateFormat) => {
-    setDf(f); setDateFormat(f);
+    setDf(f); applyDateFormat(f);
     const { error } = await supabase.auth.updateUser({ data: { date_format: f } });
     if (error) notify('Could not save', error.message);
   };
@@ -28,12 +29,20 @@ export default function Account() {
     if (error) return notify('Could not change password', error.message);
     setPw(''); setPw2(''); notify('Password changed');
   };
-  const signOut = async () => { const { error } = await signOutAndForgetDevice(); if (error) notify('Error', error.message); };
+  const signOut = () => {
+    const { uid, queue } = getState();
+    const go = async () => { const { error } = await signOutAndForgetDevice(); if (error) return notify('Error', error.message); if (uid) clearCache(uid); };
+    if (queue.length) confirm('Changes not synced yet', `${queue.length} change${queue.length === 1 ? '' : 's'} on this phone haven't reached the server. Signing out now loses them. Connect to the internet first to keep them.`, 'Sign out anyway', go);
+    else go();
+  };
   const del = () => confirm('Delete account?', 'All your animals and records are permanently deleted. This cannot be undone.', 'Delete', async () => {
+    // Stop syncing first, so queued changes aren't sent while the account is being removed.
+    const { uid } = getState(); stop();
     const { error } = await supabase.rpc('delete_my_account');
-    if (error) return notify('Could not delete account', error.message);
+    if (error) { if (uid) start(uid); return notify('Could not delete account', error.message); }
     // The account's device tokens were deleted with it; forget this phone's copy too.
     await disablePushHere().catch(() => {});
+    if (uid) clearCache(uid);
     await supabase.auth.signOut({ scope: 'local' });
   });
 

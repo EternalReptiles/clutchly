@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { supabase } from '../../lib/supabase';
+import { useCollection } from '../../lib/derived';
+import { remove, saveSeason } from '../../lib/store';
 import { FALLBACK, SEASON_KEYS, Season, Suggested, seasonFor, suggested } from '../../lib/logic';
 import { SPECIES, Repro, speciesInfo, words } from '../../lib/species';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
@@ -17,31 +17,19 @@ const numFields = (r: Repro): [NumKey, string][] => [
 ];
 
 export default function Settings() {
-  const [rows, setRows] = useState<Season[] | null>(null); const [kept, setKept] = useState<string[]>([]);
+  // Read from the local store (works offline); the race guard the old version needed is no longer required.
+  const { ready, animals, seasons } = useCollection(); const rows = ready ? seasons : null;
+  const kept = useMemo(() => [...new Set(animals.map(a => a.species))], [animals]);
   const [added, setAdded] = useState<string[]>([]);
-  // Bumped on every load and every edit, so a slow load can't overwrite a change made after it started.
-  const seq = useRef(0);
-  const load = useCallback(() => { const mine = ++seq.current;
-    return Promise.all([supabase.from('season_settings').select('*'), supabase.from('animals').select('species')]).then(([x, a]) => {
-      if (mine !== seq.current) return;
-      const err = x.error || a.error; if (err) notify('Could not load', err.message);
-      setKept([...new Set(((a.data || []) as { species: string }[]).map(r => r.species))]); setRows((x.data as Season[]) || []);
-    }); }, []);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const get = (sp: string) => seasonFor(rows || [], sp);
   // Saves the whole row for the species, keeping its other fields.
-  const save = async (sp: string, patch: Partial<Season>) => {
+  const save = (sp: string, patch: Partial<Season>) => {
     const cur = get(sp); const body: any = { species: sp };
     SEASON_KEYS.forEach(k => { body[k] = k in patch ? (patch as any)[k] : (cur as any)[k] ?? null; });
-    seq.current++; setRows(rs => [...(rs || []).filter(r => r.species !== sp), body]);
-    const { error } = await supabase.from('season_settings').upsert(body, { onConflict: 'user_id,species' });
-    if (error) { notify('Could not save', error.message); load(); }
+    saveSeason(body);
   };
-  const reset = (sp: string) => confirm(`Clear ${sp} routine?`, 'Removes the dates and numbers you set for this species.', 'Clear', async () => {
-    const { error } = await supabase.from('season_settings').delete().eq('species', sp);
-    if (error) notify('Error', error.message); load();
-  });
+  const reset = (sp: string) => confirm(`Clear ${sp} routine?`, 'Removes the dates and numbers you set for this species.', 'Clear', () => remove('season_settings', sp));
   if (!rows) return <View style={s.page} />;
   // Species shown: ones the user keeps, has a routine for, or just added here; in the species-list order.
   const shown = SPECIES.filter(sp => kept.includes(sp) || added.includes(sp) || rows.some(r => r.species === sp));

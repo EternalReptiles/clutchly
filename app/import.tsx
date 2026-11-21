@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File as FSFile } from 'expo-file-system';
-import { supabase } from '../lib/supabase';
+import { insertMany, useStore } from '../lib/store';
 import { fmt, isDayFirst } from '../lib/logic';
 import { Row, parseImport } from '../lib/importer';
 import { Btn, C, Card, Input, notify, s } from '../lib/ui';
@@ -13,16 +13,10 @@ type Result = { added: number; problems: { row: Row; msg: string }[] };
 
 export default function ImportScreen() {
   const r = useRouter();
-  const [text, setText] = useState(''); const [existing, setExisting] = useState<string[] | null>(null);
+  const [text, setText] = useState(''); const st = useStore();
+  const existing = useMemo(() => st.ready ? st.animals.map(a => a.name as string) : null, [st.ready, st.animals]);
   const [busy, setBusy] = useState(false); const [result, setResult] = useState<Result | null>(null);
   const dayFirst = isDayFirst(); const fmtHint = dayFirst ? 'DD/MM/YYYY' : 'MM/DD/YYYY';
-
-  useFocusEffect(useCallback(() => {
-    supabase.from('animals').select('name').then(x => {
-      if (x.error) notify('Could not load your animals', x.error.message);
-      setExisting((x.data || []).map(a => a.name));
-    });
-  }, []));
 
   const rows = useMemo(() => existing ? parseImport(text, dayFirst, existing) : [], [text, existing, dayFirst]);
   const good = rows.filter(x => !x.error), bad = rows.filter(x => x.error);
@@ -38,38 +32,23 @@ export default function ImportScreen() {
     } catch (e: any) { notify('Could not read file', e?.message ?? String(e)); }
   };
 
-  const run = async () => {
+  const run = () => {
     if (!good.length) return;
     if (rows.length > MAX_ROWS) return notify(`Too many rows`, `Import at most ${MAX_ROWS} at a time.`);
     setBusy(true);
+    // Rows are added to the phone's copy at once and synced in the background (works offline too).
     const problems: Result['problems'] = bad.map(row => ({ row, msg: row.error! }));
-    let added = 0;
-    const ids = new Map<string, string>(); // name -> new animal id
-    const imported = new Set<number>(); // line numbers that were added
-    const body = (x: Row) => ({ name: x.name, species: x.species, sex: x.sex, dob: x.dob });
-    // Insert in chunks; if a chunk fails, retry its rows one by one to find the bad ones.
-    for (let i = 0; i < good.length; i += 200) {
-      const chunk = good.slice(i, i + 200);
-      const res = await supabase.from('animals').insert(chunk.map(body)).select('id,name');
-      if (!res.error) { res.data.forEach(a => ids.set(a.name, a.id)); chunk.forEach(x => imported.add(x.line)); added += res.data.length; continue; }
-      for (const x of chunk) {
-        const one = await supabase.from('animals').insert(body(x)).select('id,name').single();
-        if (one.error) problems.push({ row: x, msg: one.error.message }); else { ids.set(one.data.name, one.data.id); imported.add(x.line); added++; }
-      }
-    }
-    const feeds = good.filter(x => x.last_feed && ids.has(x.name));
-    if (feeds.length) {
-      const ev = await supabase.from('events').insert(feeds.map(x => ({ animal_id: ids.get(x.name), kind: 'feed', ok: true, on_date: x.last_feed })));
-      if (ev.error) feeds.forEach(x => problems.push({ row: x, msg: `Animal added, but last feed not saved: ${ev.error!.message}` }));
-    }
+    const imported = new Set<number>(good.map(x => x.line));
+    const added = insertMany('animals', good.map(x => ({ name: x.name, species: x.species, sex: x.sex, dob: x.dob, status: 'Active' })));
+    const feeds = good.map((x, i) => ({ x, id: added[i].id })).filter(({ x }) => x.last_feed);
+    insertMany('events', feeds.map(({ x, id }) => ({ animal_id: id, kind: 'feed', ok: true, on_date: x.last_feed, food: null, grams: null })));
     problems.sort((a, b) => a.row.line - b.row.line);
     // Leave only the rows that still need fixing in the box (keeping a header row if there was one).
     const firstLine = text.split(/\r\n|\n|\r/).find(l => l.trim()) ?? '';
     const hadHeader = rows.length > 0 && rows[0].raw !== firstLine;
     const retry = problems.filter(p => !imported.has(p.row.line)).map(p => p.row.raw);
     setText(retry.length ? [...(hadHeader ? [firstLine] : []), ...retry].join('\n') : '');
-    setExisting(e => [...(e || []), ...ids.keys()]);
-    setResult({ added, problems }); setBusy(false);
+    setResult({ added: added.length, problems }); setBusy(false);
   };
 
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">

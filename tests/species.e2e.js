@@ -6,6 +6,7 @@ const SP = process.argv[2];
   const b = await chromium.launch();
   const pg = await (await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-AU' })).newPage();
   const logs = []; pg.on('pageerror', e => logs.push('PAGEERROR: ' + e.message));
+  pg.on('console', m => { if (m.text().startsWith('[sync]')) logs.push('SYNC: ' + m.text()); });
   pg.on('dialog', d => { logs.push('DIALOG: ' + d.message().replace(/\n+/g, ' | ')); d.accept(); });
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).first();

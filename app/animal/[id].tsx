@@ -1,56 +1,56 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { supabase } from '../../lib/supabase';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { insert, remove, update, useStore } from '../../lib/store';
 import { SEXES, fmt, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { Btn, Chips, DateField, Input, Label, confirm, notify, s, C } from '../../lib/ui';
 
 type Form = { name: string; species: string; sex: string; status: string; dob: string | null; feed_every: string; notes: string };
-type Ev = { id: string; kind: 'feed' | 'shed' | 'weight'; on_date: string; ok: boolean | null; food: string | null; grams: number | null };
+type Ev = { id: string; animal_id: string; kind: 'feed' | 'shed' | 'weight'; on_date: string; ok: boolean | null; food: string | null; grams: number | null; created_at?: string };
 const blank: Form = { name: '', species: '', sex: 'Female', status: 'Active', dob: null, feed_every: '', notes: '' };
 
 export default function AnimalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
+  const st = useStore();
+  const animal = isNew ? null : st.animals.find(x => x.id === id);
   const [a, setA] = useState<Form>(blank); const [loaded, setLoaded] = useState(isNew);
-  const [ev, setEv] = useState<Ev[]>([]); const [food, setFood] = useState(''); const [g, setG] = useState(''); const [day, setDay] = useState(today());
-  const load = useCallback(async () => {
+  const [food, setFood] = useState(''); const [g, setG] = useState(''); const [day, setDay] = useState(today());
+  // Fill the form once from the local store.
+  useEffect(() => {
     if (isNew) {
       // Default to the species of the most recently added animal, which suits entering a batch.
-      const last = await supabase.from('animals').select('species').order('created_at', { ascending: false }).limit(1).maybeSingle();
-      if (last.data?.species) setA(f => f.species ? f : { ...f, species: last.data!.species });
+      const last = [...st.animals].sort((x, y) => String(y.created_at ?? '').localeCompare(String(x.created_at ?? '')))[0];
+      if (last?.species) setA(f => f.species ? f : { ...f, species: last.species });
       return;
     }
-    const [x, e] = await Promise.all([supabase.from('animals').select('*').eq('id', id).maybeSingle(),
-      supabase.from('events').select('*').eq('animal_id', id).order('on_date', { ascending: false }).order('id').limit(50)]);
-    if (x.error || e.error) notify('Could not load', (x.error || e.error)!.message);
-    if (x.data) setA({ ...x.data, dob: x.data.dob ?? null, feed_every: x.data.feed_every ? String(x.data.feed_every) : '', notes: x.data.notes ?? '' });
-    setEv((e.data as Ev[]) || []); setLoaded(true);
-  }, [id, isNew]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+    if (animal && !loaded) {
+      setA({ name: animal.name, species: animal.species, sex: animal.sex, status: animal.status, dob: animal.dob ?? null,
+        feed_every: animal.feed_every ? String(animal.feed_every) : '', notes: animal.notes ?? '' });
+      setLoaded(true);
+    }
+  }, [animal, isNew, loaded, st.animals]);
+  const ev = useMemo(() => (st.events as Ev[]).filter(e => e.animal_id === id)
+    .sort((x, y) => y.on_date.localeCompare(x.on_date) || String(y.created_at ?? '').localeCompare(String(x.created_at ?? ''))).slice(0, 50), [st.events, id]);
 
-  const save = async () => {
+  const save = () => {
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
     if (!a.species) return notify('Choose a species');
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;
     if (every !== null && (isNaN(every) || every < 1 || every > 365)) return notify('Feed interval must be 1 to 365 days, or blank');
     const body = { name, species: a.species, sex: a.sex, status: a.status, dob: a.dob, feed_every: every, notes: a.notes.trim() || null };
-    const { error } = isNew ? await supabase.from('animals').insert(body) : await supabase.from('animals').update(body).eq('id', id);
-    error ? notify('Error', error.message) : r.back();
+    if (isNew) insert('animals', body); else update('animals', id, body);
+    r.back();
   };
-  const log = async (kind: Ev['kind'], extra: Partial<Ev> = {}) => {
-    const { error } = await supabase.from('events').insert({ animal_id: id, kind, on_date: day, ...extra });
-    if (error) return notify('Error', error.message);
-    if (kind === 'weight') setG(''); load();
+  const log = (kind: Ev['kind'], extra: Partial<Ev> = {}) => {
+    insert('events', { animal_id: id, kind, on_date: day, ok: null, food: null, grams: null, ...extra });
+    if (kind === 'weight') setG('');
   };
   const logWeight = () => { const n = parseFloat(g.replace(',', '.')); if (!(n > 0)) return notify('Enter a weight in grams'); log('weight', { grams: n }); };
-  const delEvent = (e: Ev) => confirm('Delete entry?', `${fmt(e.on_date)} · ${label(e)}`, 'Delete', async () => {
-    const { error } = await supabase.from('events').delete().eq('id', e.id); if (error) notify('Error', error.message); load();
-  });
-  const del = () => confirm('Delete animal?', 'Its history and pairings are deleted too.', 'Delete', async () => {
-    const { error } = await supabase.from('animals').delete().eq('id', id); error ? notify('Error', error.message) : r.back();
-  });
+  const delEvent = (e: Ev) => confirm('Delete entry?', `${fmt(e.on_date)} · ${label(e)}`, 'Delete', () => remove('events', e.id));
+  const del = () => confirm('Delete animal?', 'Its history and pairings are deleted too.', 'Delete', () => { remove('animals', id); r.back(); });
 
+  if (!isNew && !animal && st.ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This animal has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page} />;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New animal' : a.name }} />
     <Input label="Name / ID" value={a.name} onChangeText={v => setA({ ...a, name: v })} />

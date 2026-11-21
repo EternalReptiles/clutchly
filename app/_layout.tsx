@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { refreshPushToken } from '../lib/notifications';
-import { setDateFormat } from '../lib/logic';
+import { applyDateFormat, start, stop } from '../lib/store';
+import { SyncPill } from '../lib/SyncPill';
 import { C, serif } from '../lib/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -21,15 +22,17 @@ export default function Root() {
   // Expo push tokens can change; keep this phone's registration current (never prompts).
   const uid = session?.user.id;
   useEffect(() => { if (uid) refreshPushToken(); }, [uid]);
+  // Local copy of the user's data (offline mode): load and sync on sign in, drop on sign out.
+  useEffect(() => { if (uid) start(uid); else if (session === null) stop(); }, [uid, session === null]);
 
-  setDateFormat(session?.user.user_metadata?.date_format);
+  useEffect(() => { applyDateFormat(session?.user.user_metadata?.date_format); }, [session?.user.user_metadata?.date_format]);
   const signedIn = !!session;
   return (<>
     <StatusBar style="dark" />
     <Stack screenOptions={{
       headerStyle: { backgroundColor: C.bg }, headerTintColor: C.ink, headerShadowVisible: false,
       headerTitleStyle: { fontFamily: serif, color: C.ink }, contentStyle: { backgroundColor: C.bg },
-      headerBackTitle: 'Back',
+      headerBackTitle: 'Back', headerRight: () => <SyncPill />,
     }}>
       {/* Routes are only reachable when the guard is true; expo-router redirects otherwise. */}
       <Stack.Protected guard={signedIn}>

@@ -19,6 +19,22 @@ The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, 
 
 To use a different logo, put it at `assets/logo.png` (black on white or transparent) and run step 3.
 
+## Offline mode
+Breeding rooms often have poor signal, so the app works from a copy of the user's data kept on the phone (`lib/store.ts`):
+- Every screen reads the local copy. Changes are applied on the phone straight away and queued; the queue is sent in order
+  as soon as the server can be reached (retried every 15 seconds while offline, and whenever the app is reopened).
+- New rows get their ids on the phone (UUIDs), so a retried insert can never create a duplicate.
+- Each sync downloads only rows the server received since the last one (`synced_at`) and deletions made on other
+  devices (`deleted_rows`). Migration `005_offline_sync.sql`.
+- The header shows "Offline · N to sync" while changes are waiting, and "Sync problem" if the server rejected a change
+  (that change is undone on the phone and the data reloaded). Signing out with unsynced changes asks first.
+- Photos (Phase 2.3) and account settings need a connection.
+
+**Conflict rule: last write wins.** Every row records when it was last edited (`updated_at`, set on the device that made
+the edit, even offline). When two devices change the same row, the edit made later wins, even if it reaches the server
+first; an older edit that arrives later is ignored (enforced by the `clutchly_touch` trigger). If one device deletes a row
+that another edits offline, the delete wins. Changes to different rows never conflict.
+
 ## Push notifications
 Each morning (at the hour and timezone the user picks in Account > Notifications) the `daily-digest` Edge Function sends
 one notification per alert type, only when something is due: feeds due today (skipping Sold animals and species in their
@@ -60,7 +76,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - `node --experimental-strip-types tests/digest.test.mjs`: notification rules.
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js` and `tests/species.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js` and `tests/offline.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
@@ -71,4 +87,4 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-Offline mode, photos, CSV export, hatchling IDs, subscriptions (RevenueCat).
+Photos, CSV export, hatchling IDs, subscriptions (RevenueCat).
