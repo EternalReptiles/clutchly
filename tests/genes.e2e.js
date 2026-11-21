@@ -29,7 +29,7 @@ const SP = process.argv[2];
   });
   await step('female: Jaguar visual, het Albino (descriptions shown)', async () => {
     await T('JF', { exact: true }).click(); await T('No genes recorded.').waitFor(); await B('Edit genes').click();
-    await T('Genes · Carpet').waitFor({ timeout: 8000 }); await T(/Heavily reduces dark pigment and alters pattern/).waitFor();
+    await L('Search genes').waitFor({ timeout: 8000 }); await T(/Heavily reduces dark pigment and alters pattern/).waitFor();
     await setGene('Jaguar', 'Visual'); await setGene('Albino', 'Het');
     const jagRow = pg.locator('div').filter({ has: pg.getByText(/^Jaguar ·/) }).filter({ has: pg.getByRole('button', { name: 'None', exact: true }) }).last();
     const jagOpts = await jagRow.getByRole('button').allTextContents();
@@ -37,13 +37,13 @@ const SP = process.argv[2];
     await T(/linked to neurological problems/).waitFor();
     await pg.screenshot({ path: `${SP}/gn-a-editor.png` }); await B('Done').click();
     await T('Jaguar het Albino', { exact: true }).waitFor({ timeout: 5000 });
-    await B('Edit genes').click(); await T('Genes · Carpet').waitFor();
+    await B('Edit genes').click(); await L('Search genes').waitFor();
     const sel = async gene => (await pg.locator('div').filter({ has: pg.getByText(new RegExp(`^${gene} ·`)) }).filter({ has: pg.getByRole('button', { name: 'None', exact: true }) }).last().getByRole('button').evaluateAll(bs => bs.filter(x => x.getAttribute('aria-selected') === 'true').map(x => x.textContent)));
     if ((await sel('Jaguar')).join() !== 'Visual' || (await sel('Albino')).join() !== 'Het') throw new Error('editor shows ' + (await sel('Jaguar')) + ' / ' + (await sel('Albino')));
     await pg.screenshot({ path: `${SP}/gn-a2-editor-reopened.png` }); await B('Done').click(); await back();
   });
   await step('male: Zebra visual, het Albino, Tiger (line-bred); morphs show on the list', async () => {
-    await T('JM', { exact: true }).click(); await B('Edit genes').click(); await T('Genes · Carpet').waitFor({ timeout: 8000 });
+    await T('JM', { exact: true }).click(); await B('Edit genes').click(); await L('Search genes').waitFor({ timeout: 8000 });
     await setGene('Zebra', 'Visual'); await setGene('Albino', 'Het'); await setGene('Tiger', 'Has trait'); await B('Done').click();
     await T('Zebra Tiger het Albino', { exact: true }).waitFor({ timeout: 5000 }); await back();
     await T('Jaguar het Albino', { exact: true }).waitFor();
@@ -80,13 +80,13 @@ const SP = process.argv[2];
     if (await pg.getByText('Not recommended', { exact: false }).and(live).count()) throw new Error('still warned');
     await pg.screenshot({ path: `${SP}/gn-d-sunglow.png`, fullPage: true }); await back();
   });
-  await step('genes across species: an Olive python can be Albino and paired in the calculator', async () => {
+  await step('generic genes: an Olive python can be Albino and paired in the calculator', async () => {
     await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('OP'); await B('Female').click();
     await L('Species').click(); await L('Search species').fill('olive'); await pg.getByRole('button', { name: 'Olive python', exact: true }).and(live).first().click();
     await B('Save').click(); await T('OP', { exact: true }).waitFor({ timeout: 8000 });
-    await T('OP', { exact: true }).click(); await B('Edit genes').click(); await T('Genes · Olive python').waitFor({ timeout: 8000 });
-    await T(/No genes listed for Olive python yet/).waitFor(); await pg.getByRole('button', { name: /^Show \d+$/ }).and(live).first().click();
-    await setGene('Albino', 'Visual'); await B('Done').click(); await T('Albino', { exact: true }).waitFor({ timeout: 5000 }); await back();
+    await T('OP', { exact: true }).click(); await B('Edit genes').click(); await L('Search genes').waitFor({ timeout: 8000 });
+    await L('Search genes').fill('alb'); if (await pg.getByText(/^Jaguar ·/).and(live).count()) throw new Error('search did not filter');
+    await setGene('Albino', 'Visual'); await L('Search genes').fill(''); await B('Done').click(); await T('Albino', { exact: true }).waitFor({ timeout: 5000 }); await back();
     await tab('Pairings'); await B('Morph calculator').click(); await B('OP').click(); await B('JM').click();
     await row('Zebra Albino: 1/4, 25%'); await row('Zebra het Albino: 1/4, 25%');
     if (await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).count()) throw new Error('species chips still shown');

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { AnimalGene, Gene, GeneState, Inheritance } from './genetics';
+import { canonical, type AnimalGene, type Gene, type GeneState, type Inheritance } from './genetics';
 import { insert, remove, update, useStore } from './store';
 import { useGenes } from './useGenes';
 import { Btn, C, Chips, Input, notify, s } from './ui';
@@ -11,18 +11,28 @@ const KIND: Record<Inheritance, string> = { recessive: 'Recessive', incomplete_d
 const choices = (g: Gene): [GeneState | 'none', string][] =>
   g.inheritance === 'recessive' ? [['none', 'None'], ['het', 'Het'], ['possible_het', 'Possible het'], ['visual', 'Visual']]
     : g.inheritance === 'polygenic' ? [['none', 'None'], ['visual', 'Has trait']]
-      : g.has_super === false ? [['none', 'None'], ['visual', 'Visual']]
+      : g.inheritance === 'dominant' || g.has_super === false ? [['none', 'None'], ['visual', 'Visual']]
         : [['none', 'None'], ['visual', 'Visual'], ['super', g.super_name || `Super ${g.name}`]];
-/** The genes listed for a species: single genes first (library order), then line-bred traits. */
-export const speciesGenes = (genes: Map<string, Gene>, species: string) => [...genes.values()].filter(g => g.species === species)
-  .sort((a, b) => Number(a.inheritance === 'polygenic') - Number(b.inheritance === 'polygenic') || (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name));
-
 /** Every gene once (genes listed under several species, like Albino, are matched by name). */
 export const allGenes = (genes: Map<string, Gene>, exclude: Gene[] = []) => {
   const seen = new Set(exclude.map(g => g.name.toLowerCase())); const out: Gene[] = [];
   for (const g of [...genes.values()].sort((a, b) => Number(!!a.custom) - Number(!!b.custom))) { const k = g.name.toLowerCase(); if (!seen.has(k)) { seen.add(k); out.push(g); } }
-  return out.sort((a, b) => Number(a.inheritance === 'polygenic') - Number(b.inheritance === 'polygenic') || (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name));
+  return out.sort((a, b) => KINDS.indexOf(a.inheritance) - KINDS.indexOf(b.inheritance) || a.name.localeCompare(b.name));
 };
+const KINDS: Inheritance[] = ['recessive', 'incomplete_dominant', 'dominant', 'polygenic'];
+
+/** Search box plus the gene rows grouped by type (Recessive, Incomplete dominant, Dominant, Line-bred). */
+export function GenePicker({ genes, value, onSet }: { genes: Map<string, Gene>; value: Map<string, AnimalGene>; onSet: (g: Gene, state: GeneState | 'none', pct?: number) => void }) {
+  const [q, setQ] = useState('');
+  const list = useMemo(() => allGenes(genes), [genes]);
+  const rest = list.filter(g => !q.trim() || g.name.toLowerCase().includes(q.trim().toLowerCase())), shown = rest;
+  return (<View>
+    <Input label="Search genes" value={q} onChangeText={setQ} />
+    {KINDS.map(k => { const l = rest.filter(g => g.inheritance === k); return l.length ? <View key={k}>
+      <Text style={[s.mu, { marginTop: 14, fontWeight: '700' }]}>{KIND[k].toUpperCase()}</Text><GeneRows list={l} value={value} onSet={onSet} /></View> : null; })}
+    {!shown.length && <Text style={[s.mu, { marginTop: 8 }]}>No genes match "{q}".</Text>}
+  </View>);
+}
 
 /** One row per gene with its choices. Used for real animals and for made-up parents in the calculator. */
 export function GeneRows({ list, value, onSet }: { list: Gene[]; value: Map<string, AnimalGene>; onSet: (g: Gene, state: GeneState | 'none', pct?: number) => void }) {
@@ -44,15 +54,12 @@ export function GeneRows({ list, value, onSet }: { list: Gene[]; value: Map<stri
 export function GeneEditor({ open, onClose, animalId, species }: { open: boolean; onClose: () => void; animalId: string; species: string }) {
   const st = useStore(); const genes = useGenes();
   const mine = useMemo(() => new Map(st.animal_genes.filter(g => g.animal_id === animalId).map(g => [g.gene_key as string, g])), [st.animal_genes, animalId]);
-  const list = useMemo(() => speciesGenes(genes, species), [genes, species]);
-  // Genes listed under other species (e.g. Albino for an Olive python), plus any of those this animal already has.
-  const others = useMemo(() => allGenes(genes, list), [genes, list]);
-  const [showOthers, setShowOthers] = useState(false);
-  const othersShown = showOthers ? others : others.filter(g => mine.has(g.key));
+  const list = useMemo(() => allGenes(genes), [genes]);
+  const value = useMemo(() => { const c = canonical({ genes, combos: [] });
+    return new Map([...mine.values()].map(r => [c(r.gene_key as string), r as unknown as AnimalGene])); }, [mine, genes]);
   const [newName, setNewName] = useState(''); const [newKind, setNewKind] = useState<Inheritance>('recessive');
-
   const set = (g: Gene, state: GeneState | 'none', pct?: number) => {
-    const cur = mine.get(g.key);
+    const cur = value.get(g.key) as any;
     if (state === 'none') { if (cur) remove('animal_genes', cur.id); return; }
     const het_pct = state === 'possible_het' ? (pct ?? cur?.het_pct ?? 50) : null;
     if (cur) update('animal_genes', cur.id, { state, het_pct });
@@ -66,17 +73,11 @@ export function GeneEditor({ open, onClose, animalId, species }: { open: boolean
 
   return (<Modal visible={open} animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={[s.row, { padding: 14, paddingBottom: 4 }]}><Text style={[s.h, { flex: 1 }]}>Genes · {species}</Text><Btn solid t="Done" onPress={onClose} /></View>
+      <View style={[s.row, { padding: 14, paddingBottom: 4 }]}><Text style={[s.h, { flex: 1 }]}>Genes</Text><Btn solid t="Done" onPress={onClose} /></View>
       <ScrollView style={{ paddingHorizontal: 14 }} keyboardShouldPersistTaps="handled">
-        {!list.length && <Text style={s.mu}>No genes listed for {species} yet. Pick from other species or add your own below.</Text>}
-        <GeneRows list={list} value={mine as unknown as Map<string, AnimalGene>} onSet={set} />
-        {others.length > 0 && <>
-          <View style={[s.row, { marginTop: 14 }]}><Text style={[s.h, { flex: 1 }]}>Genes from other species</Text>
-            <Btn t={showOthers ? 'Hide' : `Show ${others.length}`} onPress={() => setShowOthers(!showOthers)} /></View>
-          <Text style={s.mu}>Many genes turn up across pythons, like Albino or Axanthic. Genes with the same name are treated as the same gene.</Text>
-          <GeneRows list={othersShown} value={mine as unknown as Map<string, AnimalGene>} onSet={set} /></>}
+        <GenePicker genes={genes} value={value} onSet={set} />
         <Text style={[s.h, { marginTop: 18 }]}>Add your own gene</Text>
-        <Text style={s.mu}>For genes not listed here. It's private to your account and available for all your {species}.</Text>
+        <Text style={s.mu}>For genes not listed here. It's private to your account and available for all your animals.</Text>
         <Input label="Gene name" value={newName} onChangeText={setNewName} />
         <Chips opts={(['recessive', 'incomplete_dominant', 'dominant', 'polygenic'] as Inheritance[]).map(k => KIND[k])} v={KIND[newKind]}
           on={l => setNewKind((Object.keys(KIND) as Inheritance[]).find(k => KIND[k] === l)!)} />

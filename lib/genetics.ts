@@ -22,6 +22,8 @@ export function canonical(lib: Lib): (key: string) => string {
 }
 const canon = (c: (k: string) => string, ag: AnimalGene[]) => [...new Map(ag.map(a => [c(a.gene_key), { ...a, gene_key: c(a.gene_key) }])).values()];
 
+/** Only incomplete dominants have a distinct super form (Super Caramel). Dominants look the same with 1 or 2 copies. */
+export const hasSuper = (g: Gene) => g.inheritance === 'incomplete_dominant' && g.has_super !== false;
 const isDominantType = (g: Gene) => g.inheritance === 'incomplete_dominant' || g.inheritance === 'dominant';
 const superName = (g: Gene) => g.super_name || `Super ${g.name}`;
 const order = (a: Gene, b: Gene) => (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name);
@@ -30,7 +32,7 @@ const order = (a: Gene, b: Gene) => (a.sort ?? 99) - (b.sort ?? 99) || a.name.lo
 export function passChance(g: Gene, s?: AnimalGene): number {
   if (!s || g.inheritance === 'polygenic') return 0;
   if (g.inheritance === 'recessive') return s.state === 'visual' ? 1 : s.state === 'het' ? 0.5 : s.state === 'possible_het' ? ((s.het_pct ?? 50) / 100) * 0.5 : 0;
-  return s.state === 'super' && g.has_super !== false ? 1 : s.state === 'visual' || s.state === 'super' ? 0.5 : 0;
+  return s.state === 'super' && hasSuper(g) ? 1 : s.state === 'visual' || s.state === 'super' ? 0.5 : 0;
 }
 /** Offspring chance of carrying 0, 1 or 2 copies. */
 export function copies(q1: number, q2: number): [number, number, number] {
@@ -51,7 +53,7 @@ export function visualName(lib: Lib, shown: { g: Gene; n: number }[], traits: Ge
     .sort((a, b) => b.groups.length - a.groups.length)[0];
   const used = new Set(best ? best.groups.map(gr => gn(gr.find(k => comboUsable.has(gn(k)))!)) : []);
   const rest = vis.filter(x => !used.has(nameKey(x.g.name)));
-  const dom = rest.filter(x => isDominantType(x.g)).sort((a, b) => order(a.g, b.g)).map(x => x.n === 2 && x.g.has_super !== false ? superName(x.g) : x.g.name);
+  const dom = rest.filter(x => isDominantType(x.g)).sort((a, b) => order(a.g, b.g)).map(x => x.n === 2 && hasSuper(x.g) ? superName(x.g) : x.g.name);
   const rec = rest.filter(x => x.g.inheritance === 'recessive').sort((a, b) => order(a.g, b.g)).map(x => x.g.name);
   return [...dom, ...(best ? [best.name] : []), ...rec, ...traits.sort(order).map(t => t.name)].join(' ');
 }
@@ -60,7 +62,7 @@ export function visualName(lib: Lib, shown: { g: Gene; n: number }[], traits: Ge
 export function morphName(lib: Lib, ag: AnimalGene[]): string {
   const rows = ag.map(a => ({ a, g: lib.genes.get(a.gene_key) })).filter((x): x is { a: AnimalGene; g: Gene } => !!x.g);
   const shown = rows.filter(r => r.g.inheritance !== 'polygenic' && (r.a.state === 'visual' || r.a.state === 'super'))
-    .map(r => ({ g: r.g, n: r.g.inheritance === 'recessive' ? 2 : r.a.state === 'super' && r.g.has_super !== false ? 2 : 1 }));
+    .map(r => ({ g: r.g, n: r.g.inheritance === 'recessive' ? 2 : r.a.state === 'super' && hasSuper(r.g) ? 2 : 1 }));
   const traits = rows.filter(r => r.g.inheritance === 'polygenic').map(r => r.g);
   const het = rows.filter(r => r.a.state === 'het').sort((x, y) => order(x.g, y.g)).map(r => `het ${r.g.name}`);
   const pos = rows.filter(r => r.a.state === 'possible_het').sort((x, y) => order(x.g, y.g)).map(r => `${r.a.het_pct ?? 50}% pos het ${r.g.name}`);
@@ -107,14 +109,18 @@ export function cross(lib: Lib, motherGenes: AnimalGene[], fatherGenes: AnimalGe
   const viable = 1 - nonViable;
   const usesPossibleHets = [...mother, ...father].some(a => a.state === 'possible_het' && genes.get(a.gene_key)?.inheritance === 'recessive');
 
+  // Outcomes are merged by what the baby looks like and carries (gene ids), not the display name, so two different
+  // genes that happen to give the same name (e.g. the recessive Ghost and the Ghost combination) stay apart.
   const merged = new Map<string, Outcome>();
+  const look = (x: { g: Gene; n: number }) => `${x.g.key}:${x.g.inheritance === 'recessive' ? (x.n === 2 ? 'v' : 'h') : x.n === 2 && hasSuper(x.g) ? 's' : 'v'}`;
   for (const c of combos.filter(c => !c.dead)) {
     const name = visualName(lib, c.shown) || 'Normal';
     const hets = c.shown.filter(x => x.g.inheritance === 'recessive' && x.n === 1).sort((a, b) => order(a.g, b.g)).map(x => x.g.name);
     const label = [name, ...hets.map(h => `het ${h}`)].join(' ');
     const p = c.prob / viable;
-    const o = merged.get(label);
-    if (o) o.prob += p; else merged.set(label, { prob: p, fraction: null, name, hets, label });
+    const id = c.shown.map(look).sort().join();
+    const o = merged.get(id);
+    if (o) o.prob += p; else merged.set(id, { prob: p, fraction: null, name, hets, label });
   }
   const outcomes = [...merged.values()].map(o => ({ ...o, fraction: usesPossibleHets ? null : fraction(o.prob) }))
     .sort((a, b) => b.prob - a.prob || a.label.localeCompare(b.label));

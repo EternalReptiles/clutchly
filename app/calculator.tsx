@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useCollection } from '../lib/derived';
-import { allGenes, GeneRows } from '../lib/GeneEditor';
+import { GenePicker } from '../lib/GeneEditor';
 import { morphName, type AnimalGene, type Gene, type GeneState, type Lib } from '../lib/genetics';
 import { MorphCalculator } from '../lib/MorphCalculator';
 import { useAnimalGenes, useGeneLib } from '../lib/useGenes';
@@ -13,8 +13,7 @@ const MINE = 'One of mine', MADE = 'Make one up';
 /** Try any female with any male (no pairing needed), or "what if" parents built from genes. */
 export default function Calculator() {
   const { animals } = useCollection(); const lib = useGeneLib();
-  const list = useMemo(() => allGenes(lib.genes), [lib]);
-  const mother = useParent(lib, list, animals, 'Female'), father = useParent(lib, list, animals, 'Male');
+  const mother = useParent(lib, animals, 'Female'), father = useParent(lib, animals, 'Male');
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
     <Stack.Screen options={{ title: 'Morph calculator' }} />
     <Text style={s.mu}>Pick each parent from your animals, or make one up to see "what if" odds.</Text>
@@ -25,7 +24,7 @@ export default function Calculator() {
 }
 
 type Parent = ReturnType<typeof useParent>;
-function useParent(lib: Lib, list: Gene[], animals: { id: string; name: string; species: string; sex?: string | null; status?: string | null }[], sex: 'Female' | 'Male') {
+function useParent(lib: Lib, animals: { id: string; name: string; species: string; sex?: string | null; status?: string | null }[], sex: 'Female' | 'Male') {
   const choices = animals.filter(a => a.sex === sex && a.status !== 'Sold');
   const [mode, setMode] = useState<string | null>(null); const [id, setId] = useState<string | null>(null);
   const [made, setMade] = useState<Map<string, AnimalGene>>(new Map());
@@ -36,7 +35,7 @@ function useParent(lib: Lib, list: Gene[], animals: { id: string; name: string; 
   const set = (g: Gene, state: GeneState | 'none', pct?: number) => setMade(cur => { const n = new Map(cur);
     if (state === 'none') n.delete(g.key); else n.set(g.key, { gene_key: g.key, state, het_pct: state === 'possible_het' ? (pct ?? cur.get(g.key)?.het_pct ?? 50) : null }); return n; });
   const genes = m === MINE ? animalGenes : madeGenes;
-  return { sex, mode: m, setMode, choices, animal, setId, made, set, clear: () => setMade(new Map()), list, genes,
+  return { sex, mode: m, setMode, choices, animal, setId, made, set, clear: () => setMade(new Map()), lib, genes,
     ready: m === MADE || !!animal, morph: morphName(lib, madeGenes) || 'Normal', name: m === MINE ? animal?.name ?? '' : `a ${morphName(lib, madeGenes) || 'Normal'} ${sex.toLowerCase()}` };
 }
 
@@ -56,7 +55,7 @@ function ParentCard({ title, p }: { title: string; p: Parent }) {
         <View style={[s.row, { marginTop: 6 }]}><Text style={{ flex: 1, fontWeight: '600' }} accessibilityLabel={`${title} genes`}>{p.morph}</Text>
           <Btn t={open ? 'Hide genes' : 'Choose genes'} onPress={() => setOpen(!open)} />
           {p.made.size > 0 && <Btn t="Clear" onPress={p.clear} />}</View>
-        {open && (p.list.length ? <GeneRows list={p.list} value={p.made} onSet={p.set} /> : <Text style={s.mu}>No genes listed yet.</Text>)}
+        {open && <GenePicker genes={p.lib.genes} value={p.made} onSet={p.set} />}
       </View>}
   </Card>);
 }

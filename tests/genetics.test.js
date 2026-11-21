@@ -7,7 +7,7 @@ const genes = new Map([
   gene('car', 'Caramel', 'incomplete_dominant', 20, { super_name: 'Super Caramel' }), gene('hyp', 'Hypo', 'incomplete_dominant', 21, { super_name: 'Super Hypo' }),
   gene('jag', 'Jaguar', 'dominant', 22, { has_super: false, warning: 'wobble', super_warning: 'not recommended' }),
   gene('zeb', 'Zebra', 'incomplete_dominant', 23, { super_name: 'Super Zebra', super_warning: 'tail kinks' }),
-  gene('tig', 'Tiger', 'polygenic', 30),
+  gene('tig', 'Tiger', 'polygenic', 30), gene('com', 'Comino', 'dominant', 24), gene('gho', 'Ghost', 'recessive', 12),
 ]);
 const combos = [
   { id: 's', species: 'Carpet', name: 'Sunglow', groups: [['car', 'hyp'], ['alb']] },
@@ -57,6 +57,11 @@ ok(G.fraction(1 / 16) === '1/16' && G.fraction(3 / 64) === '3/64' && G.fraction(
 // Hatchlings
 let h = G.hatchlingGenes(lib, [A('alb', 'het'), A('jag', 'visual')], [A('alb', 'het'), A('axa', 'visual')]);
 ok(JSON.stringify(h) === '[{"gene_key":"alb","state":"possible_het","het_pct":67},{"gene_key":"axa","state":"het"}]', 'hatchlings: 67% pos het albino, het axanthic, jaguar left to set', h);
+r = G.cross(lib, [A('com', 'visual')], [A('com', 'visual')]);
+ok(JSON.stringify(pct(r)) === '{"Comino":75,"Normal":25}' && r.nonViable === 0, 'dominant (Comino): 1 or 2 copies look the same, no super', pct(r));
+ok(name([A('com', 'super')]) === 'Comino', 'no Super Comino');
+r = G.cross(lib, [A('car', 'visual'), A('axa', 'het'), A('gho', 'het')], [A('axa', 'het'), A('gho', 'het')]);
+ok(r.outcomes.filter(o => o.label === 'Ghost').length === 2, 'Ghost combination and recessive Ghost stay separate rows', r.outcomes.map(o => o.label));
 // Genes across species: matched by name
 const olive = new Map([...genes, ['o-alb', { key: 'o-alb', species: 'Olive python', name: 'Albino', inheritance: 'recessive', sort: 10 }],
   ['b-axa', { key: 'b-axa', species: 'Black-headed python', name: 'Axanthic', inheritance: 'recessive', sort: 11 }]]);
