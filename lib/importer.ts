@@ -1,7 +1,8 @@
 // Parses pasted lines or a CSV file into animals to import.
 // Columns: name, species, sex, hatch date (optional), last feed date (optional).
 // A header row is optional; with one, columns can be in any order.
-import { SPECIES, iso, today } from './logic';
+import { iso, today } from './logic';
+import { findSpecies } from './species';
 
 export type Row = {
   line: number; raw: string;
@@ -23,19 +24,8 @@ export function splitLine(line: string, sep: string): string[] {
   return out;
 }
 
-const SPECIES_ALIASES: Record<string, string> = {
-  carpet: 'Carpet', 'carpet python': 'Carpet', morelia: 'Carpet',
-  bredli: 'Bredli', 'centralian carpet': 'Bredli', 'centralian python': 'Bredli',
-  diamond: 'Diamond', 'diamond python': 'Diamond',
-  antaresia: 'Antaresia', childreni: 'Antaresia', stimsoni: 'Antaresia', maculosa: 'Antaresia', perthensis: 'Antaresia',
-  "children's python": 'Antaresia', 'spotted python': 'Antaresia', 'stimsons python': 'Antaresia', "stimson's python": 'Antaresia',
-  other: 'Other',
-};
-export function parseSpecies(v: string): string | null {
-  const k = v.trim().toLowerCase().replace(/\s+/g, ' ');
-  if (!k) return null;
-  return SPECIES_ALIASES[k] ?? SPECIES.find(s => s.toLowerCase() === k) ?? null;
-}
+// Accepts the species name, Latin name or a common alias (see lib/species.ts).
+export const parseSpecies = (v: string): string | null => findSpecies(v);
 export function parseSex(v: string): string | null {
   const k = v.trim().toLowerCase();
   if (['f', 'female', '0.1', '♀'].includes(k)) return 'Female';
@@ -102,7 +92,7 @@ export function parseImport(text: string, dayFirst: boolean, existingNames: stri
     else if (existing.has(name.toLowerCase())) errs.push(`"${name}" is already in your collection`);
     else if (inFile.has(name.toLowerCase())) errs.push(`Duplicate of line ${inFile.get(name.toLowerCase())}`);
     const species = parseSpecies(v.species ?? '');
-    if (!species) errs.push(v.species?.trim() ? `Unknown species "${v.species.trim()}" (use ${SPECIES.join(', ')})` : 'Species missing');
+    if (!species) errs.push(v.species?.trim() ? `Unknown species "${v.species.trim()}". Use a name from the species list (or Other)` : 'Species missing');
     const sex = parseSex(v.sex ?? '');
     if (!sex) errs.push(v.sex?.trim() ? `Sex "${v.sex.trim()}" should be F or M` : 'Sex missing');
     const dob = parseDate(v.dob ?? '', dayFirst), lf = parseDate(v.last_feed ?? '', dayFirst);

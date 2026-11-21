@@ -25,7 +25,8 @@ create table season_settings(
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   species text not null, pause_from text, pause_to text, pair_start text,  -- 'MM-DD'
   female_every int, male_every int,        -- default feed interval, days
-  prelay_to_lay int, ovul_to_lay int,      -- days, for estimated lay date
+  prelay_to_lay int, ovul_to_lay int,      -- days, for estimated lay (or birth) date
+  lay_to_hatch int,                        -- days, for estimated hatch date
   primary key(user_id, species));
 
 alter table animals enable row level security;

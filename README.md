@@ -2,9 +2,14 @@
 Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user signs up and sees only their own collection (enforced by Postgres row-level security).
 
 ## Setup
-1. Create a free project at supabase.com. In SQL editor, run `supabase/schema.sql`.
+1. Create a free project at supabase.com. In SQL editor, run `supabase/schema.sql`. (Databases created from an older schema: run the files in `supabase/migrations/` in order.)
 2. Copy `.env.example` to `.env` with your project URL and anon key (Settings > API). Never use the service_role key in the app.
 3. `npm install && npx expo start`, then scan the QR code with Expo Go.
+
+## Species
+`lib/species.ts` lists every species a breeder can pick (pythons, dragons, monitors, geckos, skinks, turtles, Other), with
+Latin names, aliases (used by CSV import and search) and typical days from ovulation/mating to lay, pre-lay shed to lay,
+and lay to hatch. The Season tab suggests the middle of each range; each user can set their own numbers per species.
 
 ## Logo, icon and splash
 The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, so it can be tweaked and regenerated:
@@ -25,7 +30,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 ## Tests
 - `npm run typecheck`
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js` and `tests/reset.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js` and `tests/species.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.

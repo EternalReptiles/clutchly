@@ -31,9 +31,7 @@ const SP = process.argv[2];
   await step('new account: routine prompt on Today and Season, all blank', async () => {
     await T('Set up your routine').waitFor();
     await T('Set up your routine').click(); await T('Your routine', { exact: true }).waitFor({ timeout: 8000 });
-    if (await pg.getByText('Not set', { exact: true }).and(live).count() !== 5) throw new Error('expected 5 species not set');
-    if (await L('Pairing starts').inputValue() !== '') throw new Error('pairing start should be blank');
-    if (await L('Feed females every (days)').getAttribute('placeholder') !== '7 (suggested)') throw new Error('suggested placeholder missing');
+    await T('No species yet. Add animals, or add a species below.').waitFor();
     await shot('season-new');
   });
   await step('sign out, then sign in', async () => {
@@ -42,6 +40,9 @@ const SP = process.argv[2];
   });
   for (const [nm, sex] of [['ER001', 'Female'], ['ER002', 'Male']]) await step(`add animal ${nm} with hatch date picker`, async () => {
     await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill(nm); await T(sex, { exact: true }).click();
+    await L('Species').click(); await L('Search species').fill('carpet python');
+    await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
+    await T('Carpet', { exact: true }).waitFor();
     await L('Hatch date').fill('2023-12-01'); if (nm === 'ER001') await shot('new-animal');
     await T('Save', { exact: true }).click(); await T(nm, { exact: true }).waitFor({ timeout: 10000 });
   });
@@ -65,16 +66,24 @@ const SP = process.argv[2];
     await tab('Pairings'); await T('+ New pairing').click(); await T('ER001', { exact: true }).click(); await T('ER002', { exact: true }).click();
     await shot('new-pairing'); await T('Create', { exact: true }).click(); await T('ER001 × ER002').waitFor({ timeout: 8000 });
   });
-  await step('log two locks, pre-lay shed, estimated lay', async () => {
+  await step('log two locks, pre-lay shed, estimated lay, laid, estimated hatch', async () => {
     await T('ER001 × ER002').click(); await T('Locks (0)').waitFor();
     await L('Lock date').fill('2026-06-12'); await T('+ Log lock').click(); await T('Locks (1)').waitFor({ timeout: 8000 });
     await L('Lock date').fill('2026-06-05'); await T('+ Log lock').click(); await T('Locks (2)').waitFor({ timeout: 8000 });
     await L('Pre-lay shed').fill('2026-09-01'); await T('Save', { exact: true }).click();
     await T(/estimated lay 26 Sept? 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
-    await pg.getByLabel(/back$/i).and(live).first().click(); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 }); await shot('pairings');
+    await pg.getByLabel(/back$/i).and(live).first().click(); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 });
+    await T('ER001 × ER002').click(); await L('Eggs laid').fill('2026-09-28'); await T('Save', { exact: true }).click();
+    await T('Eggs laid · estimated hatch 22 Nov 2026').waitFor({ timeout: 8000 });
+    await pg.getByLabel(/back$/i).and(live).first().click(); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairings');
   });
   await step('season settings: change, persists after reload, clear', async () => {
-    await tab('Season');
+    await tab('Season'); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 });
+    for (const [label, want] of [['Feed females every (days)', '7 (suggested)'], ['Days from pre-lay shed to lay', '25 (typical 21–28)'],
+      ['Days from ovulation to lay', '49 (typical 42–55)'], ['Days from lay to hatch', '55 (typical 52–58)']]) {
+      const got = await L(label).getAttribute('placeholder'); if (got !== want) throw new Error(`${label} placeholder: ${got}`);
+    }
+    await shot('season-carpet');
     await L('Pairing starts').fill('2000-06-15'); await pg.waitForTimeout(1500);
     await L('Feed females every (days)').fill('10'); await L('Feed females every (days)').blur(); await pg.waitForTimeout(1500);
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Season'); await pg.waitForTimeout(1500);
@@ -87,10 +96,10 @@ const SP = process.argv[2];
   });
   await step('date format: switch to US and back to Australian', async () => {
     await T('US', { exact: true }).click(); await pg.waitForTimeout(1500);
-    await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Sep 26, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
-    await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Sep 26, 2026').waitFor({ timeout: 8000 });
+    await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
+    await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 });
     await tab('Season'); await T('Australian', { exact: true }).click(); await pg.waitForTimeout(1500); await shot('season-format');
-    await tab('Pairings'); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 }); await tab('Season');
+    await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 }); await tab('Season');
   });
   await step('delete account; sign-in then fails', async () => {
     await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });

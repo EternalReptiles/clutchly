@@ -2,19 +2,25 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { SEXES, SPECIES, fmt, today } from '../../lib/logic';
+import { SEXES, fmt, today } from '../../lib/logic';
+import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { Btn, Chips, DateField, Input, Label, confirm, notify, s, C } from '../../lib/ui';
 
 type Form = { name: string; species: string; sex: string; status: string; dob: string | null; feed_every: string; notes: string };
 type Ev = { id: string; kind: 'feed' | 'shed' | 'weight'; on_date: string; ok: boolean | null; food: string | null; grams: number | null };
-const blank: Form = { name: '', species: 'Carpet', sex: 'Female', status: 'Active', dob: null, feed_every: '', notes: '' };
+const blank: Form = { name: '', species: '', sex: 'Female', status: 'Active', dob: null, feed_every: '', notes: '' };
 
 export default function AnimalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
   const [a, setA] = useState<Form>(blank); const [loaded, setLoaded] = useState(isNew);
   const [ev, setEv] = useState<Ev[]>([]); const [food, setFood] = useState(''); const [g, setG] = useState(''); const [day, setDay] = useState(today());
   const load = useCallback(async () => {
-    if (isNew) return;
+    if (isNew) {
+      // Default to the species of the most recently added animal, which suits entering a batch.
+      const last = await supabase.from('animals').select('species').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (last.data?.species) setA(f => f.species ? f : { ...f, species: last.data!.species });
+      return;
+    }
     const [x, e] = await Promise.all([supabase.from('animals').select('*').eq('id', id).maybeSingle(),
       supabase.from('events').select('*').eq('animal_id', id).order('on_date', { ascending: false }).order('id').limit(50)]);
     if (x.error || e.error) notify('Could not load', (x.error || e.error)!.message);
@@ -25,6 +31,7 @@ export default function AnimalScreen() {
 
   const save = async () => {
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
+    if (!a.species) return notify('Choose a species');
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;
     if (every !== null && (isNaN(every) || every < 1 || every > 365)) return notify('Feed interval must be 1 to 365 days, or blank');
     const body = { name, species: a.species, sex: a.sex, status: a.status, dob: a.dob, feed_every: every, notes: a.notes.trim() || null };
@@ -47,7 +54,7 @@ export default function AnimalScreen() {
   if (!loaded) return <View style={s.page} />;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New animal' : a.name }} />
     <Input label="Name / ID" value={a.name} onChangeText={v => setA({ ...a, name: v })} />
-    <Label t="Species" /><Chips opts={SPECIES} v={a.species} on={v => setA({ ...a, species: v })} />
+    <SpeciesPicker value={a.species} onChange={v => setA({ ...a, species: v })} />
     <Label t="Sex" /><Chips opts={SEXES} v={a.sex} on={v => setA({ ...a, sex: v })} />
     <Label t="Status" /><Chips opts={['Active', 'Breeding', 'Resting', 'Sold']} v={a.status} on={v => setA({ ...a, status: v })} />
     <DateField optional label="Hatch date" value={a.dob} onChange={v => setA({ ...a, dob: v })} />
