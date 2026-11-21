@@ -1,7 +1,16 @@
 # Supabase production checklist
 
-Keep the current project ("Reptile Tracking", Tokyo) for testing. Real users should go on a **separate production
-project**, so tests and experiments never touch their data.
+**Current production project:** `oybgqvhuromskcwcjyft` ("clutchly", Sydney ap-southeast-2), set in `lib/config.ts`.
+Moved there from the old Tokyo project `xtjoypcgzfotjzskmggw` ("Reptile Tracking") on 2026-11-21, as set out in
+`docs/MIGRATE_TO_SYDNEY.md`. Steps 1, 2 and 4 below are done, and so are the reviewer and owner accounts (copied with
+their passwords). Still to do: Pro plan, custom SMTP, then the branded email templates (Supabase refuses custom
+templates on the built-in sender), "Confirm email" on with minimum password length 8 (left as on the old project
+for now), and the RevenueCat webhook URL.
+Auth URL configuration in use: Site URL `https://clutchly.com.au/app`; redirect URLs
+`https://clutchly.com.au/app/reset-password`, `clutchly://reset-password`, `exp://**` (remove that one at launch).
+
+To test without touching real users, use a separate test project and point `.env` at it. The release check
+(`scripts/check_release.mjs`) fails if `lib/config.ts` still points at the old Tokyo project.
 
 ## 1. Create the project
 - supabase.com > New project. **Region: Sydney (ap-southeast-2)** so Australian users' data stays in Australia (the

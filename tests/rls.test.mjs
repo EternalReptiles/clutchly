@@ -96,7 +96,7 @@ x = await A.from('user_genes').insert({ species: 'Carpet', name: 'Secret line', 
 for (const tb of ['animal_genes', 'user_genes']) { x = await B.from(tb).select('*'); ok(!x.error && x.data.length === 0, `B sees 0 rows in ${tb}`); }
 x = await B.from('animal_genes').insert({ animal_id: f.data.id, gene_key: 'carpet-albino', state: 'het' }); ok(!!x.error, "B cannot add genes to A's animal");
 x = await A.from('gene_library').update({ name: 'x' }).eq('id', 'carpet-jaguar').select(); ok(!!x.error || !x.data?.length, 'nobody can change the shared gene list');
-x = await A.from('gene_library').select('id'); ok(x.data?.length >= 29, 'signed-in user reads the gene list');
+x = await A.from('gene_library').select('id'); ok(x.data?.length >= 27, 'signed-in user reads the gene list (27 after 014 merged duplicates)');
 x = await anonClient().from('gene_library').select('id'); ok(!!x.error || x.data.length === 0, 'logged-out cannot read the gene list');
 
 // Delete accounts
