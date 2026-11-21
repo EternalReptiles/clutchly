@@ -90,6 +90,15 @@ x = await A.from('species_templates').update({ male_every: 1 }).eq('species', 'C
 x = await A.from('species_templates').insert({ species: 'Fake' }); ok(!!x.error, 'user cannot add a template');
 x = await A.from('species_templates').delete().eq('species', 'Carpet').select(); ok(!!x.error || !x.data?.length, 'user cannot delete a template');
 
+// Genes: private per account; the shared gene list is read-only.
+x = await A.from('animal_genes').insert({ animal_id: f.data.id, gene_key: 'carpet-jaguar', state: 'visual' }); ok(!x.error, 'A records a gene on own animal ' + (x.error?.message || ''));
+x = await A.from('user_genes').insert({ species: 'Carpet', name: 'Secret line', inheritance: 'recessive' }); ok(!x.error, 'A adds a private gene');
+for (const tb of ['animal_genes', 'user_genes']) { x = await B.from(tb).select('*'); ok(!x.error && x.data.length === 0, `B sees 0 rows in ${tb}`); }
+x = await B.from('animal_genes').insert({ animal_id: f.data.id, gene_key: 'carpet-albino', state: 'het' }); ok(!!x.error, "B cannot add genes to A's animal");
+x = await A.from('gene_library').update({ name: 'x' }).eq('id', 'carpet-jaguar').select(); ok(!!x.error || !x.data?.length, 'nobody can change the shared gene list');
+x = await A.from('gene_library').select('id'); ok(x.data?.length >= 29, 'signed-in user reads the gene list');
+x = await anonClient().from('gene_library').select('id'); ok(!!x.error || x.data.length === 0, 'logged-out cannot read the gene list');
+
 // Delete accounts
 x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.error?.message || ''));
 x = await A.from('animals').select('id'); ok(x.data?.length === 3, 'A data survives B deletion (2 animals + 1 hatchling)');

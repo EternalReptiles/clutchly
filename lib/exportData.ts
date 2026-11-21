@@ -25,6 +25,7 @@ export async function buildExport() {
     account: { email: u?.email, created_at: u?.created_at, preferences: u?.user_metadata ?? {} },
     notification_settings: ns,
     animals: strip(st.animals), events: strip(st.events), pairings: strip(st.pairings), season_settings: strip(st.season_settings),
+    genes: strip(st.animal_genes), my_genes: strip(st.user_genes),
     photos: strip(st.animal_photos).map(p => ({ ...p, download_url_valid_7_days: urlOf.get(p.path) ?? null })),
   };
 }

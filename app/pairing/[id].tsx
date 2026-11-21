@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useAnimalGenes, useGenes } from '../../lib/useGenes';
+import { MorphCalculator } from '../../lib/MorphCalculator';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCollection } from '../../lib/derived';
@@ -40,7 +42,8 @@ export default function PairingScreen() {
   const addLock = () => save({ locks: [...(p.locks || []), lockDay].sort() });
   const delLock = (i: number) => confirm(`Remove ${w.lock}?`, fmt(p.locks[i]), 'Remove', () => save({ locks: p.locks.filter((_, j) => j !== i) }));
   const del = () => confirm('Delete pairing?', 'This cannot be undone.', 'Delete', () => { remove('pairings', id); r.back(); });
-  const female = animals.find(a => a.id === p.female_id);
+  const female = animals.find(a => a.id === p.female_id); const male = animals.find(a => a.id === p.male_id);
+  const genes = useGenes(); const femaleGenes = useAnimalGenes(p.female_id); const maleGenes = useAnimalGenes(p.male_id);
   const repro = speciesInfo(female?.species).repro; const w = words(repro);
   const est = estimates(p, seasonFor(cfg, female?.species || 'Other'));
   const estText = !p.laid && est.lay ? ` · ${w.est} ${fmt(est.lay)}` : p.laid && !p.hatched && est.hatch ? ` · estimated hatch ${fmt(est.hatch)}` : '';
@@ -57,6 +60,8 @@ export default function PairingScreen() {
     <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
     <Label t="Male" />{males.length ? <Chips opts={males.map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n, 'Male') })} /> : <Text style={s.mu}>No males yet.</Text>}
     {isNew && <DateField label="Introduced" value={p.intro} onChange={v => setP({ ...p, intro: v })} optional />}
+    {female && male && <View style={[s.card, { marginTop: 12 }]}><Text style={s.h}>Morph calculator</Text>
+      <MorphCalculator genes={genes} mother={femaleGenes} father={maleGenes} motherName={female.name} fatherName={male.name} /></View>}
     {!isNew && <><Text style={[s.h, { marginTop: 14 }]}>{pairStatus(p, female?.species)}{estText}</Text>
       <Text style={[s.h, { marginTop: 14 }]}>{w.locks} ({p.locks?.length || 0})</Text>
       <View style={[s.row, { alignItems: 'flex-end' }]}><View style={{ flex: 1 }}><DateField label={`${w.lock[0].toUpperCase()}${w.lock.slice(1)} date`} value={lockDay} onChange={v => setLockDay(v || today())} /></View>

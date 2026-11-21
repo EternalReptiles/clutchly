@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { hatchlingGenes, morphName } from './genetics';
+import { useAnimalGenes, useGenes } from './useGenes';
 import { Modal, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from './supabase';
@@ -22,6 +24,8 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
     supabase.auth.getSession().then(({ data }) => setPattern(data.session?.user.user_metadata?.hatchling_pattern || DEFAULT_PATTERN));
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const n = parseInt(count, 10) || 0; const plan = usePlan();
+  const genes = useGenes(); const mg = useAnimalGenes(mother?.id); const fg = useAnimalGenes(father?.id);
+  const inherited = useMemo(() => hatchlingGenes(genes, mg, fg), [genes, mg, fg]);
   const names = useMemo(() => n > 0 && n <= 200 ? hatchlingNames(pattern, hatchDate, mother?.name ?? '', father?.name ?? '', n, getState().animals.map(a => a.name)) : [],
     [n, pattern, hatchDate, mother?.name, father?.name]);
   const num = (v: string) => (v.trim() ? parseInt(v, 10) : null);
@@ -32,8 +36,10 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
     if (!plan.isPro && n > plan.remaining) { onClose(); return goPro(`The free plan has room for ${plan.remaining} more animal${plan.remaining === 1 ? '' : 's'} (up to ${plan.freeAnimals}). Go Pro to add all ${n} hatchlings.`); }
     if ((c != null && (isNaN(c) || c < 0)) || (f != null && (isNaN(f) || f < 0))) return notify('Clutch and fertile counts must be numbers');
     if (c != null && f != null && f > c) return notify('Fertile eggs cannot be more than the clutch size');
-    insertMany('animals', names.map(name => ({ name, species: mother.species, sex: 'Unknown', status: 'Active', dob: hatchDate,
+    const added = insertMany('animals', names.map(name => ({ name, species: mother.species, sex: 'Unknown', status: 'Active', dob: hatchDate,
       mother_id: mother.id, father_id: father?.id ?? null, pairing_id: pairing.id })));
+    // Genes every hatchling carries (or may carry) from its parents; visual genes are set once they show.
+    insertMany('animal_genes', added.flatMap(a => inherited.map(g => ({ animal_id: a.id, gene_key: g.gene_key, state: g.state, het_pct: g.het_pct ?? null }))));
     update('pairings', pairing.id!, { clutch: c, fertile: f });
     const p = normalisePattern(pattern);
     supabase.auth.updateUser({ data: { hatchling_pattern: p } }).catch(() => {}); // remembered for next time (needs a connection)
@@ -51,6 +57,7 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
         <Input label="ID pattern" value={pattern} onChangeText={setPattern} autoCapitalize="none" autoCorrect={false} />
         <Text style={[s.mu, { marginTop: 4 }]}>{'{YYYY}'} or {'{YY}'} = hatch year · {'{###}'} = running number (one # per digit) · {'{MOTHER}'} {'{FATHER}'} = parents' names. Numbering carries on from your existing IDs.</Text>
         {!plan.isPro && <Text style={[s.mu, { marginTop: 6 }]}>Free plan: room for {plan.remaining} more animal{plan.remaining === 1 ? '' : 's'} (up to {plan.freeAnimals}).</Text>}
+        {inherited.length > 0 && <Text style={[s.mu, { marginTop: 6 }]}>Each hatchling will be recorded as {morphName(genes, inherited)} (from the parents' genes). Set visual genes once they show.</Text>}
         {names.length > 0 && <View style={[s.card, { marginTop: 10 }]}><Text style={s.mu}>Will create</Text>
           <Text style={{ color: C.ink, marginTop: 2 }}>{names.length <= 6 ? names.join(', ') : `${names.slice(0, 3).join(', ')} … ${names[names.length - 1]}`}</Text></View>}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>

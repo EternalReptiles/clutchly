@@ -32,6 +32,19 @@ species later. Users' edits are private and never change the templates. The app 
 - Account > Download my data (free for everyone) saves a JSON file of all the user's records, settings and 7-day photo
   links (`lib/exportData.ts`; share sheet on phones via `expo-sharing`, a download on the web).
 
+## Genes and morph calculator
+- `gene_library` (migration 012): shared single genes and line-bred traits per species, with inheritance (recessive,
+  incomplete dominant, dominant, line-bred), descriptions, super names and health warnings (e.g. Super Jaguar). Read-only
+  for users; add genes with a new migration or in the dashboard. Seeded for Carpet (8 genes + 3 line-bred traits),
+  Bredli (3) and Antaresia (11 + 4 line-bred). Albino and granite lines that don't work together are separate genes.
+- `user_genes`: a breeder's own private genes. `animal_genes`: each animal's genes (visual, super, het, or possible het
+  with a %). Both sync offline and are in "Download my data".
+- `lib/genetics.ts` (tested in `tests/genetics.test.js`): per-gene odds combined across genes, assuming independent
+  inheritance; possible hets weighted by their %; normal-looking babies' chance of being het; warnings with their chance;
+  line-bred traits listed but not predicted. Hatchlings get the recessive hets they carry or may carry.
+- Screens: genes on each animal (Edit genes), morph names on the Animals list, the calculator on every pairing and as a
+  standalone screen (Pairings > Morph calculator).
+
 ## Free and Pro
 - Free: up to `free_animals` owned animals (table `app_limits`, currently 10; animals marked Sold don't count, and
   marking one back as owned is checked against the limit too) with every record-keeping feature and data export.

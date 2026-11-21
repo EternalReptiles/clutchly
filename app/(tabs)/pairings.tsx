@@ -12,7 +12,8 @@ export default function Pairings() {
   const rows = useMemo(() => [...pairings].sort((a, b) => (b.intro ?? '').localeCompare(a.intro ?? '')), [pairings]);
   const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
-  return (<View style={s.page}><Btn solid t="+ New pairing" onPress={() => r.push('/pairing/new')} />
+  return (<View style={s.page}><View style={{ flexDirection: 'row', gap: 8 }}><View style={{ flex: 1 }}><Btn solid t="+ New pairing" onPress={() => r.push('/pairing/new')} /></View>
+    <Btn t="Morph calculator" onPress={() => r.push('/calculator')} /></View>
     <FlatList data={rows} keyExtractor={p => p.id!}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
       ListEmptyComponent={<Text style={[s.mu, { marginTop: 12 }]}>{ready ? 'No pairings yet.' : 'Loading…'}</Text>}

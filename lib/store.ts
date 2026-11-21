@@ -11,15 +11,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { setDateFormat } from './logic';
 
-export type Table = 'animals' | 'events' | 'pairings' | 'season_settings' | 'animal_photos';
-export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings', 'animal_photos'];
+export type Table = 'animals' | 'events' | 'pairings' | 'season_settings' | 'animal_photos' | 'user_genes' | 'animal_genes';
+export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings', 'animal_photos', 'user_genes', 'animal_genes'];
 export type Row = Record<string, any>;
 type Op = 'insert' | 'update' | 'upsert' | 'delete';
 type Mutation = { mid: string; table: Table; op: Op; key: string; row?: Row };
 export type SyncStatus = 'idle' | 'syncing' | 'offline';
 export type State = {
   uid: string | null; ready: boolean;
-  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[];
+  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[]; user_genes: Row[]; animal_genes: Row[];
   queue: Mutation[]; lastSync: string | null; lastDeleteId: number;
   status: SyncStatus; error: string | null; dateFormat: string;
   plan: Plan;
@@ -30,7 +30,7 @@ export const DEFAULT_PLAN: Plan = { active: false, expiresAt: null, productId: n
 
 const keyCol = (t: Table) => (t === 'season_settings' ? 'species' : 'id');
 const keyOf = (t: Table, r: Row) => String(r[keyCol(t)]);
-const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], queue: [],
+const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], user_genes: [], animal_genes: [], queue: [],
   lastSync: null, lastDeleteId: 0, status: 'idle', error: null, dateFormat: 'auto', plan: DEFAULT_PLAN });
 
 let state: State = empty();
@@ -107,6 +107,7 @@ function applyLocal(t: Table, op: Op, key: string, row?: Row) {
       extra.events = state.events.filter(e => e.animal_id !== key);
       extra.pairings = state.pairings.filter(p => p.female_id !== key && p.male_id !== key);
       extra.animal_photos = state.animal_photos.filter(p => p.animal_id !== key);
+      extra.animal_genes = state.animal_genes.filter(g => g.animal_id !== key); schedulePersist('animal_genes');
       // Offspring keep existing; their link to this parent is cleared (the database does the same).
       rows = rows.map(r => r.mother_id === key || r.father_id === key ? { ...r, mother_id: r.mother_id === key ? null : r.mother_id, father_id: r.father_id === key ? null : r.father_id } : r);
       const goneP = new Set(state.pairings.filter(p => p.female_id === key || p.male_id === key).map(p => p.id));

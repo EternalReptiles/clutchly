@@ -53,6 +53,7 @@ export default function Root() {
         <Stack.Screen name="import" options={{ title: 'Bulk add' }} />
         <Stack.Screen name="account" options={{ title: 'Account' }} />
         <Stack.Screen name="welcome" options={{ title: 'Welcome' }} />
+        <Stack.Screen name="calculator" options={{ title: 'Morph calculator' }} />
         <Stack.Screen name="paywall" options={{ title: 'Pro', presentation: 'modal' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
       </Stack.Protected>
