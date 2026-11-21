@@ -35,7 +35,7 @@ const SP = process.argv[2];
     await shot('season-new');
   });
   await step('sign out, then sign in', async () => {
-    await tab('Season'); await T('Sign out', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Sign out', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
     await signIn(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
   });
   for (const [nm, sex] of [['ER001', 'Female'], ['ER002', 'Male']]) await step(`add animal ${nm} with hatch date picker`, async () => {
@@ -94,12 +94,21 @@ const SP = process.argv[2];
     await until(() => L('Pairing starts').inputValue(), '', 'clear failed');
     await T('Set up your routine').waitFor();
   });
-  await step('date format: switch to US and back to Australian', async () => {
+  await step('account button: email shown; date format US and back to Australian', async () => {
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T(email, { exact: true }).waitFor({ timeout: 8000 });
     await T('US', { exact: true }).click(); await pg.waitForTimeout(1500);
-    await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
+    await pg.getByLabel(/back$/i).and(live).first().click(); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 });
-    await tab('Season'); await T('Australian', { exact: true }).click(); await pg.waitForTimeout(1500); await shot('season-format');
-    await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 }); await tab('Season');
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Australian', { exact: true }).click(); await pg.waitForTimeout(1500); await shot('account');
+    await pg.getByLabel(/back$/i).and(live).first().click(); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 });
+  });
+  await step('account button: change password, sign in with the new one', async () => {
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await L('New password').fill('Changed-pass-2'); await L('Confirm new password').fill('Changed-pass-2');
+    await pg.getByRole('button', { name: 'Change password', exact: true }).and(live).first().click(); await pg.waitForTimeout(2000);
+    if (!logs.some(l => l.includes('Password changed'))) throw new Error('no confirmation');
+    await T('Sign out', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
+    await L('Email').fill(email); await L('Password').fill('Changed-pass-2'); await T('Sign in', { exact: true }).click();
+    await pg.getByRole('tab', { name: 'Today' }).waitFor({ timeout: 10000 }); await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
   });
   await step('delete account; sign-in then fails', async () => {
     await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });

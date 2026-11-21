@@ -94,7 +94,7 @@ const SP = process.argv[2];
     await back();
   });
   await step('cleanup: delete account', async () => {
-    await tab('Season'); await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
   });
   console.log(logs.join('\n')); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); await b.close(); process.exit(fails ? 1 : 0);
 })();

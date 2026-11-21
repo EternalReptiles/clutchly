@@ -2,10 +2,10 @@ import { useCallback, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { DATE_FORMATS, DateFormat, FALLBACK, SEASON_KEYS, Season, Suggested, fmt, seasonFor, setDateFormat, suggested, today } from '../../lib/logic';
+import { FALLBACK, SEASON_KEYS, Season, Suggested, seasonFor, suggested } from '../../lib/logic';
 import { SPECIES, Repro, speciesInfo, words } from '../../lib/species';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
-import { Btn, C, Card, Chips, DateField, Input, confirm, notify, s } from '../../lib/ui';
+import { Btn, C, Card, DateField, Input, confirm, notify, s } from '../../lib/ui';
 
 type NumKey = 'female_every' | 'male_every' | 'prelay_to_lay' | 'ovul_to_lay' | 'lay_to_hatch';
 // Number fields shown for each way of reproducing.
@@ -18,7 +18,7 @@ const numFields = (r: Repro): [NumKey, string][] => [
 
 export default function Settings() {
   const [rows, setRows] = useState<Season[] | null>(null); const [kept, setKept] = useState<string[]>([]);
-  const [added, setAdded] = useState<string[]>([]); const [df, setDf] = useState<DateFormat>('auto');
+  const [added, setAdded] = useState<string[]>([]);
   // Bumped on every load and every edit, so a slow load can't overwrite a change made after it started.
   const seq = useRef(0);
   const load = useCallback(() => { const mine = ++seq.current;
@@ -27,12 +27,6 @@ export default function Settings() {
       const err = x.error || a.error; if (err) notify('Could not load', err.message);
       setKept([...new Set(((a.data || []) as { species: string }[]).map(r => r.species))]); setRows((x.data as Season[]) || []);
     }); }, []);
-  useFocusEffect(useCallback(() => { supabase.auth.getSession().then(({ data }) => setDf(data.session?.user.user_metadata?.date_format || 'auto')); }, []));
-  const changeFormat = async (f: DateFormat) => {
-    setDf(f); setDateFormat(f);
-    const { error } = await supabase.auth.updateUser({ data: { date_format: f } });
-    if (error) notify('Could not save', error.message);
-  };
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const get = (sp: string) => seasonFor(rows || [], sp);
@@ -48,22 +42,12 @@ export default function Settings() {
     const { error } = await supabase.from('season_settings').delete().eq('species', sp);
     if (error) notify('Error', error.message); load();
   });
-  const signOut = async () => { const { error } = await supabase.auth.signOut(); if (error) notify('Error', error.message); };
-  const del = () => confirm('Delete account?', 'All your animals and records are permanently deleted. This cannot be undone.', 'Delete', async () => {
-    const { error } = await supabase.rpc('delete_my_account');
-    if (error) return notify('Could not delete account', error.message);
-    await supabase.auth.signOut({ scope: 'local' });
-  });
-
   if (!rows) return <View style={s.page} />;
   // Species shown: ones the user keeps, has a routine for, or just added here; in the species-list order.
   const shown = SPECIES.filter(sp => kept.includes(sp) || added.includes(sp) || rows.some(r => r.species === sp));
   // Animals saved with a species name that is no longer in the list still get a card.
   const unknown = [...kept, ...rows.map(r => r.species)].filter((sp, i, all) => !SPECIES.includes(sp) && all.indexOf(sp) === i);
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
-    <Card><Text style={s.h}>Date format</Text>
-      <Chips opts={DATE_FORMATS.map(f => f[1])} v={DATE_FORMATS.find(f => f[0] === df)![1]} on={l => changeFormat(DATE_FORMATS.find(f => f[1] === l)![0])} />
-      <Text style={[s.mu, { marginTop: 6 }]}>Today shows as {fmt(today())}</Text></Card>
     {rows.length === 0 && <View style={[s.card, { borderColor: C.ink }]}>
       <Text style={s.h}>Set up your routine</Text>
       <Text style={{ color: C.ink, marginTop: 4 }}>Clutchly doesn't assume a schedule. For each species you keep, set when you stop feeding for the season, when feeding resumes, when breeding starts, and how often you feed females and males.</Text>
@@ -83,7 +67,6 @@ export default function Settings() {
       </Card>); })}
     <SpeciesPicker label="" value={null} exclude={shown} onChange={sp => setAdded(a => [...a, sp])} />
     <Text style={[s.mu, { marginTop: 4 }]}>Tap above to add a routine for another species.</Text>
-    <View style={{ gap: 8, marginTop: 20 }}><Btn t="Sign out" onPress={signOut} /><Btn danger t="Delete account" onPress={del} /></View>
     <View style={{ height: 60 }} /></ScrollView>);
 }
 

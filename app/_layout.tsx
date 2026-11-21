@@ -33,6 +33,7 @@ export default function Root() {
         <Stack.Screen name="animal/[id]" options={{ title: '' }} />
         <Stack.Screen name="pairing/[id]" options={{ title: '' }} />
         <Stack.Screen name="import" options={{ title: 'Bulk add' }} />
+        <Stack.Screen name="account" options={{ title: 'Account' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
