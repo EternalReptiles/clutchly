@@ -13,7 +13,7 @@ project**, so tests and experiments never touch their data.
 
 ## 2. Database (SQL Editor, in this order)
 1. `supabase/schema.sql`
-2. Every file in `supabase/migrations/`, in number order (`001` ... `010`). Each is safe to run again.
+2. Every file in `supabase/migrations/`, in number order (`001` ... `011`). Each is safe to run again.
 3. In `004_notification_cron.sql`, change the project URL to the production one **before** running it, and first run:
    `select vault.create_secret('<a long random value>', 'clutchly_cron_secret');`
    (Generate the value with `openssl rand -base64 32`. Use the same value for `CRON_SECRET` in step 4.)

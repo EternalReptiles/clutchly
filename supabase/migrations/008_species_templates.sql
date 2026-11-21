@@ -28,7 +28,7 @@ insert into species_templates (species, male_every, female_every, pause_from, pa
   ('Carpet',    21, 7, '05-01', '05-31', '06-01', 25, 49, 55, 'Paired after a month without food to clear out. Pre-lay shed to lay is usually 21-28 days.'),
   ('Bredli',    21, 7, '05-01', '05-31', '08-01', 30, 58, 60, 'Paired two months after carpets. Pre-lay shed to lay is usually 25-35 days.'),
   ('Diamond',   21, 7, '05-01', '05-31', '09-01', 25, 49, 55, 'Paired three months after carpets. Pre-lay shed to lay is usually 21-28 days.'),
-  ('Antaresia', 21, 7, '05-01', '05-31', null,    24, 42, 52, 'Set your own pairing date. Pre-lay shed to lay is usually 20-28 days.')
+  ('Antaresia', 21, 7, '05-01', '05-31', '06-01', 24, 42, 52, 'Paired after a month without food to clear out. Pre-lay shed to lay is usually 20-28 days.')
 on conflict (species) do update set male_every = excluded.male_every, female_every = excluded.female_every,
   pause_from = excluded.pause_from, pause_to = excluded.pause_to, pair_start = excluded.pair_start,
   prelay_to_lay = excluded.prelay_to_lay, ovul_to_lay = excluded.ovul_to_lay, lay_to_hatch = excluded.lay_to_hatch,
