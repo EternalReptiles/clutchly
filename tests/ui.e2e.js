@@ -58,7 +58,7 @@ const SP = process.argv[2];
     await L('Weight (g)').fill('850'); await T('Weight', { exact: true }).click(); await T('10 Nov 2026 · 850 g').waitFor({ timeout: 8000 });
     await shot('animal-detail');
   });
-  await step('delete a history entry', async () => { await T('10 Nov 2026 · 850 g').click(); await gone(T('10 Nov 2026 · 850 g')); });
+  await step('delete a history entry (via the entry editor)', async () => { await T('10 Nov 2026 · 850 g').click(); await pg.getByRole('button', { name: 'Delete', exact: true }).last().click(); await gone(T('10 Nov 2026 · 850 g')); });
   await step('back button; list shows last feed', async () => { await pg.getByLabel(/back$/i).and(live).first().click(); await T(/Male · fed 10 Nov 2026/).waitFor({ timeout: 8000 }); await shot('animals'); });
   await step('Today: male fed 10 Nov is not due (21-day default)', async () => {
     await tab('Today'); await T('Nothing due in the next 3 days.').waitFor({ timeout: 8000 });

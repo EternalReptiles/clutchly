@@ -46,6 +46,12 @@ camera, resized to at most 1200 px on the long edge and saved as JPEG (about 150
   removes them from Storage (photos deleted while online are also removed straight away). Migration `006_photos.sql`.
 - Adding photos needs a connection; viewing needs one unless the image was already loaded.
 
+## Growth chart and history
+The animal screen shows a growth chart (weight over time, drawn with `react-native-svg`; tap or drag to read a point), the
+average number of days between sheds, and the share of feeds refused in the last 90 days, plus the five most recent
+entries. "Full history" filters by type (feeds, sheds, weights) and date range; tap any entry to edit its date, result,
+food, weight or note, or to delete it. The calculations are in `lib/history.ts` (unit-tested in `tests/history.test.js`).
+
 ## Push notifications
 Each morning (at the hour and timezone the user picks in Account > Notifications) the `daily-digest` Edge Function sends
 one notification per alert type, only when something is due: feeds due today (skipping Sold animals and species in their
@@ -87,7 +93,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - `node --experimental-strip-types tests/digest.test.mjs`: notification rules.
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js` and `tests/photos.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js` and `tests/history.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.

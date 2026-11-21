@@ -5,10 +5,12 @@ import { insert, remove, update, useStore } from '../../lib/store';
 import { SEXES, fmt, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { PhotoGallery } from '../../lib/PhotoGallery';
+import { WeightChart } from '../../lib/WeightChart';
+import { EventEditor } from '../../lib/EventEditor';
+import { eventLabel, newestFirst, refusalStats, shedStats, weightSeries, type Ev } from '../../lib/history';
 import { Btn, Chips, DateField, Input, Label, confirm, notify, s, C } from '../../lib/ui';
 
 type Form = { name: string; species: string; sex: string; status: string; dob: string | null; feed_every: string; notes: string };
-type Ev = { id: string; animal_id: string; kind: 'feed' | 'shed' | 'weight'; on_date: string; ok: boolean | null; food: string | null; grams: number | null; created_at?: string };
 const blank: Form = { name: '', species: '', sex: 'Female', status: 'Active', dob: null, feed_every: '', notes: '' };
 
 export default function AnimalScreen() {
@@ -31,8 +33,12 @@ export default function AnimalScreen() {
       setLoaded(true);
     }
   }, [animal, isNew, loaded, st.animals]);
-  const ev = useMemo(() => (st.events as Ev[]).filter(e => e.animal_id === id)
-    .sort((x, y) => y.on_date.localeCompare(x.on_date) || String(y.created_at ?? '').localeCompare(String(x.created_at ?? ''))).slice(0, 50), [st.events, id]);
+  const allEv = useMemo(() => (st.events as Ev[]).filter(e => e.animal_id === id).sort(newestFirst), [st.events, id]);
+  const ev = allEv;
+  const weights = useMemo(() => weightSeries(allEv), [allEv]);
+  const sheds = useMemo(() => shedStats(allEv), [allEv]);
+  const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
+  const [editing, setEditing] = useState<Ev | null>(null);
 
   const save = () => {
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
@@ -48,7 +54,6 @@ export default function AnimalScreen() {
     if (kind === 'weight') setG('');
   };
   const logWeight = () => { const n = parseFloat(g.replace(',', '.')); if (!(n > 0)) return notify('Enter a weight in grams'); log('weight', { grams: n }); };
-  const delEvent = (e: Ev) => confirm('Delete entry?', `${fmt(e.on_date)} · ${label(e)}`, 'Delete', () => remove('events', e.id));
   const del = () => confirm('Delete animal?', 'Its history and pairings are deleted too.', 'Delete', () => { remove('animals', id); r.back(); });
 
   if (!isNew && !animal && st.ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This animal has been deleted.</Text></View>;
@@ -71,11 +76,22 @@ export default function AnimalScreen() {
         <Btn solid t="Fed" onPress={() => log('feed', { ok: true, food: food.trim() || null })} />
         <Btn t="Refused" onPress={() => log('feed', { ok: false, food: food.trim() || null })} />
         <Btn t="Shed" onPress={() => log('shed')} /><Btn t="Weight" onPress={logWeight} /></View>
-      <Text style={[s.h, { marginTop: 22 }]}>History</Text>
+      <Text style={[s.h, { marginTop: 22 }]}>Growth</Text>
+      <WeightChart points={weights} />
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+        <View style={[s.card, { flex: 1 }]}><Text style={s.mu}>Days between sheds</Text>
+          <Text style={s.h}>{sheds.avgDays != null ? `${sheds.avgDays} avg` : '–'}</Text>
+          <Text style={s.mu}>{sheds.count} shed{sheds.count === 1 ? '' : 's'} logged</Text></View>
+        <View style={[s.card, { flex: 1 }]}><Text style={s.mu}>Refused, last 90 days</Text>
+          <Text style={s.h}>{refusals.rate != null ? `${Math.round(refusals.rate * 100)}%` : '–'}</Text>
+          <Text style={s.mu}>{refusals.refused} of {refusals.offered} feed{refusals.offered === 1 ? '' : 's'}</Text></View></View>
+      <Text style={[s.h, { marginTop: 18 }]}>Recent</Text>
       {!ev.length && <Text style={s.mu}>Nothing logged yet.</Text>}
-      {ev.length > 0 && <Text style={s.mu}>Tap an entry to delete it.</Text>}
-      {ev.map(e => <Pressable key={e.id} onPress={() => delEvent(e)} style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.bd }}>
-        <Text style={{ color: C.ink }}>{fmt(e.on_date)} · {label(e)}</Text></Pressable>)}</>}
+      {ev.length > 0 && <Text style={s.mu}>Tap an entry to edit or delete it.</Text>}
+      {ev.slice(0, 5).map(e => <Pressable key={e.id} onPress={() => setEditing(e)} style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.bd }}>
+        <Text style={{ color: C.ink }}>{fmt(e.on_date)} · {label(e)}</Text></Pressable>)}
+      {ev.length > 0 && <View style={{ marginTop: 10 }}><Btn t={`Full history (${allEv.length})`} onPress={() => r.push(`/history/${id}`)} /></View>}
+      <EventEditor ev={editing} onClose={() => setEditing(null)} /></>}
     <View style={{ height: 60 }} /></ScrollView>);
 }
-const label = (e: Ev) => e.kind === 'feed' ? (e.ok ? 'Fed' : 'Refused') + (e.food ? ` (${e.food})` : '') : e.kind === 'weight' ? `${e.grams} g` : 'Shed';
+const label = eventLabel;
