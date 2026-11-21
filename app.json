@@ -7,20 +7,35 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#fcfcf8"
+        }
+      ]
     ],
     "ios": {
       "bundleIdentifier": "com.eternalreptiles.clutchly",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.eternalreptiles.clutchly"
+      "package": "com.eternalreptiles.clutchly",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fcfcf8"
+      }
     },
     "web": {
       "output": "single",
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "backgroundColor": "#fcfcf8",
-    "primaryColor": "#141414"
+    "primaryColor": "#141414",
+    "icon": "./assets/icon.png"
   }
 }

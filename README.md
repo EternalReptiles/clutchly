@@ -5,7 +5,14 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 1. Create a free project at supabase.com. In SQL editor, run `supabase/schema.sql`.
 2. Copy `.env.example` to `.env` with your project URL and anon key (Settings > API). Never use the service_role key in the app.
 3. `npm install && npx expo start`, then scan the QR code with Expo Go.
-4. Add `assets/icon.png` (1024x1024, from your logo).
+
+## Logo, icon and splash
+The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, so it can be tweaked and regenerated:
+1. `python3 scripts/draw_logo.py` writes `assets/source/clutchly-mark.svg`
+2. `node scripts/render_svg.js assets/source/clutchly-mark.svg assets/logo.png 2048` (or export the SVG to PNG with any tool)
+3. `python3 scripts/make_icons.py` writes the app icon, Android adaptive icon, splash image, favicon and login logo into `assets/`
+
+To use a different logo, put it at `assets/logo.png` (black on white or transparent) and run step 3.
 
 ## Password reset emails
 In Supabase, **Authentication > URL Configuration > Redirect URLs**, add:

@@ -41,8 +41,8 @@ def main():
     full = ink_art(logo)
     m = ink_art(mark) if mark.exists() else full
     ASSETS.mkdir(exist_ok=True)
-    # Login screen: full logo, max 1200px wide, transparent.
-    lg = full.copy(); lg.thumbnail((1200, 1200), Image.LANCZOS); lg.save(ASSETS / 'logo-ink.png', optimize=True)
+    # Login screen: full logo, max 600px (shown at about 150pt, so sharp at 3x), transparent.
+    lg = full.copy(); lg.thumbnail((600, 600), Image.LANCZOS); lg.save(ASSETS / 'logo-ink.png', optimize=True)
     # iOS / store icon: opaque, cream background (iOS adds its own rounded corners).
     place(m, 1024, 0.74, CREAM).convert('RGB').save(ASSETS / 'icon.png', optimize=True)
     # Android adaptive icon foreground: transparent, inside the 66% safe zone; background colour set in app.json.

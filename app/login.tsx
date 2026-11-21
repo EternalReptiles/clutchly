@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Btn, Input, notify, s, serif, C } from '../lib/ui';
@@ -16,7 +16,8 @@ export default function Login() {
     else if (up && !r.data.session) notify('Check your email', 'Confirm your address, then sign in.');
   };
   return (<View style={[s.page, { justifyContent: 'center' }]}>
-    <Text style={{ fontFamily: serif, fontSize: 30, textAlign: 'center', color: C.ink }}>Clutchly</Text>
+    <Image source={require('../assets/logo-ink.png')} style={{ width: 150, height: 145, alignSelf: 'center', marginBottom: 6 }} resizeMode="contain" accessibilityLabel="Clutchly logo: a python coiled around a clutch of eggs" />
+    <Text style={{ fontFamily: serif, fontSize: 34, letterSpacing: 1, textAlign: 'center', color: C.ink }}>Clutchly</Text>
     <Text style={[s.mu, { textAlign: 'center' }]}>Feeding, sheds and breeding for your collection</Text>
     <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" autoComplete="email" />
     <Input label="Password" value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoComplete="password" />
