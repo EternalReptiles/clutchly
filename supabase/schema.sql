@@ -23,7 +23,9 @@ create table pairings(
   locks date[] not null default '{}', notes text);
 create table season_settings(
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  species text not null, pause_from text, pause_to text, pair_start text,
+  species text not null, pause_from text, pause_to text, pair_start text,  -- 'MM-DD'
+  female_every int, male_every int,        -- default feed interval, days
+  prelay_to_lay int, ovul_to_lay int,      -- days, for estimated lay date
   primary key(user_id, species));
 
 alter table animals enable row level security;
@@ -45,6 +47,11 @@ select a.*,
  (select max(on_date) from events e where e.animal_id=a.id and kind='shed') last_shed,
  (select grams from events e where e.animal_id=a.id and kind='weight' order by on_date desc limit 1) last_weight
 from animals a;
+
+-- Explicit grants (newer Supabase projects don't always expose new tables automatically).
+-- RLS above still limits every row to its owner.
+grant select, insert, update, delete on animals, events, pairings, season_settings to authenticated;
+grant select on animal_status to authenticated;
 
 -- App Store requires in-app account deletion.
 create function delete_my_account() returns void language sql security definer set search_path=public as

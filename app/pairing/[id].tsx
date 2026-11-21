@@ -1,40 +1,65 @@
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { estLay, pairStatus, today } from '../../lib/logic';
-import { Btn, Chips, Input, s } from '../../lib/ui';
-const DATES: [string, string][] = [['intro', 'Introduced'], ['removed', 'Male removed'], ['ovulation', 'Ovulation'], ['prelay_shed', 'Pre-lay shed'], ['laid', 'Eggs laid'], ['hatched', 'Hatched']];
+import { Pairing, Season, estLay, fmt, pairStatus, seasonFor, today } from '../../lib/logic';
+import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
+
+const DATES = [['intro', 'Introduced'], ['removed', 'Male removed'], ['ovulation', 'Ovulation'], ['prelay_shed', 'Pre-lay shed'], ['laid', 'Eggs laid'], ['hatched', 'Hatched']] as const;
+const FIELDS = ['female_id', 'male_id', 'intro', 'removed', 'ovulation', 'prelay_shed', 'laid', 'hatched', 'clutch', 'fertile', 'locks', 'notes'] as const;
+type A = { id: string; name: string; sex: string; species: string; status: string };
+
 export default function PairingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
-  const [p, setP] = useState<any>({ locks: [] }); const [animals, setAnimals] = useState<any[]>([]);
+  const [p, setP] = useState<Pairing>({ locks: [], intro: today() }); const [animals, setAnimals] = useState<A[]>([]);
+  const [cfg, setCfg] = useState<Season[]>([]); const [lockDay, setLockDay] = useState(today());
   const load = useCallback(async () => {
-    const a = await supabase.from('animals').select('id,name,sex').order('name'); setAnimals(a.data || []);
-    if (!isNew) { const x = await supabase.from('pairings').select('*').eq('id', id).single(); if (x.data) setP(x.data); }
-  }, [id]);
+    const [a, c, x] = await Promise.all([supabase.from('animals').select('id,name,sex,species,status').order('name'),
+      supabase.from('season_settings').select('*'),
+      isNew ? Promise.resolve(null) : supabase.from('pairings').select('*').eq('id', id).maybeSingle()]);
+    const err = a.error || c.error || x?.error; if (err) notify('Could not load', err.message);
+    setAnimals((a.data as A[]) || []); setCfg((c.data as Season[]) || []); if (x?.data) setP(x.data as Pairing);
+  }, [id, isNew]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Sold animals are hidden from the pickers, except the ones already in this pairing.
+  const pick = (sex: string) => animals.filter(a => a.sex === sex && (a.status !== 'Sold' || a.id === p.female_id || a.id === p.male_id));
   const nm = (i?: string) => animals.find(a => a.id === i)?.name || '';
-  const byName = (n: string) => animals.find(a => a.name === n)?.id;
-  const save = async (patch: any = {}) => {
-    const body = { ...p, ...patch }; delete body.id; delete body.user_id;
-    DATES.forEach(([k]) => { if (body[k] === '') body[k] = null; });
-    if (!body.female_id || !body.male_id) return Alert.alert('Pick a female and a male');
-    const { error } = isNew ? await supabase.from('pairings').insert(body) : await supabase.from('pairings').update(body).eq('id', id);
-    if (error) Alert.alert('Error', error.message); else if (isNew) r.back(); else { setP(body); load(); }
+  const byName = (n: string, sex: string) => animals.find(a => a.name === n && a.sex === sex)?.id;
+  const save = async (patch: Partial<Pairing> = {}) => {
+    const next = { ...p, ...patch }; const body: any = {};
+    FIELDS.forEach(k => { body[k] = (next as any)[k] ?? null; }); body.locks = next.locks || [];
+    if (!body.female_id || !body.male_id) return notify('Pick a female and a male');
+    const res = isNew ? await supabase.from('pairings').insert(body) : await supabase.from('pairings').update(body).eq('id', id);
+    if (res.error) return notify('Error', res.error.message);
+    if (isNew) r.back(); else setP(next);
   };
-  const e = estLay(p);
-  return (<ScrollView style={s.page}><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
-    <Text style={s.mu}>Female</Text><Chips opts={animals.filter(a => a.sex === 'Female').map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n) })} />
-    <Text style={[s.mu, { marginTop: 10 }]}>Male</Text><Chips opts={animals.filter(a => a.sex === 'Male').map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n) })} />
-    {!isNew && <><Text style={[s.h, { marginTop: 14 }]}>{pairStatus(p)}{e ? ` · estimated lay ${e}` : ''}</Text>
-      {DATES.map(([k, l]) => <Input key={k} label={`${l} (YYYY-MM-DD)`} value={p[k] || ''} onChangeText={v => setP({ ...p, [k]: v })} />)}
-      <Input label="Clutch size" keyboardType="number-pad" value={p.clutch != null ? String(p.clutch) : ''} onChangeText={v => setP({ ...p, clutch: v ? +v : null })} />
-      <Input label="Fertile eggs" keyboardType="number-pad" value={p.fertile != null ? String(p.fertile) : ''} onChangeText={v => setP({ ...p, fertile: v ? +v : null })} />
+  const addLock = () => save({ locks: [...(p.locks || []), lockDay].sort() });
+  const delLock = (i: number) => confirm('Remove lock?', fmt(p.locks[i]), 'Remove', () => save({ locks: p.locks.filter((_, j) => j !== i) }));
+  const del = () => confirm('Delete pairing?', 'This cannot be undone.', 'Delete', async () => {
+    const { error } = await supabase.from('pairings').delete().eq('id', id); error ? notify('Error', error.message) : r.back();
+  });
+  const female = animals.find(a => a.id === p.female_id);
+  const e = estLay(p, seasonFor(cfg, female?.species || 'Other'));
+  const females = pick('Female'), males = pick('Male');
+
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
+    <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
+    <Label t="Male" />{males.length ? <Chips opts={males.map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n, 'Male') })} /> : <Text style={s.mu}>No males yet.</Text>}
+    {isNew && <DateField label="Introduced" value={p.intro} onChange={v => setP({ ...p, intro: v })} optional />}
+    {!isNew && <><Text style={[s.h, { marginTop: 14 }]}>{pairStatus(p)}{e && !p.laid ? ` · estimated lay ${fmt(e)}` : ''}</Text>
       <Text style={[s.h, { marginTop: 14 }]}>Locks ({p.locks?.length || 0})</Text>
-      <Btn t="+ Log lock today" onPress={() => save({ locks: [...(p.locks || []), today()] })} />
-      {(p.locks || []).map((d: string, i: number) => <Text key={i} style={{ paddingVertical: 3 }}>{d}</Text>)}
+      <View style={[s.row, { alignItems: 'flex-end' }]}><View style={{ flex: 1 }}><DateField label="Lock date" value={lockDay} onChange={v => setLockDay(v || today())} /></View>
+        <Btn solid t="+ Log lock" onPress={addLock} /></View>
+      {(p.locks || []).map((d, i) => <Pressable key={`${d}-${i}`} onPress={() => delLock(i)} style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.bd }}>
+        <Text style={{ color: C.ink }}>{fmt(d)}</Text></Pressable>)}
+      {(p.locks || []).length > 0 && <Text style={s.mu}>Tap a lock to remove it.</Text>}
+      <Text style={[s.h, { marginTop: 18 }]}>Dates</Text>
+      {DATES.map(([k, l]) => <DateField key={k} optional label={l} value={p[k]} onChange={v => setP({ ...p, [k]: v })} />)}
+      <Input label="Clutch size" keyboardType="number-pad" value={p.clutch != null ? String(p.clutch) : ''} onChangeText={v => setP({ ...p, clutch: v ? parseInt(v, 10) || null : null })} />
+      <Input label="Fertile eggs" keyboardType="number-pad" value={p.fertile != null ? String(p.fertile) : ''} onChangeText={v => setP({ ...p, fertile: v ? parseInt(v, 10) || null : null })} />
       <Input label="Notes" multiline value={p.notes || ''} onChangeText={v => setP({ ...p, notes: v })} /></>}
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}><Btn solid t={isNew ? 'Create' : 'Save'} onPress={() => save()} />
-      {!isNew && <Btn danger t="Delete" onPress={async () => { await supabase.from('pairings').delete().eq('id', id); r.back(); }} />}</View>
+      {!isNew && <Btn danger t="Delete" onPress={del} />}</View>
     <View style={{ height: 60 }} /></ScrollView>);
 }

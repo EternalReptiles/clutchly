@@ -1,19 +1,39 @@
 import { useEffect, useState } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { C, serif } from '../lib/ui';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function Root() {
-  const [session, setSession] = useState<any>(undefined);
-  const segs = useSegments(); const router = useRouter();
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
-  useEffect(() => {
-    if (session === undefined) return;
-    const inAuth = segs[0] === 'login';
-    if (!session && !inAuth) router.replace('/login');
-    else if (session && inAuth) router.replace('/');
-  }, [session, segs]);
-  return <Slot />;
+  useEffect(() => { if (session !== undefined) SplashScreen.hideAsync().catch(() => {}); }, [session]);
+
+  const signedIn = !!session;
+  return (<>
+    <StatusBar style="dark" />
+    <Stack screenOptions={{
+      headerStyle: { backgroundColor: C.bg }, headerTintColor: C.ink, headerShadowVisible: false,
+      headerTitleStyle: { fontFamily: serif, color: C.ink }, contentStyle: { backgroundColor: C.bg },
+      headerBackTitle: 'Back',
+    }}>
+      {/* Routes are only reachable when the guard is true; expo-router redirects otherwise. */}
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="animal/[id]" options={{ title: '' }} />
+        <Stack.Screen name="pairing/[id]" options={{ title: '' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+      </Stack.Protected>
+    </Stack>
+  </>);
 }
