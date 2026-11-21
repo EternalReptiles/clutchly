@@ -8,7 +8,7 @@ const check = (bad, msg) => { if (bad) problems.push(msg); };
 check(/REPLACE_ME/.test(brand.revenuecat.iosApiKey + brand.revenuecat.androidApiKey), 'brand.json: RevenueCat public API keys are placeholders');
 check(/YOUR-SITE|example/i.test(brand.siteUrl), 'brand.json: siteUrl is a placeholder (host /site and put its address here)');
 check(/\[|\]/.test(brand.supportEmail), 'brand.json: supportEmail is a placeholder');
-for (const f of ['index.html', 'privacy.html', 'terms.html']) {
+for (const f of ['support.html', 'privacy.html', 'terms.html']) {
   const html = read(`site/${f}`);
   const brackets = [...new Set(html.match(/\[[A-Z][A-Z0-9 ,.'"/()-]+\]/g) ?? [])];
   check(brackets.length > 0, `site/${f}: placeholders ${brackets.join(', ')}`);

@@ -34,5 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       }],
     ],
     extra: { ...config.extra, eas: { ...(config.extra?.eas ?? {}) } },
+    // The web app is published under a path of the website (e.g. /app); scripts/build_web.mjs sets WEB_BASE_URL.
+    ...(process.env.WEB_BASE_URL ? { experiments: { ...config.experiments, baseUrl: process.env.WEB_BASE_URL } } : {}),
   };
 };

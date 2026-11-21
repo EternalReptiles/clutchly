@@ -11,7 +11,7 @@ limits. "Clutchly" is the working name; if you rename the app (brand.json), upda
 
 **Price:** Free, with an in-app subscription (Clutchly Pro, A$59.99/year).
 
-**Support URL:** `<siteUrl>/index.html` · **Privacy policy URL:** `<siteUrl>/privacy.html` · **Terms (EULA) URL:**
+**Support URL:** `<siteUrl>/support.html` · **Privacy policy URL:** `<siteUrl>/privacy.html` · **Terms (EULA) URL:**
 `<siteUrl>/terms.html` (Apple: add the terms link to the description or set a custom EULA, because the app has a
 subscription).
 
@@ -103,7 +103,7 @@ other than the subscription (answer **Yes** to "in-app purchases"). Expected rat
 - **Target audience:** 18 and over (or 16+). Not designed for children.
 - **Ads:** No ads.
 - **Data safety:** see `store/app-privacy.md`.
-- **Account deletion:** in app (Account > Delete account) and web: `<siteUrl>/index.html` (the support page explains
+- **Account deletion:** in app (Account > Delete account) and web: `<siteUrl>/support.html` (the support page explains
   deletion by email). Google requires the web link.
 - **App access:** "All functionality requires sign-in" > add the demo account credentials.
 - **Government app / financial features / health:** No.

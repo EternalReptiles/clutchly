@@ -23,7 +23,7 @@ limits, functions and secrets. *Why:* real users' data shouldn't live in the tes
 
 ## 3. Legal pages and support site
 
-1. **Fill in the placeholders.** Open `site/_templates/privacy.html`, `terms.html` and `index.html` and replace every
+1. **Fill in the placeholders.** Open `site/_templates/privacy.html`, `terms.html` and `support.html` and replace every
    `[BRACKETED]` item: business name, ABN, support email, postal address, dates, backup retention, liability cap.
    Then run `node scripts/build_site.mjs` to regenerate the pages in `/site`.
    *Why:* the stores and the Privacy Act require you to say who you are and how to contact you.

@@ -14,3 +14,4 @@ google-play-service-account.json
 *.mobileprovision
 *.keystore
 *.jks
+public-site/

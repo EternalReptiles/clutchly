@@ -15,3 +15,26 @@ th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px
 th { font-family: Georgia, serif; }
 footer { margin-top: 40px; padding-top: 16px; padding-bottom: 32px; border-top: 1px solid var(--bd); color: var(--mu); font-size: 14px; }
 @media (max-width: 480px) { nav a { margin: 0 12px 0 0; } table, tr, td, th { display: block; } th { display: none; } td:first-child { font-weight: 600; border-bottom: 0; padding-bottom: 0; } }
+/* Brand and home page */
+.brand { display: inline-flex; align-items: center; gap: 8px; }
+.brand img, .hero-logo { display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand img, :root:not([data-theme="light"]) .hero-logo { filter: invert(1); } }
+.hero { text-align: center; padding: 28px 0 8px; }
+.hero-logo { width: 150px; height: auto; margin: 0 auto; }
+.hero h1 { font-size: 34px; margin: 14px auto 8px; max-width: 620px; }
+.lead { font-size: 18px; max-width: 600px; margin: 0 auto; }
+.cta { margin-top: 20px; }
+.btn { display: inline-block; padding: 11px 18px; border-radius: 10px; border: 1px solid var(--ink); text-decoration: none; font-weight: 600; }
+.btn.solid { background: var(--ink); color: var(--bg); }
+.shots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 34px 0 10px; }
+.shots figure { margin: 0; }
+.shots img { width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--bd); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+.shots figcaption { text-align: center; font-size: 14px; color: var(--mu); margin-top: 6px; }
+.features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 28px; margin-top: 20px; }
+.features p { margin-top: 0; }
+.plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.plan { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 4px 16px 8px; }
+.price { font: 600 26px Georgia, serif; margin: 4px 0; }
+.closing { text-align: center; margin-top: 34px; }
+main:has(.hero) { max-width: 980px; }
+@media (max-width: 720px) { .shots { grid-template-columns: repeat(2, 1fr); } .features, .plans { grid-template-columns: 1fr; } .hero h1 { font-size: 27px; } }

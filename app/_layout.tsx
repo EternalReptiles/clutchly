@@ -38,6 +38,9 @@ export default function Root() {
     AsyncStorage.getItem(`clutchly.onboarded.${uid}`).then(v => { if (!v) router.replace('/welcome'); }, () => {});
   }, [uid, onboarded, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const signedIn = !!session;
+  // Wait until we know whether someone is signed in. Rendering the screens before that briefly counts as signed
+  // out, which sent a refreshed web page (e.g. /app/pairings) to sign-in and then back to Overview.
+  if (session === undefined) return <StatusBar style="dark" />;
   return (<>
     <StatusBar style="dark" />
     <Stack screenOptions={{
