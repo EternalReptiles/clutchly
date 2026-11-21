@@ -1,26 +1,36 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { SPECIES, SEASON_KEYS, Season, seasonFor } from '../../lib/logic';
-import { Btn, Card, DateField, Input, confirm, notify, s } from '../../lib/ui';
+import { DATE_FORMATS, DateFormat, SPECIES, SEASON_KEYS, Season, fmt, seasonFor, setDateFormat, today } from '../../lib/logic';
+import { Btn, Card, Chips, DateField, Input, confirm, notify, s } from '../../lib/ui';
 
 const NUMS = [['female_every', 'Feed females every (days)'], ['male_every', 'Feed males every (days)'],
   ['prelay_to_lay', 'Days from pre-lay shed to lay'], ['ovul_to_lay', 'Days from ovulation to lay']] as const;
 
 export default function Settings() {
-  const [rows, setRows] = useState<Season[]>([]);
-  const load = useCallback(() => supabase.from('season_settings').select('*').then(x => {
-    if (x.error) notify('Could not load', x.error.message); setRows((x.data as Season[]) || []);
-  }), []);
+  const [rows, setRows] = useState<Season[] | null>(null); const [df, setDf] = useState<DateFormat>('auto');
+  // Bumped on every load and every edit, so a slow load can't overwrite a change made after it started.
+  const seq = useRef(0);
+  const load = useCallback(() => { const mine = ++seq.current;
+    return supabase.from('season_settings').select('*').then(x => {
+      if (mine !== seq.current) return;
+      if (x.error) notify('Could not load', x.error.message); setRows((x.data as Season[]) || []);
+    }); }, []);
+  useFocusEffect(useCallback(() => { supabase.auth.getSession().then(({ data }) => setDf(data.session?.user.user_metadata?.date_format || 'auto')); }, []));
+  const changeFormat = async (f: DateFormat) => {
+    setDf(f); setDateFormat(f);
+    const { error } = await supabase.auth.updateUser({ data: { date_format: f } });
+    if (error) notify('Could not save', error.message);
+  };
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const get = (sp: string) => seasonFor(rows, sp);
+  const get = (sp: string) => seasonFor(rows || [], sp);
   // Saves the whole row, so editing one field also stores the defaults shown for the others.
   const save = async (sp: string, patch: Partial<Season>) => {
     const cur = get(sp); const body: any = { species: sp };
     SEASON_KEYS.forEach(k => { body[k] = k in patch ? (patch as any)[k] : (cur as any)[k] ?? null; });
-    setRows(rs => [...rs.filter(r => r.species !== sp), body]);
+    seq.current++; setRows(rs => [...(rs || []).filter(r => r.species !== sp), body]);
     const { error } = await supabase.from('season_settings').upsert(body, { onConflict: 'user_id,species' });
     if (error) { notify('Could not save', error.message); load(); }
   };
@@ -35,7 +45,12 @@ export default function Settings() {
     await supabase.auth.signOut({ scope: 'local' });
   });
 
+  if (!rows) return <View style={s.page} />;
   return (<ScrollView style={s.page}>
+    <Card><Text style={s.h}>Date format</Text>
+      <Chips opts={DATE_FORMATS.map(f => f[1])} v={DATE_FORMATS.find(f => f[0] === df)![1]} on={l => changeFormat(DATE_FORMATS.find(f => f[1] === l)![0])} />
+      <Text style={[s.mu, { marginTop: 6 }]}>Today shows as {fmt(today())}</Text></Card>
+    <Text style={[s.h, { marginTop: 14 }]}>Seasons</Text>
     <Text style={s.mu}>Each species has its own yearly season. Animals of that species are hidden from Today during the feeding pause. Blank feed intervals fall back to 7 days for females and 21 for males; an animal's own interval overrides both.</Text>
     {SPECIES.map(sp => { const c = get(sp); const saved = rows.some(r => r.species === sp);
       return (<Card key={sp}><View style={s.row}><Text style={[s.h, { flex: 1 }]}>{sp}</Text>

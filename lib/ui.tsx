@@ -19,8 +19,10 @@ export const Btn = ({ t, onPress, solid, danger, disabled }:
   <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button"
     style={[s.btn, solid && { backgroundColor: C.ink, borderColor: C.ink }, disabled && { opacity: 0.5 }]}>
     <Text style={{ fontWeight: '600', textAlign: 'center', color: solid ? C.bg : danger ? C.bad : C.ink }}>{t}</Text></Pressable>);
-export const Card = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
-  <Pressable onPress={onPress} disabled={!onPress} style={s.card}>{children}</Pressable>);
+// A non-tappable card must be a plain View: a disabled Pressable marks everything inside it as disabled for screen readers.
+export const Card = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => onPress
+  ? <Pressable onPress={onPress} style={s.card}>{children}</Pressable>
+  : <View style={s.card}>{children}</View>;
 export const Label = ({ t }: { t: string }) => <Text style={[s.mu, { marginTop: 10 }]}>{t}</Text>;
 export const Input = (p: TextInputProps & { label?: string }) => (
   <View style={{ marginTop: 8 }}>{p.label && <Text style={s.mu}>{p.label}</Text>}

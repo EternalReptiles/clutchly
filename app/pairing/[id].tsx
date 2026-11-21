@@ -12,14 +12,16 @@ type A = { id: string; name: string; sex: string; species: string; status: strin
 export default function PairingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
   const [p, setP] = useState<Pairing>({ locks: [], intro: today() }); const [animals, setAnimals] = useState<A[]>([]);
-  const [cfg, setCfg] = useState<Season[]>([]); const [lockDay, setLockDay] = useState(today());
+  const [cfg, setCfg] = useState<Season[]>([]); const [lockDay, setLockDay] = useState(today()); const [loaded, setLoaded] = useState(false);
   const load = useCallback(async () => {
     const [a, c, x] = await Promise.all([supabase.from('animals').select('id,name,sex,species,status').order('name'),
       supabase.from('season_settings').select('*'),
       isNew ? Promise.resolve(null) : supabase.from('pairings').select('*').eq('id', id).maybeSingle()]);
     const err = a.error || c.error || x?.error; if (err) notify('Could not load', err.message);
     setAnimals((a.data as A[]) || []); setCfg((c.data as Season[]) || []); if (x?.data) setP(x.data as Pairing);
-  }, [id, isNew]);
+    if (!isNew && !x?.data && !err) { notify('Pairing not found'); r.back(); return; }
+    setLoaded(true);
+  }, [id, isNew, r]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   // Sold animals are hidden from the pickers, except the ones already in this pairing.
@@ -43,6 +45,8 @@ export default function PairingScreen() {
   const e = estLay(p, seasonFor(cfg, female?.species || 'Other'));
   const females = pick('Female'), males = pick('Male');
 
+  // Don't show controls until the pairing has loaded, or a quick tap would save an empty pairing.
+  if (!loaded) return <View style={s.page}><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} /></View>;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
     <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
     <Label t="Male" />{males.length ? <Chips opts={males.map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n, 'Male') })} /> : <Text style={s.mu}>No males yet.</Text>}

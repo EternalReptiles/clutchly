@@ -34,9 +34,14 @@ export const addDays = (d: string, n: number) => { const x = noon(d); x.setDate(
 export const diffDays = (a: string, b: string) => Math.round((noon(a).getTime() - noon(b).getTime()) / 864e5);
 export const isIsoDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(noon(d).getTime()) && iso(noon(d)) === d;
 
-// Display helpers use the device's locale, so each user sees their own date format.
-export const fmt = (d?: string | null) => d ? noon(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
-export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) : '–';
+// Date display format, chosen per user on the Season tab and stored on their account.
+// 'auto' follows the phone's region setting.
+export type DateFormat = 'auto' | 'au' | 'us';
+export const DATE_FORMATS: [DateFormat, string][] = [['auto', 'Phone setting'], ['au', 'Australian'], ['us', 'US']];
+let locale: string | undefined;
+export const setDateFormat = (f?: string | null) => { locale = f === 'au' ? 'en-AU' : f === 'us' ? 'en-US' : undefined; };
+export const fmt = (d?: string | null) => d ? noon(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
+export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : '–';
 
 export const interval = (a: Animal, s: Season) =>
   a.feed_every || (a.sex === 'Male' ? s.male_every || FALLBACK.male_every : s.female_every || FALLBACK.female_every);

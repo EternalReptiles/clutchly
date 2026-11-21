@@ -7,6 +7,11 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 3. `npm install && npx expo start`, then scan the QR code with Expo Go.
 4. Add `assets/icon.png` (1024x1024, from your logo).
 
+## Tests
+- `npm run typecheck`
+- `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
+- `tests/ui.e2e.js`: clicks through the web build with Playwright; see the comment at the top of the file.
+
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
 - Supabase Auth: configure email templates, enable email confirmation, set up a real SMTP sender (Resend, Postmark).

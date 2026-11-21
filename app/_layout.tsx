@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { setDateFormat } from '../lib/logic';
 import { C, serif } from '../lib/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -17,6 +18,7 @@ export default function Root() {
   }, []);
   useEffect(() => { if (session !== undefined) SplashScreen.hideAsync().catch(() => {}); }, [session]);
 
+  setDateFormat(session?.user.user_metadata?.date_format);
   const signedIn = !!session;
   return (<>
     <StatusBar style="dark" />
