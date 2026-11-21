@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { DATE_FORMATS, DateFormat, FALLBACK, SPECIES, SEASON_KEYS, Season, fmt, seasonFor, setDateFormat, today } from '../../lib/logic';
+import { DATE_FORMATS, DateFormat, FALLBACK, SPECIES, Suggested, suggested, SEASON_KEYS, Season, fmt, seasonFor, setDateFormat, today } from '../../lib/logic';
 import { Btn, C, Card, Chips, DateField, Input, confirm, notify, s } from '../../lib/ui';
 
 const NUMS = [['female_every', 'Feed females every (days)'], ['male_every', 'Feed males every (days)'],
@@ -56,22 +56,28 @@ export default function Settings() {
       <Text style={[s.mu, { marginTop: 6 }]}>Until you do, feeds are due every {FALLBACK.female_every} days for females and {FALLBACK.male_every} for males, all year round.</Text></View>}
     <Text style={[s.h, { marginTop: 14 }]}>Your routine</Text>
     <Text style={s.mu}>Each species has its own yearly routine. Animals of that species are hidden from Today during the feeding pause. Blank fields use the suggested numbers shown in grey; an animal's own feed interval overrides both.</Text>
-    {SPECIES.map(sp => { const c = get(sp); const saved = rows.some(r => r.species === sp);
+    {SPECIES.map(sp => { const c = get(sp); const saved = rows.some(r => r.species === sp); const sg = suggested(sp);
       return (<Card key={sp}><View style={s.row}><Text style={[s.h, { flex: 1 }]}>{sp}</Text>
         {saved ? <Btn t="Clear" onPress={() => reset(sp)} /> : <Text style={s.mu}>Not set</Text>}</View>
         <DateField mode="monthDay" optional label="Feeding pause from" value={c.pause_from} onChange={v => save(sp, { pause_from: v })} />
         <DateField mode="monthDay" optional label="Feeding resumes after" value={c.pause_to} onChange={v => save(sp, { pause_to: v })} />
         <DateField mode="monthDay" optional label="Pairing starts" value={c.pair_start} onChange={v => save(sp, { pair_start: v })} />
-        {NUMS.map(([k, l]) => <NumField key={`${sp}-${k}-${c[k] ?? ''}`} label={l} value={c[k]} suggested={FALLBACK[k]} onSave={v => save(sp, { [k]: v })} />)}
+        {NUMS.map(([k, l]) => <NumField key={`${sp}-${k}-${c[k] ?? ''}`} label={l} value={c[k]} hint={hintFor(sg, k)} onSave={v => save(sp, { [k]: v })} />)}
       </Card>); })}
     <View style={{ gap: 8, marginTop: 20 }}><Btn t="Sign out" onPress={signOut} /><Btn danger t="Delete account" onPress={del} /></View>
     <View style={{ height: 60 }} /></ScrollView>);
 }
 
-function NumField({ label, value, suggested, onSave }: { label: string; value?: number | null; suggested: number; onSave: (v: number | null) => void }) {
+// Placeholder for a blank number: the suggestion, plus the typical range where there is one.
+const hintFor = (sg: Suggested, k: (typeof NUMS)[number][0]) => {
+  const r = k === 'prelay_to_lay' || k === 'ovul_to_lay' ? sg.range[k] : undefined;
+  return r ? `${sg[k]} (typical ${r[0]}–${r[1]})` : `${sg[k]} (suggested)`;
+};
+
+function NumField({ label, value, hint, onSave }: { label: string; value?: number | null; hint: string; onSave: (v: number | null) => void }) {
   const [t, setT] = useState(value != null ? String(value) : '');
   const commit = () => { const n = t.trim() ? parseInt(t, 10) : null;
     if (n !== null && (isNaN(n) || n < 1 || n > 365)) { notify('Enter a number of days from 1 to 365'); setT(value != null ? String(value) : ''); return; }
     if (n !== (value ?? null)) onSave(n); };
-  return <Input label={label} keyboardType="number-pad" placeholder={`${suggested} (suggested)`} value={t} onChangeText={setT} onBlur={commit} onSubmitEditing={commit} />;
+  return <Input label={label} keyboardType="number-pad" placeholder={hint} value={t} onChangeText={setT} onBlur={commit} onSubmitEditing={commit} />;
 }

@@ -70,8 +70,8 @@ const SP = process.argv[2];
     await L('Lock date').fill('2026-06-12'); await T('+ Log lock').click(); await T('Locks (1)').waitFor({ timeout: 8000 });
     await L('Lock date').fill('2026-06-05'); await T('+ Log lock').click(); await T('Locks (2)').waitFor({ timeout: 8000 });
     await L('Pre-lay shed').fill('2026-09-01'); await T('Save', { exact: true }).click();
-    await T(/estimated lay 1 Oct 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
-    await pg.getByLabel(/back$/i).and(live).first().click(); await T('Pre-lay shed · 2 locks · lay ~ 1 Oct 2026').waitFor({ timeout: 8000 }); await shot('pairings');
+    await T(/estimated lay 26 Sept? 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
+    await pg.getByLabel(/back$/i).and(live).first().click(); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 }); await shot('pairings');
   });
   await step('season settings: change, persists after reload, clear', async () => {
     await tab('Season');
@@ -87,10 +87,10 @@ const SP = process.argv[2];
   });
   await step('date format: switch to US and back to Australian', async () => {
     await T('US', { exact: true }).click(); await pg.waitForTimeout(1500);
-    await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Oct 1, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
-    await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Oct 1, 2026').waitFor({ timeout: 8000 });
+    await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Sep 26, 2026').waitFor({ timeout: 8000 }); await shot('pairings-us');
+    await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ Sep 26, 2026').waitFor({ timeout: 8000 });
     await tab('Season'); await T('Australian', { exact: true }).click(); await pg.waitForTimeout(1500); await shot('season-format');
-    await tab('Pairings'); await T('Pre-lay shed · 2 locks · lay ~ 1 Oct 2026').waitFor({ timeout: 8000 }); await tab('Season');
+    await tab('Pairings'); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 }); await tab('Season');
   });
   await step('delete account; sign-in then fails', async () => {
     await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
