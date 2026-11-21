@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...config.ios,
       bundleIdentifier: brand.iosBundleId,
       config: { usesNonExemptEncryption: false }, // only standard HTTPS: no export-compliance paperwork
-      infoPlist: { ...config.ios?.infoPlist },
+      infoPlist: { ...config.ios?.infoPlist, ITSAppUsesNonExemptEncryption: false },
       privacyManifests: {
         NSPrivacyAccessedAPITypes: [
           { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] },
