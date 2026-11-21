@@ -8,3 +8,9 @@ web-build/
 .DS_Store
 ios/
 android/
+google-play-service-account.json
+*.p8
+*.p12
+*.mobileprovision
+*.keystore
+*.jks

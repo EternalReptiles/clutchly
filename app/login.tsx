@@ -18,7 +18,7 @@ export default function Login() {
     else if (up && !r.data.session) notify('Check your email', 'Confirm your address, then sign in.');
   };
   return (<View style={[s.page, { justifyContent: 'center' }]}>
-    <Image source={require('../assets/logo-ink.png')} style={{ width: 150, height: 145, alignSelf: 'center', marginBottom: 6 }} resizeMode="contain" accessibilityLabel="Clutchly logo: a python coiled around a clutch of eggs" />
+    <Image source={require('../assets/logo-ink.png')} style={{ width: 150, height: 145, alignSelf: 'center', marginBottom: 6 }} resizeMode="contain" accessibilityLabel={`${APP_NAME} logo: a python coiled around a clutch of eggs`} />
     <Text style={{ fontFamily: serif, fontSize: 34, letterSpacing: 1, textAlign: 'center', color: C.ink }}>{APP_NAME}</Text>
     <Text style={[s.mu, { textAlign: 'center' }]}>Feeding, sheds and breeding for your collection</Text>
     <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" autoComplete="email" />

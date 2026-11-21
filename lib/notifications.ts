@@ -1,4 +1,5 @@
 // Push notifications on this device: permission, Expo push token, and keeping device_tokens in step.
+import { APP_NAME } from './brand';
 // The daily-digest Edge Function sends the notifications; this file only registers and unregisters the phone.
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,14 +24,14 @@ export type PushResult = { ok: true } | { ok: false; reason: string };
 
 /** Asks for permission (only when the user chooses to turn notifications on) and registers this phone. */
 export async function enablePush(): Promise<PushResult> {
-  if (!pushSupported) return { ok: false, reason: 'Notifications work in the Clutchly phone app, not in a web browser.' };
-  if (!projectId) return { ok: false, reason: 'This build of Clutchly is not linked to an Expo (EAS) project yet, so it cannot get a push token. See "Push notifications" in the README.' };
+  if (!pushSupported) return { ok: false, reason: `Notifications work in the ${APP_NAME} phone app, not in a web browser.` };
+  if (!projectId) return { ok: false, reason: `This build of ${APP_NAME} is not linked to an Expo (EAS) project yet, so it cannot get a push token. See "Push notifications" in the README.` };
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', { name: 'Reminders', importance: Notifications.AndroidImportance.DEFAULT });
   }
   let perm = await Notifications.getPermissionsAsync();
   if (!perm.granted && perm.canAskAgain) perm = await Notifications.requestPermissionsAsync();
-  if (!perm.granted) return { ok: false, reason: "Notifications are turned off for Clutchly in your phone's Settings. Turn them on there, then try again." };
+  if (!perm.granted) return { ok: false, reason: `Notifications are turned off for ${APP_NAME} in your phone's Settings. Turn them on there, then try again.` };
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
     const { error } = await supabase.rpc('register_device_token', { p_token: token, p_platform: Platform.OS });
@@ -40,7 +41,7 @@ export async function enablePush(): Promise<PushResult> {
     await supabase.from('notification_settings').upsert({ timezone: deviceTimeZone() }, { onConflict: 'user_id', ignoreDuplicates: true });
     return { ok: true };
   } catch (e: any) {
-    return { ok: false, reason: inExpoGo ? "Push notifications don't work inside Expo Go. They need a development or store build of Clutchly." : e?.message ?? String(e) };
+    return { ok: false, reason: inExpoGo ? `Push notifications don't work inside Expo Go. They need a development or store build of ${APP_NAME}.` : e?.message ?? String(e) };
   }
 }
 

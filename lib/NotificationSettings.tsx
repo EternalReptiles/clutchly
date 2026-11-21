@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { APP_NAME } from './brand';
 import { Switch, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from './supabase';
@@ -51,7 +52,7 @@ export function NotificationSettings() {
         ? <View style={[s.row, { marginTop: 6 }]}><Text style={[s.mu, { flex: 1 }]}>On for this phone.</Text><Btn disabled={busy} t="Turn off for this phone" onPress={turnOff} /></View>
         : <><Text style={[s.mu, { marginTop: 4 }]}>One message a morning when something is due: feeds, lays coming up, and pairing season. Nothing is sent on days with nothing due.</Text>
           <View style={{ marginTop: 8 }}><Btn solid disabled={busy} t={busy ? 'Turning on…' : 'Turn on notifications'} onPress={turnOn} /></View></>
-      : <Text style={[s.mu, { marginTop: 4 }]}>Notifications are sent to the Clutchly phone app. These settings apply to all your phones.</Text>}
+      : <Text style={[s.mu, { marginTop: 4 }]}>Notifications are sent to the {APP_NAME} phone app. These settings apply to all your phones.</Text>}
     {row('feed_due', 'Feeds due today', 'How many animals are due, skipping species in their feeding pause')}
     {row('lay_soon', 'Lay or birth coming up', '7 days before the estimated date')}
     {row('pairing_soon', 'Pairing season', "3 days before a species' pairing start")}

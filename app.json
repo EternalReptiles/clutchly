@@ -1,9 +1,5 @@
 {
   "expo": {
-    "name": "Clutchly",
-    "slug": "clutchly",
-    "scheme": "clutchly",
-    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
@@ -23,22 +19,12 @@
           "icon": "./assets/notification-icon.png",
           "color": "#141414"
         }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Clutchly uses your photos so you can add pictures of your animals.",
-          "cameraPermission": "Clutchly uses the camera so you can photograph your animals.",
-          "microphonePermission": false
-        }
       ]
     ],
     "ios": {
-      "bundleIdentifier": "com.eternalreptiles.clutchly",
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
-      "package": "com.eternalreptiles.clutchly",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#fcfcf8"

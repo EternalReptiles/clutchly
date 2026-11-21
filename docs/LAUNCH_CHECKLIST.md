@@ -1,9 +1,27 @@
 # Launch checklist
 
-Everything here needs you to act outside the code. Work through it in order. (This file is completed in the store
-readiness step; sections below are added as each part is built.)
+Everything here needs you to act outside the code, in the order you need to do it. Each step says why. For anything
+code-related, ask me.
 
-## Legal pages and support site
+## 1. Business basics
+1. **ABN.** You need one to sell in the stores as a business and to fill in the legal pages. If Eternal Reptiles already
+   has one, use it.
+2. **Decide who publishes:** you as an individual, or your business. A business account shows the business name in the
+   stores and needs a **D-U-N-S number** (free from Dun & Bradstreet, takes about a week). Google's organisation accounts
+   also skip the 12-tester / 14-day closed test that new personal accounts must run.
+3. **GST:** Apple and Google collect and pay Australian GST on sales to Australians for you. If you're registered for GST,
+   ask your accountant how to report the income (store payouts arrive net of their commission).
+4. **Apply for the developer accounts now** (details in step 6): Apple Developer Program (US$99/year) and Google Play
+   Console (US$25 once). Approval, D-U-N-S numbers and Apple's paid-apps agreement can each take days.
+5. **Name check.** "Clutchly" is a working name. Search the App Store, Google Play, the IP Australia trade mark search
+   (search.ipaustralia.gov.au) and a domain registrar before you commit. If you change it, edit `brand.json` (`name`)
+   before the first release. The IDs (`com.eternalreptiles.clutchly`) can't change after release.
+
+## 2. Supabase production project
+Follow `docs/SUPABASE_PRODUCTION.md`: Sydney region, Pro plan (backups), migrations, email sender, redirect URLs, rate
+limits, functions and secrets. *Why:* real users' data shouldn't live in the test project, and the free plan has no backups.
+
+## 3. Legal pages and support site
 
 1. **Fill in the placeholders.** Open `site/_templates/privacy.html`, `terms.html` and `index.html` and replace every
    `[BRACKETED]` item: business name, ABN, support email, postal address, dates, backup retention, liability cap.
@@ -14,8 +32,25 @@ readiness step; sections below are added as each part is built.)
 3. **Host the `/site` folder** on Netlify, Vercel or GitHub Pages (free). Netlify: drag the `site` folder onto
    app.netlify.com/drop. Then put the address in `brand.json` as `siteUrl` (for example `https://clutchly.netlify.app`).
    *Why:* Apple and Google require a working privacy policy URL, and the app links to these pages.
+4. **Support email.** Set up the address you used in the legal pages (for example support@yourdomain) and put it in
+   `brand.json` (`supportEmail`).
 
-## Subscriptions (Apple, Google, RevenueCat)
+## 4. Expo account and builds
+1. Create a free account at expo.dev (you already have one), then in the project folder run `npx eas login` and
+   `npx eas init`. *Why:* links the app to your Expo account so EAS can build it, and gives it the project ID push
+   notifications need.
+2. `npx eas build --profile development --platform android` makes a test app for your phone (the first build asks to
+   create a signing key; say yes and let EAS keep it). iPhone builds need the Apple account from step 6A.
+3. Push notifications on Android need a Firebase project: firebase.google.com > add project > add Android app with
+   package `com.eternalreptiles.clutchly` > download `google-services.json` into the project and set
+   `"googleServicesFile": "./google-services.json"` under `android` in app.json, then upload an FCM V1 service-account
+   key with `npx eas credentials`. iPhone push keys are set up by EAS automatically.
+
+## 5. Test on real phones
+Install the development build, sign in, and try: notifications (Account > Turn on), the camera and photo library,
+offline mode (airplane mode, log feeds, turn it off again), and a sandbox purchase (after step 6). Tell me anything odd.
+
+## 6. Subscriptions (Apple, Google, RevenueCat)
 
 The app sells one thing: **Clutchly Pro**, a yearly auto-renewing subscription (A$59.95/year). A second, hidden product,
 a **lifetime unlock**, is never shown in the app; you give it away with store codes. Both unlock the same RevenueCat
@@ -78,3 +113,18 @@ If you change them, change them everywhere below and in `brand.json`.
    single events.
 8. **Test:** use a sandbox tester (App Store Connect > Users and Access > Sandbox) or a Play licence tester, buy Pro in a
    development build, and check Account shows "Clutchly Pro". RevenueCat's webhook page shows each delivery.
+
+## 7. Store listings
+- Text, categories, age-rating answers and review notes: `store/listing.md`. Privacy forms: `store/app-privacy.md`.
+  Screenshots: `store/screenshots.md`.
+- Put the reviewer account's email and password in App Store Connect (App Review Information) and Play Console
+  (App access). I've given you the credentials separately; they are not in the repo.
+
+## 8. Release
+1. Run `node scripts/check_release.mjs`. It lists any placeholders still in the app or site (RevenueCat keys,
+   site address, support email, legal `[BRACKETS]` and DRAFT notices, the test Supabase project). Fix them all.
+2. Bump `version` in `brand.json` for each release (build numbers are automatic).
+3. `npx eas build --profile production --platform all`, then `npx eas submit -p ios` and `-p android` (or upload in
+   the consoles). Google: start with Internal testing, then Closed testing (12 testers for 14 days if you have a new
+   personal account), then Production.
+4. Submit for review. Apple usually takes 1-3 days. I won't submit anything for you.

@@ -16,7 +16,9 @@ const shell = (title, body) => `<!doctype html>
 for (const f of fs.readdirSync(tdir).filter(f => f.endsWith('.html'))) {
   const src = fs.readFileSync(path.join(tdir, f), 'utf8');
   const title = (src.match(/<!-- TITLE: (.+?) -->/) || [, 'Page'])[1];
-  const out = shell(title, src.replace(/<!-- TITLE: .+? -->/, '').replaceAll('{{APP_NAME}}', brand.name));
+  let body = src.replace(/<!-- TITLE: .+? -->/, '').replaceAll('{{APP_NAME}}', brand.name);
+  if (brand.supportEmail && !/\[/.test(brand.supportEmail)) body = body.replaceAll('[SUPPORT EMAIL]', brand.supportEmail); // filled once set in brand.json
+  const out = shell(title, body);
   const dest = path.join(root, 'site', f);
   if (process.argv.includes('--check')) { if (!fs.existsSync(dest) || fs.readFileSync(dest, 'utf8') !== out) { console.error(`${f} is out of date`); stale = true; } }
   else { fs.writeFileSync(dest, out); console.log('wrote site/' + f); }

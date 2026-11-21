@@ -1,4 +1,5 @@
 // Animal photos: pick or take, shrink to 1200 px on the long edge, upload to the private bucket, show via signed URLs.
+import { APP_NAME } from './brand';
 // Files live at <user id>/<animal id>/<photo id>.jpg; storage policies only let a user reach their own folder.
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
@@ -17,7 +18,7 @@ export async function addPhoto(animalId: string, source: 'library' | 'camera'): 
   const uid = getState().uid; if (!uid) return 'Not signed in.';
   if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return "Camera access is off for Clutchly. Turn it on in your phone's Settings.";
+    if (!perm.granted) return `Camera access is off for ${APP_NAME}. Turn it on in your phone's Settings.`;
   }
   const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, allowsEditing: false };
   const res = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);

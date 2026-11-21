@@ -4,7 +4,8 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 ## Setup
 1. Create a free project at supabase.com. In SQL editor, run `supabase/schema.sql`. (Databases created from an older schema: run the files in `supabase/migrations/` in order.)
 2. Put your project URL and anon/publishable key in `lib/config.ts` (already set for this project). They are public by design; never use the service_role / secret key. A `.env` file (see `.env.example`) overrides them, e.g. to point at a test project.
-3. `npm install && npx expo start`, then scan the QR code with Expo Go.
+3. `npm install && npx expo start`, then scan the QR code with Expo Go. Notifications and purchases need a development
+   build (`npx eas build --profile development`).
 
 ## Species
 `lib/species.ts` lists every species a breeder can pick (pythons, dragons, monitors, geckos, skinks, turtles, Other), with
@@ -135,18 +136,21 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 
 ## Tests
 - `npm run typecheck`
-- `node --experimental-strip-types tests/digest.test.mjs`: notification rules. `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
+- `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts.
+- `RC_AUTH=... CRON_SECRET=... node --env-file=.env tests/plans.test.mjs`: free vs Pro vs lapsed, enforced by the database. Tests that need Pro use `tests/makePro.cjs` (sends the webhook a sandbox purchase). `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js` and `tests/export.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js` and `tests/plans.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
-## Before the stores
-- `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
-- Supabase Auth: configure email templates, enable email confirmation, set up a real SMTP sender (Resend, Postmark).
-- Required: privacy policy URL, support URL, in-app account deletion (included). Apple: $99/yr developer account; Google Play: $25 once.
-- Build and submit: `npm i -g eas-cli && eas build -p ios && eas submit -p ios` (same for android).
-- If you add "Sign in with Google/Facebook", Apple requires also offering Sign in with Apple.
-- Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
+## Store readiness
+- `brand.json` holds the name, identifiers, version, site address, support email and RevenueCat keys; `app.config.ts`
+  builds the Expo config from it (permission text, no-encryption declaration, iOS privacy manifest, blocked Android
+  permissions). iPad support is off for version 1.
+- `eas.json`: `development` (dev client, internal), `preview` (internal test builds, Android APK) and `production`
+  (store builds; build numbers increase automatically).
+- `scripts/check_release.mjs` lists placeholders that must be replaced before a store build.
+- Reviewer account: `scripts/seed_demo.mjs`. Store text, privacy answers and screenshot plan: `/store`.
+  Launch steps: `docs/LAUNCH_CHECKLIST.md`; production database: `docs/SUPABASE_PRODUCTION.md`.
 
 ## Not built yet
 Nothing from the plan; see the checklist below.

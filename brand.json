@@ -1,7 +1,12 @@
 {
   "name": "Clutchly",
+  "slug": "clutchly",
+  "scheme": "clutchly",
+  "iosBundleId": "com.eternalreptiles.clutchly",
+  "androidPackage": "com.eternalreptiles.clutchly",
+  "version": "1.0.0",
   "siteUrl": "https://YOUR-SITE.example",
-  "_note": "name can change any time. siteUrl: where /site is hosted. revenuecat: public SDK keys from RevenueCat (Project settings > API keys; safe to ship in the app) and the store product ids (see docs/LAUNCH_CHECKLIST.md).",
+  "supportEmail": "[SUPPORT EMAIL]",
   "revenuecat": {
     "iosApiKey": "appl_REPLACE_ME",
     "androidApiKey": "goog_REPLACE_ME",
@@ -10,5 +15,10 @@
       "yearly": "clutchly_pro_yearly",
       "lifetime": "clutchly_pro_lifetime"
     }
-  }
+  },
+  "_notes": [
+    "name, siteUrl, supportEmail and version can change any time (raise version for each store release).",
+    "slug, scheme, iosBundleId and androidPackage must NOT change after the first store release.",
+    "revenuecat: public SDK keys (safe in the app) and store product ids. See docs/LAUNCH_CHECKLIST.md."
+  ]
 }

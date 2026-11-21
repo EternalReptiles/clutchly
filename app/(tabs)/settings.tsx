@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { APP_NAME } from '../../lib/brand';
 import { supabase } from '../../lib/supabase';
 import { seasonFromTemplate, type Hemisphere } from '../../lib/templates';
 import { useTemplates } from '../../lib/useTemplates';
@@ -46,7 +47,7 @@ export default function Settings() {
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
     {rows.length === 0 && <View style={[s.card, { borderColor: C.ink }]}>
       <Text style={s.h}>Set up your routine</Text>
-      <Text style={{ color: C.ink, marginTop: 4 }}>Clutchly doesn't assume a schedule. For each species you keep, set when you stop feeding for the season, when feeding resumes, when breeding starts, and how often you feed females and males.</Text>
+      <Text style={{ color: C.ink, marginTop: 4 }}>{APP_NAME} doesn't assume a schedule. For each species you keep, set when you stop feeding for the season, when feeding resumes, when breeding starts, and how often you feed females and males.</Text>
       <Text style={[s.mu, { marginTop: 6 }]}>Until you do, feeds are due every {FALLBACK.female_every} days for females and {FALLBACK.male_every} for males, all year round.</Text></View>}
     <Text style={[s.h, { marginTop: 14 }]}>Your routine</Text>
     <Text style={s.mu}>One routine per species you keep. Animals of that species are hidden from Today during the feeding pause. Blank numbers use the suggestion shown in grey (with the typical range); an animal's own feed interval overrides them.</Text>
