@@ -28,6 +28,14 @@ const SP = process.argv[2];
     await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click();
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 }); await shot('today-empty');
   });
+  await step('new account: routine prompt on Today and Season, all blank', async () => {
+    await T('Set up your routine').waitFor();
+    await T('Set up your routine').click(); await T('Your routine', { exact: true }).waitFor({ timeout: 8000 });
+    if (await pg.getByText('Not set', { exact: true }).and(live).count() !== 5) throw new Error('expected 5 species not set');
+    if (await L('Pairing starts').inputValue() !== '') throw new Error('pairing start should be blank');
+    if (await L('Feed females every (days)').getAttribute('placeholder') !== '7 (suggested)') throw new Error('suggested placeholder missing');
+    await shot('season-new');
+  });
   await step('sign out, then sign in', async () => {
     await tab('Season'); await T('Sign out', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
     await signIn(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
@@ -65,15 +73,17 @@ const SP = process.argv[2];
     await T(/estimated lay 1 Oct 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
     await pg.getByLabel(/back$/i).and(live).first().click(); await T('Pre-lay shed · 2 locks · lay ~ 1 Oct 2026').waitFor({ timeout: 8000 }); await shot('pairings');
   });
-  await step('season settings: change, persists after reload, reset', async () => {
-    await tab('Season'); await shot('season-defaults');
+  await step('season settings: change, persists after reload, clear', async () => {
+    await tab('Season');
     await L('Pairing starts').fill('2000-06-15'); await pg.waitForTimeout(1500);
     await L('Feed females every (days)').fill('10'); await L('Feed females every (days)').blur(); await pg.waitForTimeout(1500);
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Season'); await pg.waitForTimeout(1500);
     await until(() => L('Pairing starts').inputValue(), '2000-06-15', 'pair start not saved');
     await until(() => L('Feed females every (days)').inputValue(), '10', 'interval not saved');
-    await T('Reset', { exact: true }).click(); await pg.waitForTimeout(2000);
-    await until(() => L('Pairing starts').inputValue(), '2000-06-01', 'reset failed');
+    if (await pg.getByText('Set up your routine').and(live).count()) throw new Error('prompt still shown after saving');
+    await T('Clear', { exact: true }).click(); await pg.waitForTimeout(2000);
+    await until(() => L('Pairing starts').inputValue(), '', 'clear failed');
+    await T('Set up your routine').waitFor();
   });
   await step('date format: switch to US and back to Australian', async () => {
     await T('US', { exact: true }).click(); await pg.waitForTimeout(1500);

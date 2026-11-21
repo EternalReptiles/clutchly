@@ -3,7 +3,7 @@ export const SEXES = ['Female', 'Male'];
 export type Animal = { id: string; name: string; species: string; sex: string; status: string; dob?: string | null;
   feed_every?: number | null; notes?: string | null; last_feed?: string | null; last_shed?: string | null; last_weight?: number | null };
 
-// Per-species, per-user settings. A user with no saved row for a species gets DEFAULT_SEASON.
+// Per-species, per-user settings (the user's routine). New accounts start with none: no feeding pause, no pairing dates.
 export type Season = {
   species: string;
   pause_from?: string | null; pause_to?: string | null; pair_start?: string | null; // 'MM-DD', repeating yearly
@@ -12,20 +12,10 @@ export type Season = {
 };
 export const SEASON_KEYS = ['pause_from', 'pause_to', 'pair_start', 'female_every', 'male_every', 'prelay_to_lay', 'ovul_to_lay'] as const;
 
-// Used when a field is blank.
+// Suggested values, used only while a field is blank. Shown as placeholders on the Season tab.
 export const FALLBACK = { female_every: 7, male_every: 21, prelay_to_lay: 30, ovul_to_lay: 45 };
 
-// Starting values for a new account. Every user can change these in the Season tab.
-const routine = { pause_from: '05-01', pause_to: '05-31', ...FALLBACK };
-export const DEFAULT_SEASON: Record<string, Omit<Season, 'species'>> = {
-  Carpet: { ...routine, pair_start: '06-01' },
-  Bredli: { ...routine },
-  Diamond: { ...routine },
-  Antaresia: { ...routine },
-  Other: { ...FALLBACK },
-};
-export const seasonFor = (rows: Season[], species: string): Season =>
-  rows.find(r => r.species === species) ?? { species, ...(DEFAULT_SEASON[species] ?? DEFAULT_SEASON.Other) };
+export const seasonFor = (rows: Season[], species: string): Season => rows.find(r => r.species === species) ?? { species };
 
 const noon = (d: string) => new Date(d + 'T12:00:00');
 export const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
