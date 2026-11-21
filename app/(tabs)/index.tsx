@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { FALLBACK, today, diffDays, fmt, fmtDay } from '../../lib/logic';
 import { speciesInfo, words } from '../../lib/species';
 import { overview } from '../../lib/overview';
+import { EmptyState, Greeting, Loading } from '../../lib/Brand';
 import { useCollection } from '../../lib/derived';
 import { insert, sync } from '../../lib/store';
 import { Btn, C, Card, notify, s } from '../../lib/ui';
@@ -29,11 +30,12 @@ export default function Overview() {
   const t = today();
   const o = useMemo(() => overview(animals, events, pairings, cfg || [], t), [animals, events, pairings, cfg, t]);
   const log = (id: string, ok: boolean) => { insert('events', { animal_id: id, kind: 'feed', ok, on_date: t }); };
-  if (!ready) return <View style={s.page}><Text style={s.mu}>Loading your collection…</Text></View>;
+  if (!ready) return <Loading />;
   const go = (x: { animalId?: string; pairingId?: string }) => x.animalId ? r.push(`/animal/${x.animalId}`) : x.pairingId ? r.push(`/pairing/${x.pairingId}`) : null;
   const pairName = (f?: { name: string }, m?: { name: string }) => `${f?.name ?? '?'}${m ? ` × ${m.name}` : ''}`;
   const empty = !rows.length;
   return (<ScrollView style={s.page} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}>
+    <Greeting />
     {cfg && cfg.length === 0 ? <Card onPress={() => r.navigate('/settings')}>
       <Text style={s.h}>Set up your routine</Text>
       <Text style={s.mu}>Add your feeding pause, pairing dates and feed intervals for each species on the Season tab. Until then, feeds are due every {FALLBACK.female_every} days for females and {FALLBACK.male_every} for males. Tap to start.</Text></Card> : null}
@@ -41,7 +43,8 @@ export default function Overview() {
       <Text style={s.h}>Morning reminders?</Text>
       <Text style={s.mu}>Get one notification a morning with how many animals are due, and a heads-up before lays and pairing season.</Text>
       <View style={[s.row, { marginTop: 8 }]}><Btn solid t="Turn on" onPress={turnOnPush} /><Btn t="Not now" onPress={dismissPush} /></View></Card> : null}
-    {empty ? <Text style={s.mu}>No animals yet. Add some on the Animals tab.</Text> : <>
+    {empty ? <EmptyState title="Welcome to your collection" text="No animals yet. Add some on the Animals tab.">
+      <Btn solid t="Add your first animal" onPress={() => r.push('/animal/new')} /></EmptyState> : <>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
         <Stat n={o.dueNow.length} l="due now" /><Stat n={o.week.feeds} l="feeds this week" />
         <Stat n={o.week.lays} l={o.week.lays === 1 ? 'lay due' : 'lays due'} /><Stat n={o.week.hatches} l={o.week.hatches === 1 ? 'hatch due' : 'hatches due'} />

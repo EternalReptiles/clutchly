@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { estimates, fmt, pairStatus, seasonFor } from '../../lib/logic';
 import { speciesInfo, words } from '../../lib/species';
 import { useCollection } from '../../lib/derived';
+import { EmptyState } from '../../lib/Brand';
 import { sync } from '../../lib/store';
 import { Btn, C, Card, s } from '../../lib/ui';
 export default function Pairings() {
@@ -16,7 +17,7 @@ export default function Pairings() {
     <Btn t="Morph calculator" onPress={() => r.push('/calculator')} /></View>
     <FlatList data={rows} keyExtractor={p => p.id!}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
-      ListEmptyComponent={<Text style={[s.mu, { marginTop: 12 }]}>{ready ? 'No pairings yet.' : 'Loading…'}</Text>}
+      ListEmptyComponent={ready ? <EmptyState title="No pairings yet" text="Start one when a pair goes in together, and follow it through to hatchlings." /> : <Text style={[s.mu, { marginTop: 12 }]}>Loading…</Text>}
       renderItem={({ item: p }) => {
         const f = animals[p.female_id!]; const e = estimates(p, seasonFor(cfg, f?.species || 'Other'));
         const rp = speciesInfo(f?.species).repro; const w = words(rp);

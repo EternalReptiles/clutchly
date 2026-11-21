@@ -4,6 +4,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { C, serif } from '../../lib/ui';
 import { SyncPill } from '../../lib/SyncPill';
+import { BrandTitle } from '../../lib/Brand';
 
 // Round button in the top-right of every tab: the user's initial (a profile photo can replace it later). Opens Account.
 function AccountButton() {
@@ -24,7 +25,7 @@ export default function T() {
     headerRight: () => <View style={{ flexDirection: 'row', alignItems: 'center' }}><SyncPill /><AccountButton /></View>,
     sceneStyle: { backgroundColor: C.bg },
   }}>
-    <Tabs.Screen name="index" options={{ title: 'Overview' }} />
+    <Tabs.Screen name="index" options={{ title: 'Overview', headerTitle: () => <BrandTitle /> }} />
     <Tabs.Screen name="animals" options={{ title: 'Animals' }} />
     <Tabs.Screen name="pairings" options={{ title: 'Pairings' }} />
     <Tabs.Screen name="settings" options={{ title: 'Season' }} />

@@ -10,6 +10,7 @@ import { Btn, C, Card, Input, s } from '../../lib/ui';
 import { useStore } from '../../lib/store';
 import { coverOf, useSignedUrls } from '../../lib/photos';
 import { Thumb } from '../../lib/PhotoGallery';
+import { EmptyState, LogoMark } from '../../lib/Brand';
 export default function Animals() {
   const { ready, animals: rows } = useCollection(); const [q, setQ] = useState(''); const r = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -25,8 +26,10 @@ export default function Animals() {
     <View style={{ marginTop: 8, flexDirection: 'row', gap: 6 }}><Btn t="Bulk add" onPress={() => r.push('/import')} /><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
     <FlatList data={l} keyExtractor={a => a.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
-      ListEmptyComponent={<Text style={[s.mu, { marginTop: 12 }]}>{!ready ? 'Loading your collection…' : rows.length ? 'No matches.' : 'No animals yet. Tap + Add, or Bulk add to paste a list or import a CSV.'}</Text>}
+      ListEmptyComponent={!ready || rows.length ? <Text style={[s.mu, { marginTop: 12 }]}>{!ready ? 'Loading your collection…' : 'No matches.'}</Text>
+        : <EmptyState title="No animals yet" text="No animals yet. Tap + Add, or Bulk add to paste a list or import a CSV." />}
       renderItem={({ item: a }) => (<Card onPress={() => r.push(`/animal/${a.id}`)}><View style={s.row}>
-      {covers[a.id] ? <Thumb uri={urls[covers[a.id]]} size={52} label={a.name} /> : null}
+      {covers[a.id] ? <Thumb uri={urls[covers[a.id]]} size={52} label={a.name} />
+        : <View style={{ width: 52, height: 52, borderRadius: 8, backgroundColor: C.bg, borderWidth: 1, borderColor: C.bd, alignItems: 'center', justifyContent: 'center' }}><LogoMark size={36} faded /></View>}
       <View style={{ flex: 1 }}><Text style={s.h}>{a.name}</Text>{morphs[a.id] ? <Text style={{ color: C.ink }}>{morphs[a.id]}</Text> : null}<Text style={s.mu}>{a.species} · {a.sex}{a.status !== 'Active' ? ` · ${a.status}` : ''}{a.last_weight ? ` · ${a.last_weight} g` : ''} · fed {fmt(a.last_feed)} · shed {fmt(a.last_shed)}</Text></View></View></Card>)} /></View>);
 }

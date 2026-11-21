@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { LogoMark } from '../lib/Brand';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -73,7 +74,8 @@ export default function Account() {
       <Text style={[s.mu, { marginTop: 4 }]}>Download everything you've entered (animals, history, pairings, routine, settings and photo links) as one file.</Text>
       <View style={{ marginTop: 8 }}><Btn disabled={exporting} t={exporting ? 'Preparing…' : 'Download my data'} onPress={exportData} /></View></Card>
     <Card><Text style={s.h}>Help and legal</Text><View style={{ marginTop: 6 }}><LegalLinks /></View>
-      <Text style={[s.mu, { marginTop: 6 }]}>{APP_NAME} · version {appVersion}</Text></Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}><LogoMark size={28} />
+        <Text style={s.mu}>{APP_NAME} · version {appVersion}</Text></View></Card>
     <View style={{ gap: 8, marginTop: 20 }}><Btn t="Sign out" onPress={signOut} />
       <Btn danger t="Delete account" onPress={del} />
       <Text style={[s.mu, { textAlign: 'center' }]}>Deleting your account permanently removes all your animals, feeding records, pairings and routines.</Text></View>

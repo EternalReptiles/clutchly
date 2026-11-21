@@ -48,6 +48,7 @@ export const isDayFirst = () => {
 };
 export const fmt = (d?: string | null) => d ? noon(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
 export const fmtHour = (h: number) => new Date(2000, 0, 1, h).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+export const fmtLong = (d: string) => noon(d).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 export const fmtDay = (d: string) => noon(d).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
 export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : '–';
 
