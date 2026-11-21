@@ -3,7 +3,7 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 
 ## Setup
 1. Create a free project at supabase.com. In SQL editor, run `supabase/schema.sql`. (Databases created from an older schema: run the files in `supabase/migrations/` in order.)
-2. Copy `.env.example` to `.env` with your project URL and anon key (Settings > API). Never use the service_role key in the app.
+2. Put your project URL and anon/publishable key in `lib/config.ts` (already set for this project). They are public by design; never use the service_role / secret key. A `.env` file (see `.env.example`) overrides them, e.g. to point at a test project.
 3. `npm install && npx expo start`, then scan the QR code with Expo Go.
 
 ## Species
