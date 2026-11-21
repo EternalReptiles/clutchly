@@ -28,12 +28,23 @@ Breeding rooms often have poor signal, so the app works from a copy of the user'
   devices (`deleted_rows`). Migration `005_offline_sync.sql`.
 - The header shows "Offline · N to sync" while changes are waiting, and "Sync problem" if the server rejected a change
   (that change is undone on the phone and the data reloaded). Signing out with unsynced changes asks first.
-- Photos (Phase 2.3) and account settings need a connection.
+- Adding photos and changing account settings need a connection.
 
 **Conflict rule: last write wins.** Every row records when it was last edited (`updated_at`, set on the device that made
 the edit, even offline). When two devices change the same row, the edit made later wins, even if it reaches the server
 first; an older edit that arrives later is ignored (enforced by the `clutchly_touch` trigger). If one device deletes a row
 that another edits offline, the delete wins. Changes to different rows never conflict.
+
+## Photos
+Each animal can have several photos (`lib/photos.ts`, `lib/PhotoGallery.tsx`), chosen from the library or taken with the
+camera, resized to at most 1200 px on the long edge and saved as JPEG (about 150-250 KB) before upload.
+- Files go to the private `animal-photos` bucket at `<user id>/<animal id>/<photo id>.jpg`. Storage policies only let a user
+  read or write inside the folder named after their own user id; images are shown through signed URLs (valid 1 hour).
+  The bucket only accepts JPEG, up to 5 MB.
+- `animal_photos` lists each animal's photos (one is the cover, shown on the Animals list) and syncs like other data.
+- Deleting a photo, an animal or an account queues the files in `photo_cleanup`; the hourly `daily-digest` function
+  removes them from Storage (photos deleted while online are also removed straight away). Migration `006_photos.sql`.
+- Adding photos needs a connection; viewing needs one unless the image was already loaded.
 
 ## Push notifications
 Each morning (at the hour and timezone the user picks in Account > Notifications) the `daily-digest` Edge Function sends
@@ -76,7 +87,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - `node --experimental-strip-types tests/digest.test.mjs`: notification rules.
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js` and `tests/offline.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js` and `tests/photos.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
@@ -87,4 +98,4 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-Photos, CSV export, hatchling IDs, subscriptions (RevenueCat).
+CSV export, hatchling IDs, subscriptions (RevenueCat).

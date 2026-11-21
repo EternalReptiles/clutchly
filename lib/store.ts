@@ -11,22 +11,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { setDateFormat } from './logic';
 
-export type Table = 'animals' | 'events' | 'pairings' | 'season_settings';
-export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings'];
+export type Table = 'animals' | 'events' | 'pairings' | 'season_settings' | 'animal_photos';
+export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings', 'animal_photos'];
 export type Row = Record<string, any>;
 type Op = 'insert' | 'update' | 'upsert' | 'delete';
 type Mutation = { mid: string; table: Table; op: Op; key: string; row?: Row };
 export type SyncStatus = 'idle' | 'syncing' | 'offline';
 export type State = {
   uid: string | null; ready: boolean;
-  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[];
+  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[];
   queue: Mutation[]; lastSync: string | null; lastDeleteId: number;
   status: SyncStatus; error: string | null; dateFormat: string;
 };
 
 const keyCol = (t: Table) => (t === 'season_settings' ? 'species' : 'id');
 const keyOf = (t: Table, r: Row) => String(r[keyCol(t)]);
-const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], queue: [],
+const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], queue: [],
   lastSync: null, lastDeleteId: 0, status: 'idle', error: null, dateFormat: 'auto' });
 
 let state: State = empty();
@@ -102,7 +102,8 @@ function applyLocal(t: Table, op: Op, key: string, row?: Row) {
     if (t === 'animals') { // mirror the database's cascades
       extra.events = state.events.filter(e => e.animal_id !== key);
       extra.pairings = state.pairings.filter(p => p.female_id !== key && p.male_id !== key);
-      schedulePersist('events', 'pairings');
+      extra.animal_photos = state.animal_photos.filter(p => p.animal_id !== key);
+      schedulePersist('events', 'pairings', 'animal_photos');
     }
     set({ [t]: rows, ...extra } as Partial<State>);
   } else {

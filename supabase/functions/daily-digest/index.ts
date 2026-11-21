@@ -1,4 +1,5 @@
 // daily-digest: run every hour by pg_cron (see supabase/migrations/004_notification_cron.sql).
+// Also removes Storage files of deleted photos (queued in photo_cleanup by migration 006).
 // For each user whose chosen notification hour has just started in their timezone, and who hasn't been sent
 // today's digest yet, works out what is due and sends it to their devices through Expo's push service.
 //
@@ -16,6 +17,17 @@ Deno.serve(async req => {
   const q = new URL(req.url).searchParams; const dry = q.get('dry') === '1';
   const now = q.get('at') ? new Date(q.get('at')!) : new Date();
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+
+  // Remove photo files whose rows were deleted (a photo, its animal, or a whole account). See migration 006.
+  let photosRemoved = 0;
+  if (!dry) {
+    const { data: gone } = await db.from('photo_cleanup').select('path').limit(1000);
+    if (gone?.length) {
+      const paths = gone.map(g => g.path);
+      const { error: rmErr } = await db.storage.from('animal-photos').remove(paths);
+      if (!rmErr) { await db.from('photo_cleanup').delete().in('path', paths); photosRemoved = paths.length; }
+    }
+  }
 
   let sq = db.from('notification_settings').select('*').or('feed_due.eq.true,lay_soon.eq.true,pairing_soon.eq.true');
   if (q.get('user')) sq = sq.eq('user_id', q.get('user')!);
@@ -54,5 +66,5 @@ Deno.serve(async req => {
     if (!dry) await db.from('notification_settings').update({ last_sent_on: local.date }).eq('user_id', st.user_id);
     report.push({ user: st.user_id, local: local.date, messages, devices: tokens.length, removedTokens });
   }
-  return Response.json({ at: now.toISOString(), dry, users: report });
+  return Response.json({ at: now.toISOString(), dry, photosRemoved, users: report });
 });

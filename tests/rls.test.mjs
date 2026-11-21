@@ -54,6 +54,25 @@ x = await B.rpc('register_device_token', { p_token: tok, p_platform: 'ios' }); o
 x = await A.from('device_tokens').select('*'); ok(x.data?.length === 0, "A no longer gets notifications on B's phone");
 x = await B.from('device_tokens').select('token'); ok(x.data?.length === 1 && x.data[0].token === tok, 'B owns the token now');
 
+// Photos: private bucket, each user limited to the folder named after their user id.
+const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]); const uidA = r.data.user.id;
+const pathA = `${uidA}/${f.data.id}/rls-test.jpg`;
+x = await A.storage.from('animal-photos').upload(pathA, jpeg, { contentType: 'image/jpeg' }); ok(!x.error, 'A uploads a photo to their folder ' + (x.error?.message || ''));
+x = await A.from('animal_photos').insert({ animal_id: f.data.id, path: pathA }); ok(!x.error, 'A records the photo ' + (x.error?.message || ''));
+x = await A.storage.from('animal-photos').createSignedUrl(pathA, 60); ok(!!x.data?.signedUrl, 'A gets a signed URL for own photo');
+const uidB = (await B.auth.getUser()).data.user.id;
+x = await B.storage.from('animal-photos').list(uidA); ok(!x.error && (x.data ?? []).length === 0, "B cannot list A's folder");
+x = await B.storage.from('animal-photos').download(pathA); ok(!!x.error, "B cannot download A's photo");
+x = await B.storage.from('animal-photos').createSignedUrl(pathA, 60); ok(!!x.error || !x.data?.signedUrl, "B cannot get a signed URL for A's photo");
+x = await B.storage.from('animal-photos').upload(`${uidA}/${f.data.id}/sneaky.jpg`, jpeg, { contentType: 'image/jpeg' }); ok(!!x.error, "B cannot upload into A's folder");
+x = await B.storage.from('animal-photos').upload(pathA, jpeg, { contentType: 'image/jpeg', upsert: true }); ok(!!x.error, "B cannot overwrite A's photo");
+x = await B.storage.from('animal-photos').remove([pathA]); x = await A.storage.from('animal-photos').download(pathA); ok(!x.error, "B cannot delete A's photo");
+x = await B.from('animal_photos').select('*'); ok(!x.error && x.data.length === 0, 'B sees 0 rows in animal_photos');
+x = await B.from('animal_photos').insert({ animal_id: f.data.id, path: `${uidB}/x/y.jpg` }); ok(!!x.error, "B cannot attach a photo to A's animal");
+x = await B.from('animal_photos').insert({ animal_id: bf.data.id, path: pathA }); ok(!!x.error, "B cannot record a path in A's folder");
+x = await anonClient().storage.from('animal-photos').download(pathA); ok(!!x.error, 'logged-out cannot download photos');
+x = await A.storage.from('animal-photos').upload(`${uidA}/x/not-a-photo.txt`, new Uint8Array([1]), { contentType: 'text/plain' }); ok(!!x.error, 'bucket refuses non-JPEG files');
+
 // Delete accounts
 x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.error?.message || ''));
 x = await A.from('animals').select('id'); ok(x.data?.length === 2, 'A data survives B deletion');

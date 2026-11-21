@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { insert, remove, update, useStore } from '../../lib/store';
 import { SEXES, fmt, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
+import { PhotoGallery } from '../../lib/PhotoGallery';
 import { Btn, Chips, DateField, Input, Label, confirm, notify, s, C } from '../../lib/ui';
 
 type Form = { name: string; species: string; sex: string; status: string; dob: string | null; feed_every: string; notes: string };
@@ -61,6 +62,7 @@ export default function AnimalScreen() {
     <Input label="Feed every N days (blank = species default from the Season tab)" keyboardType="number-pad" value={a.feed_every} onChangeText={v => setA({ ...a, feed_every: v })} />
     <Input label="Notes" multiline value={a.notes} onChangeText={v => setA({ ...a, notes: v })} />
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
+    {!isNew && <PhotoGallery animalId={id} />}
     {!isNew && <><Text style={[s.h, { marginTop: 22 }]}>Log</Text>
       <DateField label="Date" value={day} onChange={v => setDay(v || today())} />
       <Input label="Food" value={food} onChangeText={setFood} placeholder="e.g. medium rat" />

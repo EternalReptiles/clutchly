@@ -23,6 +23,14 @@
           "icon": "./assets/notification-icon.png",
           "color": "#141414"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Clutchly uses your photos so you can add pictures of your animals.",
+          "cameraPermission": "Clutchly uses the camera so you can photograph your animals.",
+          "microphonePermission": false
+        }
       ]
     ],
     "ios": {
