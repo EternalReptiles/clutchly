@@ -1,5 +1,5 @@
 // Integration test for the deployed daily-digest Edge Function. Needs .env, and CRON_SECRET in the environment:
-//   CRON_SECRET=... node --env-file=.env tests/digest.function.test.mjs
+//   RC_AUTH='Bearer ...' CRON_SECRET=... node --env-file=.env tests/digest.function.test.mjs
 // Creates a throwaway account (needs "Confirm email" off), then deletes it.
 import { createClient } from '@supabase/supabase-js';
 const U = process.env.EXPO_PUBLIC_SUPABASE_URL, K = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY, SECRET = process.env.CRON_SECRET;
@@ -9,6 +9,7 @@ const fn = (qs, secret = SECRET) => fetch(`${U}/functions/v1/daily-digest?${qs}`
 const c = createClient(U, K, { auth: { persistSession: false } });
 const su = await c.auth.signUp({ email: `clutchly.fn.${Date.now()}@gmail.com`, password: 'Fn-test-pass-1' });
 const uid = su.data.user.id;
+await (await import('./makePro.cjs')).default(uid); // notifications are a Pro feature
 try {
   ok((await fn('dry=1', 'wrong')).status === 403, 'wrong secret refused');
   ok((await fetch(`${U}/functions/v1/daily-digest`, { method: 'POST' })).status === 403, 'no secret refused');

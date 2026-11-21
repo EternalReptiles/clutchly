@@ -6,6 +6,8 @@ import { DATE_FORMATS, DateFormat, fmt, today } from '../lib/logic';
 import { Btn, C, Card, Chips, Input, confirm, notify, s } from '../lib/ui';
 import { NotificationSettings } from '../lib/NotificationSettings';
 import { LegalLinks } from '../lib/LegalLinks';
+import { usePlan } from '../lib/plan';
+import { goPro } from '../lib/goPro';
 import { APP_NAME } from '../lib/brand';
 import { downloadMyData } from '../lib/exportData';
 import Constants from 'expo-constants';
@@ -15,7 +17,7 @@ import { applyDateFormat, clearCache, getState, start, stop } from '../lib/store
 
 export default function Account() {
   const [email, setEmail] = useState(''); const [df, setDf] = useState<DateFormat>('auto');
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState(false); const plan = usePlan();
   const exportData = async () => { setExporting(true); const err = await downloadMyData(); setExporting(false); if (err) notify('Could not export', err); };
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState(''); const [busy, setBusy] = useState(false);
   useFocusEffect(useCallback(() => {
@@ -59,6 +61,9 @@ export default function Account() {
     <Card><Text style={s.h}>Date format</Text>
       <Chips opts={DATE_FORMATS.map(f => f[1])} v={DATE_FORMATS.find(f => f[0] === df)![1]} on={l => changeFormat(DATE_FORMATS.find(f => f[1] === l)![0])} />
       <Text style={[s.mu, { marginTop: 6 }]}>Today shows as {fmt(today())}</Text></Card>
+    <Card><Text style={s.h}>Plan</Text>
+      <Text style={{ color: C.ink, marginTop: 4 }}>{plan.isPro ? `${APP_NAME} Pro${plan.expiresAt ? ` · ${plan.productId?.includes('lifetime') ? 'active until' : 'renews or ends'} ${fmt(plan.expiresAt.slice(0, 10))}` : ' · no end date'}` : `Free · ${plan.count} of ${plan.freeAnimals} animals`}</Text>
+      <View style={{ marginTop: 8 }}><Btn solid={!plan.isPro} t={plan.isPro ? 'Manage Pro' : 'Go Pro'} onPress={() => goPro()} /></View></Card>
     <NotificationSettings />
     <Card><Text style={s.h}>Change password</Text>
       <Input label="New password" value={pw} onChangeText={setPw} secureTextEntry textContentType="newPassword" autoComplete="new-password" />

@@ -40,6 +40,9 @@ Deno.serve(async req => {
     if (!local) { report.push({ user: st.user_id, local: null, skipped: 'bad timezone' }); continue; }
     if (local.hour !== st.notify_hour) continue;
     if (st.last_sent_on === local.date && !dry) { report.push({ user: st.user_id, local: local.date, skipped: 'already sent today' }); continue; }
+    // Notifications are a Pro feature (subscriptions table, written only by the revenuecat-webhook function).
+    const { data: pro } = await db.rpc('is_pro', { uid: st.user_id });
+    if (!pro) { report.push({ user: st.user_id, local: local.date, skipped: 'not pro' }); continue; }
 
     const [a, s, p, t] = await Promise.all([
       db.from('animal_status').select('*').eq('user_id', st.user_id),

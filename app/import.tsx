@@ -4,6 +4,8 @@ import { Stack, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File as FSFile } from 'expo-file-system';
 import { insertMany, useStore } from '../lib/store';
+import { usePlan } from '../lib/plan';
+import { goPro } from '../lib/goPro';
 import { fmt, isDayFirst } from '../lib/logic';
 import { Row, parseImport } from '../lib/importer';
 import { Btn, C, Card, Input, notify, s } from '../lib/ui';
@@ -19,7 +21,10 @@ export default function ImportScreen() {
   const dayFirst = isDayFirst(); const fmtHint = dayFirst ? 'DD/MM/YYYY' : 'MM/DD/YYYY';
 
   const rows = useMemo(() => existing ? parseImport(text, dayFirst, existing) : [], [text, existing, dayFirst]);
-  const good = rows.filter(x => !x.error), bad = rows.filter(x => x.error);
+  const plan = usePlan();
+  const valid = rows.filter(x => !x.error), bad = rows.filter(x => x.error);
+  const good = plan.isPro ? valid : valid.slice(0, plan.remaining); // free plan: only as many as fit
+  const overLimit = valid.slice(good.length);
 
   const pickFile = async () => {
     try {
@@ -37,7 +42,8 @@ export default function ImportScreen() {
     if (rows.length > MAX_ROWS) return notify(`Too many rows`, `Import at most ${MAX_ROWS} at a time.`);
     setBusy(true);
     // Rows are added to the phone's copy at once and synced in the background (works offline too).
-    const problems: Result['problems'] = bad.map(row => ({ row, msg: row.error! }));
+    const problems: Result['problems'] = [...bad.map(row => ({ row, msg: row.error! })),
+      ...overLimit.map(row => ({ row, msg: `Over the free limit of ${plan.freeAnimals} animals` }))];
     const imported = new Set<number>(good.map(x => x.line));
     const added = insertMany('animals', good.map(x => ({ name: x.name, species: x.species, sex: x.sex, dob: x.dob, status: 'Active' })));
     const feeds = good.map((x, i) => ({ x, id: added[i].id })).filter(({ x }) => x.last_feed);
@@ -71,6 +77,8 @@ export default function ImportScreen() {
     {rows.length > 0 && <>
       <Text style={[s.h, { marginTop: 18 }]}>Preview</Text>
       <Text style={s.mu}>{good.length} ready to import{bad.length ? ` · ${bad.length} with problems (skipped)` : ''}</Text>
+      {overLimit.length > 0 && <Card><Text style={{ color: C.ink }}>The free plan has room for {plan.remaining} more animal{plan.remaining === 1 ? '' : 's'} (up to {plan.freeAnimals}). The first {good.length} will be imported; the other {overLimit.length} stay in the box.</Text>
+        <View style={{ marginTop: 8 }}><Btn t="Go Pro for unlimited animals" onPress={() => goPro()} /></View></Card>}
       {rows.slice(0, 500).map(x => <View key={x.line} style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.bd }}>
         {x.error
           ? <><Text style={{ color: C.bad }}>Line {x.line}: {x.error}</Text><Text style={s.mu} numberOfLines={1}>{x.raw}</Text></>

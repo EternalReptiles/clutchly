@@ -31,6 +31,21 @@ species later. Users' edits are private and never change the templates. The app 
 - Account > Download my data (free for everyone) saves a JSON file of all the user's records, settings and 7-day photo
   links (`lib/exportData.ts`; share sheet on phones via `expo-sharing`, a download on the web).
 
+## Free and Pro
+- Free: up to `free_animals` animals (table `app_limits`, currently 10) with every record-keeping feature and data export.
+  Pro (RevenueCat entitlement `pro`): unlimited animals, photos and morning notifications.
+- Pro status lives in `subscriptions`, written **only** by the `revenuecat-webhook` Edge Function (checks the
+  `REVENUECAT_WEBHOOK_AUTH` secret; ignores out-of-order events; optional `REVENUECAT_SECRET_API_KEY` to re-read status
+  from RevenueCat). Users can read their own row and nothing else. Migration `009_subscriptions.sql`.
+- Enforced by the database, not the app: a trigger refuses animal number 11 for non-Pro users (with a per-user lock so
+  parallel adds can't slip through); adding photos requires Pro in both the table policy and the storage policy; the
+  daily-digest function only notifies Pro users. Nothing is ever deleted or locked when Pro ends.
+- App: `lib/purchases.ts` (react-native-purchases; logs in with the Supabase user id), `app/paywall.tsx` (yearly
+  subscription with price and renewal terms, restore, redeem a code, terms and privacy links), `lib/plan.ts`.
+  Keys and product ids are in `brand.json`; until real keys are added, purchases are switched off.
+- Tests: `tests/revenuecat.test.mjs` (webhook rules), `tests/plans.test.mjs` (free vs Pro vs lapsed, against Supabase),
+  `tests/plans.e2e.js` (limits in the app). Store setup steps: `docs/LAUNCH_CHECKLIST.md`.
+
 ## Logo, icon and splash
 The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, so it can be tweaked and regenerated:
 1. `python3 scripts/draw_logo.py` writes `assets/source/clutchly-mark.svg`
@@ -134,6 +149,6 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-Subscriptions (RevenueCat).
+Nothing from the plan; see the checklist below.
 
 See `docs/LAUNCH_CHECKLIST.md` for everything that needs doing outside the code.

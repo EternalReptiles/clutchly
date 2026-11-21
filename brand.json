@@ -1,5 +1,14 @@
 {
   "name": "Clutchly",
   "siteUrl": "https://YOUR-SITE.example",
-  "_note": "name can change any time. siteUrl: where /site is hosted (privacy, terms, support links in the app)."
+  "_note": "name can change any time. siteUrl: where /site is hosted. revenuecat: public SDK keys from RevenueCat (Project settings > API keys; safe to ship in the app) and the store product ids (see docs/LAUNCH_CHECKLIST.md).",
+  "revenuecat": {
+    "iosApiKey": "appl_REPLACE_ME",
+    "androidApiKey": "goog_REPLACE_ME",
+    "entitlement": "pro",
+    "products": {
+      "yearly": "clutchly_pro_yearly",
+      "lifetime": "clutchly_pro_lifetime"
+    }
+  }
 }

@@ -4,6 +4,8 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from './supabase';
 import { deviceTimeZone, disablePushHere, enablePush, pushEnabledHere, pushSupported } from './notifications';
 import { fmtHour } from './logic';
+import { usePlan } from './plan';
+import { goPro } from './goPro';
 import { Btn, C, Card, Input, notify, s } from './ui';
 
 type NS = { feed_due: boolean; lay_soon: boolean; pairing_soon: boolean; notify_hour: number; timezone: string };
@@ -27,7 +29,8 @@ export function NotificationSettings() {
     const { error } = await supabase.from('notification_settings').upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
     if (error) { notify('Could not save', error.message); load(); }
   };
-  const turnOn = async () => { setBusy(true); const r = await enablePush(); setBusy(false);
+  const plan = usePlan();
+  const turnOn = async () => { if (!plan.isPro) return goPro('Morning notifications are part of Pro.'); setBusy(true); const r = await enablePush(); setBusy(false);
     if (!r.ok) return notify('Notifications not turned on', r.reason);
     setHere(true); load(); notify('Notifications on', `You'll get a summary at ${fmtHour(ns?.notify_hour ?? 7)} when something is due.`); };
   const turnOff = async () => { setBusy(true); await disablePushHere(); setBusy(false); setHere(false); };

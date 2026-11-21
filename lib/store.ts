@@ -22,12 +22,16 @@ export type State = {
   animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[];
   queue: Mutation[]; lastSync: string | null; lastDeleteId: number;
   status: SyncStatus; error: string | null; dateFormat: string;
+  plan: Plan;
 };
+/** From the server (subscriptions + app_limits). The database enforces the limits; this is for the app's messages. */
+export type Plan = { active: boolean; expiresAt: string | null; productId: string | null; freeAnimals: number };
+export const DEFAULT_PLAN: Plan = { active: false, expiresAt: null, productId: null, freeAnimals: 10 };
 
 const keyCol = (t: Table) => (t === 'season_settings' ? 'species' : 'id');
 const keyOf = (t: Table, r: Row) => String(r[keyCol(t)]);
 const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], queue: [],
-  lastSync: null, lastDeleteId: 0, status: 'idle', error: null, dateFormat: 'auto' });
+  lastSync: null, lastDeleteId: 0, status: 'idle', error: null, dateFormat: 'auto', plan: DEFAULT_PLAN });
 
 let state: State = empty();
 const listeners = new Set<() => void>();
@@ -60,7 +64,7 @@ function schedulePersist(...what: (Table | 'meta')[]) {
 }
 async function persistNow() {
   persistTimer = null; const s = state; if (!s.uid) return;
-  const p = prefix(s.uid); const writes: [string, string][] = []; const meta: Row = { lastSync: s.lastSync, lastDeleteId: s.lastDeleteId, queue: s.queue, chunks: {} };
+  const p = prefix(s.uid); const writes: [string, string][] = []; const meta: Row = { lastSync: s.lastSync, lastDeleteId: s.lastDeleteId, queue: s.queue, plan: s.plan, chunks: {} };
   const prevMeta = JSON.parse((await AsyncStorage.getItem(`${p}.meta`).catch(() => null)) || '{}');
   for (const t of TABLES) {
     const n = Math.ceil(s[t].length / CHUNK); meta.chunks[t] = n;
@@ -77,7 +81,7 @@ async function loadCache(uid: string): Promise<Partial<State>> {
   try {
     const p = prefix(uid); const meta = JSON.parse((await AsyncStorage.getItem(`${p}.meta`)) || 'null');
     if (!meta) return {};
-    const out: Partial<State> = { lastSync: meta.lastSync ?? null, lastDeleteId: meta.lastDeleteId ?? 0, queue: meta.queue ?? [] };
+    const out: Partial<State> = { lastSync: meta.lastSync ?? null, lastDeleteId: meta.lastDeleteId ?? 0, queue: meta.queue ?? [], plan: meta.plan ?? DEFAULT_PLAN };
     for (const t of TABLES) {
       const keys = Array.from({ length: meta.chunks?.[t] ?? 0 }, (_, i) => `${p}.${t}.${i}`);
       const vals = keys.length ? await AsyncStorage.multiGet(keys) : [];
@@ -162,7 +166,8 @@ async function flush(): Promise<boolean> {
     const m = state.queue[0];
     const r = await send(m);
     if (!r.ok && r.retry) return false; // offline: keep the queue
-    if (!r.ok) { console.warn('[sync] change rejected', m.table, m.op, r.message); set({ error: `A change couldn't be saved (${r.message}). It has been undone.` }); } // rejected: drop it
+    if (!r.ok) { console.warn('[sync] change rejected', m.table, m.op, r.message);
+      set({ error: /free_limit_reached/.test(r.message) ? `Free accounts can have up to ${state.plan.freeAnimals} animals, so an animal added on another device or offline was not saved. Go Pro for unlimited animals.` : `A change couldn't be saved (${r.message}). It has been undone.` }); } // rejected: drop it
     set({ queue: state.queue.filter(x => x.mid !== m.mid) }); schedulePersist('meta');
     if (!r.ok) set({ lastSync: null }); // reload everything to undo the rejected change locally
   }
@@ -207,7 +212,13 @@ async function pull() {
   for (const d of del.data) lastDeleteId = Math.max(lastDeleteId, d.id);
   let max: string | null = state.lastSync;
   for (const t of TABLES) { const m = await pullTable(t, since); if (m && (!max || m > max)) max = m; }
-  set({ lastSync: max ?? new Date(0).toISOString(), lastDeleteId }); schedulePersist('meta');
+  set({ lastSync: max ?? new Date(0).toISOString(), lastDeleteId });
+  // Plan status (small; refreshed every sync). Failure keeps the last known plan.
+  const [sub, lim] = await Promise.all([supabase.from('subscriptions').select('active,expires_at,product_id').maybeSingle(),
+    supabase.from('app_limits').select('value').eq('key', 'free_animals').maybeSingle()]);
+  if (!sub.error && !lim.error) set({ plan: { active: !!sub.data?.active, expiresAt: sub.data?.expires_at ?? null, productId: sub.data?.product_id ?? null,
+    freeAnimals: lim.data?.value ?? DEFAULT_PLAN.freeAnimals } });
+  schedulePersist('meta');
 }
 
 let running: Promise<any> | null = null; let retryTimer: ReturnType<typeof setTimeout> | null = null;

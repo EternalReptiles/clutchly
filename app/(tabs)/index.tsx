@@ -7,12 +7,14 @@ import { useCollection } from '../../lib/derived';
 import { insert, sync } from '../../lib/store';
 import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
+import { usePlan } from '../../lib/plan';
+import { goPro } from '../../lib/goPro';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Today() {
   const r = useRouter(); const { ready, animals, seasons } = useCollection();
   const rows = animals.filter(a => a.status !== 'Sold'); const cfg = ready ? seasons : null;
-  const [askPush, setAskPush] = useState(false); const [refreshing, setRefreshing] = useState(false);
+  const [askPush, setAskPush] = useState(false); const plan = usePlan(); const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   // Offer reminders once the user has animals (not on first launch), until they turn them on or say no.
   useFocusEffect(useCallback(() => { (async () => {
@@ -21,7 +23,7 @@ export default function Today() {
     setAskPush(!dismissed && !(await pushEnabledHere()));
   })(); }, []));
   const dismissPush = () => { setAskPush(false); AsyncStorage.setItem(PROMPT_KEY, '1').catch(() => {}); };
-  const turnOnPush = async () => { const res = await enablePush(); if (!res.ok) return notify('Notifications not turned on', res.reason); dismissPush(); notify('Notifications on', 'Change what you get and when in Account.'); };
+  const turnOnPush = async () => { if (!plan.isPro) return goPro('Morning notifications are part of Pro.'); const res = await enablePush(); if (!res.ok) return notify('Notifications not turned on', res.reason); dismissPush(); notify('Notifications on', 'Change what you get and when in Account.'); };
   const t = today();
   const due = rows.map(a => ({ a, sc: seasonFor(cfg || [], a.species) })).filter(({ sc }) => !isPaused(sc, t))
     .map(({ a, sc }) => ({ a, n: nextFeed(a, sc) }))

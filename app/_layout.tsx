@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { refreshPushToken } from '../lib/notifications';
 import { applyDateFormat, start, stop } from '../lib/store';
 import { SyncPill } from '../lib/SyncPill';
+import { purchasesLogIn, purchasesLogOut } from '../lib/purchases';
 import { C, serif } from '../lib/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -23,6 +24,8 @@ export default function Root() {
   // Expo push tokens can change; keep this phone's registration current (never prompts).
   const uid = session?.user.id;
   useEffect(() => { if (uid) refreshPushToken(); }, [uid]);
+  // Purchases are linked to the Supabase user id, which is how the webhook knows whose subscription it is.
+  useEffect(() => { if (uid) purchasesLogIn(uid); else if (session === null) purchasesLogOut(); }, [uid, session === null]);
   // Local copy of the user's data (offline mode): load and sync on sign in, drop on sign out.
   useEffect(() => { if (uid) start(uid); else if (session === null) stop(); }, [uid, session === null]);
 
@@ -50,6 +53,7 @@ export default function Root() {
         <Stack.Screen name="import" options={{ title: 'Bulk add' }} />
         <Stack.Screen name="account" options={{ title: 'Account' }} />
         <Stack.Screen name="welcome" options={{ title: 'Welcome' }} />
+        <Stack.Screen name="paywall" options={{ title: 'Pro', presentation: 'modal' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

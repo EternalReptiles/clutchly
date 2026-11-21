@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 // Backend + row-level-security test. Creates throwaway accounts (needs "Confirm email" off), then deletes them.
-// Run: node --env-file=.env tests/rls.test.mjs   (in a proxied environment add NODE_USE_ENV_PROXY=1)
+// Run: RC_AUTH='Bearer ...' node --env-file=.env tests/rls.test.mjs   (in a proxied environment add NODE_USE_ENV_PROXY=1)
 const U = process.env.EXPO_PUBLIC_SUPABASE_URL, K = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 if (!U || !K) { console.error('Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY (node --env-file=.env ...)'); process.exit(1); }
 const mk = () => createClient(U, K, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -54,7 +54,8 @@ x = await B.rpc('register_device_token', { p_token: tok, p_platform: 'ios' }); o
 x = await A.from('device_tokens').select('*'); ok(x.data?.length === 0, "A no longer gets notifications on B's phone");
 x = await B.from('device_tokens').select('token'); ok(x.data?.length === 1 && x.data[0].token === tok, 'B owns the token now');
 
-// Photos: private bucket, each user limited to the folder named after their user id.
+// Photos: private bucket, each user limited to the folder named after their user id. (Photos need Pro; see tests/plans.test.mjs.)
+await (await import('./makePro.cjs')).default(r.data.user.id);
 const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]); const uidA = r.data.user.id;
 const pathA = `${uidA}/${f.data.id}/rls-test.jpg`;
 x = await A.storage.from('animal-photos').upload(pathA, jpeg, { contentType: 'image/jpeg' }); ok(!x.error, 'A uploads a photo to their folder ' + (x.error?.message || ''));

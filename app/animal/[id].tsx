@@ -5,6 +5,8 @@ import { insert, remove, update, useStore } from '../../lib/store';
 import { SEXES, fmt, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { PhotoGallery } from '../../lib/PhotoGallery';
+import { usePlan } from '../../lib/plan';
+import { goPro } from '../../lib/goPro';
 import { WeightChart } from '../../lib/WeightChart';
 import { EventEditor } from '../../lib/EventEditor';
 import { eventLabel, newestFirst, refusalStats, shedStats, weightSeries, type Ev } from '../../lib/history';
@@ -15,7 +17,7 @@ const blank: Form = { name: '', species: '', sex: 'Female', status: 'Active', do
 
 export default function AnimalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
-  const st = useStore();
+  const st = useStore(); const plan = usePlan();
   const animal = isNew ? null : st.animals.find(x => x.id === id);
   const [a, setA] = useState<Form>(blank); const [loaded, setLoaded] = useState(isNew);
   const [food, setFood] = useState(''); const [g, setG] = useState(''); const [day, setDay] = useState(today());
@@ -45,6 +47,7 @@ export default function AnimalScreen() {
     .sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })), [st.animals, id]);
 
   const save = () => {
+    if (isNew && !plan.isPro && plan.remaining <= 0) return goPro(`Free accounts can have up to ${plan.freeAnimals} animals, and you have ${plan.count}. Go Pro for unlimited animals. Your existing animals are never affected.`);
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
     if (!a.species) return notify('Choose a species');
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;

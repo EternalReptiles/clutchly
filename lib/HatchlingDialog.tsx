@@ -5,6 +5,8 @@ import { supabase } from './supabase';
 import { fmt, type Animal, type Pairing } from './logic';
 import { DEFAULT_PATTERN, hatchlingNames, normalisePattern } from './hatchlings';
 import { getState, insertMany, update } from './store';
+import { usePlan } from './plan';
+import { goPro } from './goPro';
 import { Btn, C, Input, notify, s } from './ui';
 
 /** Creates hatchlings from a pairing: asks how many, names them from the user's pattern, links them to both parents. */
@@ -19,7 +21,7 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
     setCount(fromFertile(pairing.fertile != null ? String(pairing.fertile) : '')); setCountTouched(false);
     supabase.auth.getSession().then(({ data }) => setPattern(data.session?.user.user_metadata?.hatchling_pattern || DEFAULT_PATTERN));
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-  const n = parseInt(count, 10) || 0;
+  const n = parseInt(count, 10) || 0; const plan = usePlan();
   const names = useMemo(() => n > 0 && n <= 200 ? hatchlingNames(pattern, hatchDate, mother?.name ?? '', father?.name ?? '', n, getState().animals.map(a => a.name)) : [],
     [n, pattern, hatchDate, mother?.name, father?.name]);
   const num = (v: string) => (v.trim() ? parseInt(v, 10) : null);
@@ -27,6 +29,7 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
     const c = num(clutch), f = num(fertile);
     if (!mother) return notify('The pairing has no female');
     if (!(n >= 1 && n <= 200)) return notify('How many hatchlings? Enter 1 to 200.');
+    if (!plan.isPro && n > plan.remaining) { onClose(); return goPro(`The free plan has room for ${plan.remaining} more animal${plan.remaining === 1 ? '' : 's'} (up to ${plan.freeAnimals}). Go Pro to add all ${n} hatchlings.`); }
     if ((c != null && (isNaN(c) || c < 0)) || (f != null && (isNaN(f) || f < 0))) return notify('Clutch and fertile counts must be numbers');
     if (c != null && f != null && f > c) return notify('Fertile eggs cannot be more than the clutch size');
     insertMany('animals', names.map(name => ({ name, species: mother.species, sex: 'Unknown', status: 'Active', dob: hatchDate,
@@ -47,6 +50,7 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
         <Input label="How many hatchlings to add" keyboardType="number-pad" value={count} onChangeText={v => { setCount(v); setCountTouched(true); }} />
         <Input label="ID pattern" value={pattern} onChangeText={setPattern} autoCapitalize="none" autoCorrect={false} />
         <Text style={[s.mu, { marginTop: 4 }]}>{'{YYYY}'} or {'{YY}'} = hatch year · {'{###}'} = running number (one # per digit) · {'{MOTHER}'} {'{FATHER}'} = parents' names. Numbering carries on from your existing IDs.</Text>
+        {!plan.isPro && <Text style={[s.mu, { marginTop: 6 }]}>Free plan: room for {plan.remaining} more animal{plan.remaining === 1 ? '' : 's'} (up to {plan.freeAnimals}).</Text>}
         {names.length > 0 && <View style={[s.card, { marginTop: 10 }]}><Text style={s.mu}>Will create</Text>
           <Text style={{ color: C.ink, marginTop: 2 }}>{names.length <= 6 ? names.join(', ') : `${names.slice(0, 3).join(', ')} … ${names[names.length - 1]}`}</Text></View>}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
