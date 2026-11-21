@@ -17,6 +17,7 @@ const SP = process.argv[2];
     const row = pg.locator('div').filter({ has: pg.getByText(new RegExp(`^${gene} ·`)) }).filter({ has: pg.getByRole('button', { name: choice, exact: true }) }).last();
     await row.getByRole('button', { name: choice, exact: true }).click(); await pg.waitForTimeout(150);
   };
+  const row = l => pg.getByLabel(l, { exact: true }).and(live).first().waitFor({ timeout: 5000 });
   const addAnimal = async (name, sex) => { await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill(name); await B(sex).click();
     await L('Species').click(); await L('Search species').fill('carpet'); await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
     await B('Save').click(); await T(name, { exact: true }).waitFor({ timeout: 8000 }); };
@@ -30,6 +31,10 @@ const SP = process.argv[2];
     await T('JF', { exact: true }).click(); await T('No genes recorded.').waitFor(); await B('Edit genes').click();
     await T('Genes · Carpet').waitFor({ timeout: 8000 }); await T(/Heavily reduces dark pigment and alters pattern/).waitFor();
     await setGene('Jaguar', 'Visual'); await setGene('Albino', 'Het');
+    const jagRow = pg.locator('div').filter({ has: pg.getByText(/^Jaguar ·/) }).filter({ has: pg.getByRole('button', { name: 'None', exact: true }) }).last();
+    const jagOpts = await jagRow.getByRole('button').allTextContents();
+    if (jagOpts.join() !== 'None,Visual') throw new Error('Jaguar choices: ' + jagOpts);
+    await T(/linked to neurological problems/).waitFor();
     await pg.screenshot({ path: `${SP}/gn-a-editor.png` }); await B('Done').click();
     await T('Jaguar het Albino', { exact: true }).waitFor({ timeout: 5000 });
     await B('Edit genes').click(); await T('Genes · Carpet').waitFor();
@@ -47,10 +52,7 @@ const SP = process.argv[2];
     await tab('Pairings'); await T('+ New pairing').click(); await B('JF').click(); await B('JM').click();
     await T('Morph calculator', { exact: true }).waitFor();
     // jaguar (ID, one parent) 50/50 · albino het x het 25/50/25 · zebra (ID, one parent) 50/50
-    await T('Albino Jaguar Zebra', { exact: true }).waitFor();
-    const row = async label => (await pg.getByText(label, { exact: true }).and(live).first().locator('xpath=..').innerText()).replace(label, '').trim();
-    if (await row('Albino Jaguar Zebra') !== '6.3%') throw new Error('Albino Jaguar Zebra ' + await row('Albino Jaguar Zebra'));
-    if (await row('Jaguar Zebra het Albino') !== '12.5%') throw new Error('Jaguar Zebra het Albino ' + await row('Jaguar Zebra het Albino'));
+    await row('Jaguar Zebra Albino: 1/16, 6.3%'); await row('Jaguar Zebra het Albino: 1/8, 12.5%'); await row('Normal het Albino: 1/8, 12.5%');
     await T("Babies that don't show the gene: 67% possible het Albino.").waitFor();
     await T(/^Jaguar · 50%: /).waitFor(); await T(/Tiger from the father/).waitFor();
     await pg.screenshot({ path: `${SP}/gn-b-pairing.png`, fullPage: true });
@@ -58,7 +60,25 @@ const SP = process.argv[2];
   });
   await step('standalone calculator for any two animals', async () => {
     await B('Morph calculator').click(); await B('JF').click(); await B('JM').click();
-    await T('Albino Jaguar Zebra', { exact: true }).waitFor({ timeout: 5000 }); await back();
+    await row('Jaguar Zebra Albino: 1/16, 6.3%');
+  });
+  await step('what-if parents: Jaguar x Jaguar is flagged, 1 in 4 eggs not viable', async () => {
+    const made = i => pg.getByRole('button', { name: 'Make one up', exact: true }).and(live).nth(i);
+    await made(0).click(); await setGene('Jaguar', 'Visual'); await B('Hide genes').click();
+    await made(1).click(); await setGene('Jaguar', 'Visual');
+    await T('Not recommended: Jaguar × Jaguar').waitFor({ timeout: 5000 });
+    await T(/About 25% of eggs are expected not to develop/).waitFor();
+    await row('Jaguar: 2/3, 66.7%'); await row('Normal: 1/3, 33.3%');
+    await pg.screenshot({ path: `${SP}/gn-c-jag-jag.png`, fullPage: true });
+  });
+  await step('what-if parents: combination names (Sunglow)', async () => {
+    await setGene('Jaguar', 'None'); await setGene('Albino', 'Visual'); await B('Hide genes').click();   // male: Albino
+    await pg.getByRole('button', { name: 'Choose genes', exact: true }).and(live).first().click();     // female
+    await setGene('Jaguar', 'None'); await setGene('Caramel', 'Visual'); await setGene('Albino', 'Visual'); await setGene('Axanthic', 'Het');
+    await T('Sunglow het Axanthic', { exact: true }).waitFor();                                         // the female's name
+    await row('Sunglow het Axanthic: 1/4, 25%'); await row('Albino: 1/4, 25%'); await row('Sunglow: 1/4, 25%');
+    if (await pg.getByText('Not recommended', { exact: false }).and(live).count()) throw new Error('still warned');
+    await pg.screenshot({ path: `${SP}/gn-d-sunglow.png`, fullPage: true }); await back();
   });
   await step('hatchlings inherit possible hets from the parents', async () => {
     await T('JF × JM').click(); await L('Eggs laid').fill('2026-08-01'); await L('Hatched').fill('2026-10-01');

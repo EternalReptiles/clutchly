@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { morphName } from '../../lib/genetics';
-import { useGenes } from '../../lib/useGenes';
+import { useGeneLib } from '../../lib/useGenes';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fmt } from '../../lib/logic';
@@ -18,7 +18,7 @@ export default function Animals() {
   const { animal_photos } = useStore(); // eslint-disable-line
   const covers = useMemo(() => Object.fromEntries(rows.flatMap(a => { const c = coverOf(animal_photos, a.id); return c ? [[a.id, c.path]] : []; })), [rows, animal_photos]);
   const urls = useSignedUrls(Object.values(covers) as string[]);
-  const genes = useGenes(); const { animal_genes } = useStore();
+  const genes = useGeneLib(); const { animal_genes } = useStore();
   const morphs = useMemo(() => { const by: Record<string, any[]> = {}; for (const g of animal_genes) (by[g.animal_id] ??= []).push(g);
     return Object.fromEntries(Object.entries(by).map(([k, v]) => [k, morphName(genes, v)])); }, [animal_genes, genes]);
   return (<View style={s.page}><View style={s.row}><View style={{ flex: 1 }}><Input placeholder="Search" value={q} onChangeText={setQ} /></View>

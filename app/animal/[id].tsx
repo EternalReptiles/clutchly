@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { morphName } from '../../lib/genetics';
-import { useAnimalGenes, useGenes } from '../../lib/useGenes';
+import { useAnimalGenes, useGeneLib } from '../../lib/useGenes';
 import { GeneEditor } from '../../lib/GeneEditor';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -44,7 +44,7 @@ export default function AnimalScreen() {
   const sheds = useMemo(() => shedStats(allEv), [allEv]);
   const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
   const [editing, setEditing] = useState<Ev | null>(null);
-  const genes = useGenes(); const myGenes = useAnimalGenes(isNew ? null : id); const morph = morphName(genes, myGenes);
+  const geneLib = useGeneLib(); const myGenes = useAnimalGenes(isNew ? null : id); const morph = morphName(geneLib, myGenes);
   const [genesOpen, setGenesOpen] = useState(false);
   const mother = animal?.mother_id ? st.animals.find(x => x.id === animal.mother_id) : undefined;
   const father = animal?.father_id ? st.animals.find(x => x.id === animal.father_id) : undefined;

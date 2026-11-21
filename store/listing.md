@@ -45,7 +45,7 @@ BREEDING, START TO FINISH
 • Pairings with locks, ovulation and pre-lay shed
 • Estimated lay and hatch dates (estimated birth for live-bearing skinks)
 • Morph calculator: record each animal's genes (visual, het, possible het) and see every possible baby with its odds,
-  plus health warnings such as Super Jaguar
+  with combination names (Sunglow, Moonglow, Snow, Ghost) and health warnings such as Jaguar
 • Create hatchlings with your own ID pattern, linked to both parents and carrying their hets
 • Heads-up a week before a lay and three days before pairing season (Pro)
 
