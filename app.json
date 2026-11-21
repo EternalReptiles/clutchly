@@ -1,0 +1,4 @@
+{"expo":{"name":"Herdbook","slug":"herdbook","scheme":"herdbook","version":"1.0.0","orientation":"portrait",
+"userInterfaceStyle":"light","icon":"./assets/icon.png","plugins":["expo-router"],
+"ios":{"bundleIdentifier":"com.yourname.herdbook","supportsTablet":true},
+"android":{"package":"com.yourname.herdbook"}}}
