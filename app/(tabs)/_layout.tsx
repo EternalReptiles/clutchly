@@ -24,7 +24,7 @@ export default function T() {
     headerRight: () => <View style={{ flexDirection: 'row', alignItems: 'center' }}><SyncPill /><AccountButton /></View>,
     sceneStyle: { backgroundColor: C.bg },
   }}>
-    <Tabs.Screen name="index" options={{ title: 'Today' }} />
+    <Tabs.Screen name="index" options={{ title: 'Overview' }} />
     <Tabs.Screen name="animals" options={{ title: 'Animals' }} />
     <Tabs.Screen name="pairings" options={{ title: 'Pairings' }} />
     <Tabs.Screen name="settings" options={{ title: 'Season' }} />

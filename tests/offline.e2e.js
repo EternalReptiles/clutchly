@@ -47,7 +47,7 @@ const SB = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).host;
 
   d1.setOffline(true);
   await step(pg, 'offline: log feed from Today; pill appears', async () => {
-    await tab('Today'); await T('F1', { exact: true }).waitFor();
+    await tab('Overview'); await T('F1', { exact: true }).waitFor();
     await pg.getByRole('button', { name: 'Fed', exact: true }).and(d1.live).first().click();
     await until(async () => /^Offline · \d+ to sync$/.test((await pill(pg).first().textContent().catch(() => '')) || ''), 10000, 'no offline pill');
     await pg.screenshot({ path: `${SP}/off-a-pill.png` });
@@ -105,7 +105,7 @@ const SB = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).host;
   await step(pg, 'delete on the second device reaches this phone', async () => {
     await d2.T('OFF1', { exact: true }).click(); await d2.T('Delete', { exact: true }).click(); await d2.T('F2-renamed', { exact: true }).waitFor({ timeout: 8000 });
     await until(async () => (await server()).animals.length === 2, 15000, 'delete not on server');
-    await tab('Today'); await tab('Animals');
+    await tab('Overview'); await tab('Animals');
     await pg.getByRole('tab', { name: 'Animals' }).click(); // pull to refresh is a gesture; app also syncs every 2 min and on reopen
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Animals');
     await until(async () => (await pg.getByText('OFF1', { exact: true }).and(d1.live).count()) === 0, 15000, 'OFF1 still shown');

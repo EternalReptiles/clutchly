@@ -33,17 +33,23 @@ species later. Users' edits are private and never change the templates. The app 
   links (`lib/exportData.ts`; share sheet on phones via `expo-sharing`, a download on the web).
 
 ## Genes and morph calculator
-- `gene_library` (migration 012): shared single genes and line-bred traits per species, with inheritance (recessive,
-  incomplete dominant, dominant, line-bred), descriptions, super names and health warnings (e.g. Super Jaguar). Read-only
-  for users; add genes with a new migration or in the dashboard. Seeded for Carpet (8 genes + 3 line-bred traits),
-  Bredli (3) and Antaresia (11 + 4 line-bred). Albino and granite lines that don't work together are separate genes.
+- `gene_library` (migrations 012-014): one generic list of single genes and line-bred traits (no species: any gene can
+  be picked for any animal), with inheritance (recessive, incomplete dominant, dominant, line-bred), descriptions, super
+  names and health warnings. `has_super = false` means the double-copy form isn't viable (Jaguar: always visual, Jaguar x
+  Jaguar flagged as not recommended). Dominant genes look the same with one or two copies. Genes are also matched by
+  name, so older records under a duplicate id still work. Read-only for users; add genes with a new migration.
+- `morph_combos` (013): names for genes shown together (Sunglow, Moonglow, Snow, Ghost). The combination with the most
+  requirements wins; other genes stay in the name ("Jaguar Sunglow het Axanthic").
 - `user_genes`: a breeder's own private genes. `animal_genes`: each animal's genes (visual, super, het, or possible het
   with a %). Both sync offline and are in "Download my data".
 - `lib/genetics.ts` (tested in `tests/genetics.test.js`): per-gene odds combined across genes, assuming independent
-  inheritance; possible hets weighted by their %; normal-looking babies' chance of being het; warnings with their chance;
-  line-bred traits listed but not predicted. Hatchlings get the recessive hets they carry or may carry.
-- Screens: genes on each animal (Edit genes), morph names on the Animals list, the calculator on every pairing and as a
-  standalone screen (Pairings > Morph calculator).
+  inheritance; possible hets weighted by their %; exact fractions (1/16) when there are no possible hets; normal-looking
+  babies' chance of being het; warnings with their chance; line-bred traits listed but not predicted. Hatchlings get the
+  recessive hets they carry or may carry.
+- Screens: genes on each animal (Edit genes, searchable), morph names on the Animals list, the calculator on every pairing
+  and as a standalone screen (Pairings > Morph calculator), where each parent is one of your animals or made up.
+- Overview tab (`lib/overview.ts`, tested in `tests/overview.test.js`): due now, the next 7 days (feeds, estimated lays and
+  hatches, season dates), refusal streaks of 3+, estimated dates that passed with nothing recorded, and the last 7 days.
 
 ## Free and Pro
 - Free: up to `free_animals` owned animals (table `app_limits`, currently 10; animals marked Sold don't count, and
@@ -129,7 +135,7 @@ How it fits together:
 - Tokens are removed on sign out, when the user turns notifications off for a phone, when Expo reports a phone as gone,
   and with the account.
 
-The app asks for permission only when the user taps "Turn on" (Account, or a one-time card on Today once they have animals).
+The app asks for permission only when the user taps "Turn on" (Account, or a one-time card on Overview once they have animals).
 
 Remote notifications do not work in Expo Go. To try them you need a development build:
 1. `npx eas init` (links the app to an Expo project and writes its projectId into app.json).

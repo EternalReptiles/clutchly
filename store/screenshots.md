@@ -20,7 +20,7 @@ cream, matching the app) helps; keep it to 2-6 words.
 
 ## Order
 
-1. **Today** – caption: *"Know who's due today"*. The Today tab with 5-7 animals due, mix of "due today" and
+1. **Overview** – caption: *"Your week at a glance"*. The Overview tab with 5-7 animals due, mix of "due today" and
    "1d overdue". Fed/Refused buttons visible.
 2. **Animal page with growth chart** – caption: *"Growth, sheds and refusals"*. Open Ruby, scroll so the Growth chart
    and the two stat cards (days between sheds, refusal rate) fill the screen.
@@ -34,7 +34,7 @@ cream, matching the app) helps; keep it to 2-6 words.
    pairing start and intervals.
 
 Optional 7th and 8th (Google allows 8): **Bulk add** (paste preview with a few rows) – *"Add your collection in
-seconds"*; **Offline** (the "Offline · 3 to sync" pill on Today with airplane mode on) – *"Works with no signal"*.
+seconds"*; **Offline** (the "Offline · 3 to sync" pill on Overview with airplane mode on) – *"Works with no signal"*.
 
 Don't show: the Pro screen as a main screenshot (Apple allows it, but it reads as an ad), anything with test data
 names, or the web version.

@@ -31,7 +31,8 @@ Clutchly is the record book for reptile keepers and breeders. Log feeds, refusal
 who is due today, and follow every pairing from introduction to hatchlings.
 
 KNOW WHO'S DUE
-• Today shows every animal due or overdue for a feed, based on your own routine
+• Overview shows who is due now and the week ahead day by day: feeds, lays, hatches and season dates
+• Flags refusal streaks and lays or hatches that are past their estimated date
 • Set feed intervals for males and females per species, plus a seasonal feeding pause
 • Morning reminder of what's due (Pro)
 

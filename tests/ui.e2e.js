@@ -48,7 +48,7 @@ const SP = process.argv[2];
     await T('Save', { exact: true }).click(); await T(nm, { exact: true }).waitFor({ timeout: 10000 });
   });
   await step('both due on Today; log feed from Today', async () => {
-    await tab('Today'); await T('ER001', { exact: true }).waitFor(); await T('ER002', { exact: true }).waitFor(); await shot('today-due');
+    await tab('Overview'); await T('ER001', { exact: true }).waitFor(); await T('ER002', { exact: true }).waitFor(); await shot('today-due');
     await T('Fed', { exact: true }).click(); await gone(T('ER001', { exact: true }));
   });
   await step('animal screen: log feed on a past date, weight, history', async () => {
@@ -61,7 +61,7 @@ const SP = process.argv[2];
   await step('delete a history entry (via the entry editor)', async () => { await T('10 Nov 2026 · 850 g').click(); await pg.getByRole('button', { name: 'Delete', exact: true }).last().click(); await gone(T('10 Nov 2026 · 850 g')); });
   await step('back button; list shows last feed', async () => { await pg.getByLabel(/back$/i).and(live).first().click(); await T(/Male · fed 10 Nov 2026/).waitFor({ timeout: 8000 }); await shot('animals'); });
   await step('Today: male fed 10 Nov is not due (21-day default)', async () => {
-    await tab('Today'); await T('Nothing due in the next 3 days.').waitFor({ timeout: 8000 });
+    await tab('Overview'); await T('Nothing due today.').waitFor({ timeout: 8000 });
   });
   await step('create pairing', async () => {
     await tab('Pairings'); await T('+ New pairing').click(); await T('ER001', { exact: true }).click(); await T('ER002', { exact: true }).click();
@@ -119,7 +119,7 @@ const SP = process.argv[2];
     if (!(await pg.getByRole('switch', { name: 'Feeds due today' }).and(live).first().isChecked())) throw new Error('other toggle changed');
     if (await L('Notification time').textContent() === before) throw new Error('time not saved: ' + before);
     if (await L('Timezone').inputValue() !== 'Australia/Perth') throw new Error('timezone not saved');
-    await pg.getByLabel(/back$/i).and(live).first().click(); await pg.getByRole('tab', { name: 'Today' }).waitFor();
+    await pg.getByLabel(/back$/i).and(live).first().click(); await pg.getByRole('tab', { name: 'Overview' }).waitFor();
   });
   await step('account button: change password, sign in with the new one', async () => {
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await L('New password').fill('Changed-pass-2'); await L('Confirm new password').fill('Changed-pass-2');
@@ -127,7 +127,7 @@ const SP = process.argv[2];
     if (!logs.some(l => l.includes('Password changed'))) throw new Error('no confirmation');
     await T('Sign out', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
     await L('Email').fill(email); await L('Password').fill('Changed-pass-2'); await T('Sign in', { exact: true }).click();
-    await pg.getByRole('tab', { name: 'Today' }).waitFor({ timeout: 10000 }); await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
+    await pg.getByRole('tab', { name: 'Overview' }).waitFor({ timeout: 10000 }); await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
   });
   await step('delete account; sign-in then fails', async () => {
     await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });
