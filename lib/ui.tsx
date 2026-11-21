@@ -26,7 +26,7 @@ export const Card = ({ children, onPress }: { children: React.ReactNode; onPress
 export const Label = ({ t }: { t: string }) => <Text style={[s.mu, { marginTop: 10 }]}>{t}</Text>;
 export const Input = (p: TextInputProps & { label?: string }) => (
   <View style={{ marginTop: 8 }}>{p.label && <Text style={s.mu}>{p.label}</Text>}
-    <TextInput placeholderTextColor={C.mu} accessibilityLabel={p.label ?? p.placeholder} {...p} style={[s.in, p.style]} /></View>);
+    <TextInput placeholderTextColor={C.mu} keyboardAppearance="light" selectionColor={C.ink} cursorColor={C.ink} accessibilityLabel={p.label ?? p.placeholder} {...p} style={[s.in, p.style]} /></View>);
 export const Chips = ({ opts, v, on }: { opts: string[]; v: string; on: (x: string) => void }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
     {opts.map(o => <Pressable key={o} onPress={() => on(o)} style={[s.btn, v === o && { backgroundColor: C.ink, borderColor: C.ink }]}>

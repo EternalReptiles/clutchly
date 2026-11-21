@@ -19,6 +19,8 @@
     "web": {
       "output": "single",
       "bundler": "metro"
-    }
+    },
+    "backgroundColor": "#fcfcf8",
+    "primaryColor": "#141414"
   }
 }
