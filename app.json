@@ -37,6 +37,12 @@
     },
     "backgroundColor": "#fcfcf8",
     "primaryColor": "#141414",
-    "icon": "./assets/icon.png"
+    "icon": "./assets/icon.png",
+    "owner": "eternalreptiles01",
+    "extra": {
+      "eas": {
+        "projectId": "44959b1a-93d3-438d-a00c-eead79453e3f"
+      }
+    }
   }
 }
