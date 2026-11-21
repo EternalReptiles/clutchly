@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, SectionList, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from './ModalSafeArea';
 import { GROUPS, searchSpecies } from './species';
 import { Btn, C, s } from './ui';
 

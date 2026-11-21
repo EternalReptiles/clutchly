@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from './ModalSafeArea';
 import { addPhoto, byNewest, deletePhoto, setCover, useSignedUrls, type Photo } from './photos';
 import { useStore } from './store';
 import { usePlan } from './plan';

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { hatchlingGenes, morphName } from './genetics';
 import { useAnimalGenes, useGeneLib } from './useGenes';
 import { Modal, Platform, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from './ModalSafeArea';
 import { supabase } from './supabase';
 import { fmt, type Animal, type Pairing } from './logic';
 import { DEFAULT_PATTERN, hatchlingNames, normalisePattern } from './hatchlings';

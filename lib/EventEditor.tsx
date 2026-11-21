@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, Platform, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from './ModalSafeArea';
 import { fmt } from './logic';
 import { eventLabel, type Ev } from './history';
 import { remove, update } from './store';

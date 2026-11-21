@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, Platform, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from './ModalSafeArea';
 import { canonical, type AnimalGene, type Gene, type GeneState, type Inheritance } from './genetics';
 import { insert, remove, update, useStore } from './store';
 import { useGenes } from './useGenes';
