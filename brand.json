@@ -1,3 +1,5 @@
 {
-  "name": "Clutchly"
+  "name": "Clutchly",
+  "siteUrl": "https://YOUR-SITE.example",
+  "_note": "name can change any time. siteUrl: where /site is hosted (privacy, terms, support links in the app)."
 }

@@ -23,6 +23,14 @@ species they keep, with a preview; "Use these starting values" copies the templa
 (never overwriting a routine they already have), or they can skip. The Season tab offers "Use starting values" per
 species later. Users' edits are private and never change the templates. The app name comes from `brand.json`.
 
+## Legal pages, support site and data export
+- `/site` is a static support site (support, privacy policy, terms of use) built from `site/_templates` by
+  `node scripts/build_site.mjs` (fills in the app name from `brand.json`). They are drafts for an Australian business with
+  `[BRACKETED]` placeholders and must be reviewed by a lawyer. Host `/site` anywhere static and set `siteUrl` in `brand.json`.
+- The app links to them from the login screen and Account > Help and legal.
+- Account > Download my data (free for everyone) saves a JSON file of all the user's records, settings and 7-day photo
+  links (`lib/exportData.ts`; share sheet on phones via `expo-sharing`, a download on the web).
+
 ## Logo, icon and splash
 The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, so it can be tweaked and regenerated:
 1. `python3 scripts/draw_logo.py` writes `assets/source/clutchly-mark.svg`
@@ -115,7 +123,7 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - `node --experimental-strip-types tests/digest.test.mjs`: notification rules. `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js` and `tests/onboarding.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js` and `tests/export.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
@@ -126,4 +134,6 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-CSV export, subscriptions (RevenueCat).
+Subscriptions (RevenueCat).
+
+See `docs/LAUNCH_CHECKLIST.md` for everything that needs doing outside the code.

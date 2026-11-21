@@ -5,11 +5,18 @@ import { supabase } from '../lib/supabase';
 import { DATE_FORMATS, DateFormat, fmt, today } from '../lib/logic';
 import { Btn, C, Card, Chips, Input, confirm, notify, s } from '../lib/ui';
 import { NotificationSettings } from '../lib/NotificationSettings';
+import { LegalLinks } from '../lib/LegalLinks';
+import { APP_NAME } from '../lib/brand';
+import { downloadMyData } from '../lib/exportData';
+import Constants from 'expo-constants';
+const appVersion = Constants.expoConfig?.version ?? '';
 import { disablePushHere, signOutAndForgetDevice } from '../lib/notifications';
 import { applyDateFormat, clearCache, getState, start, stop } from '../lib/store';
 
 export default function Account() {
   const [email, setEmail] = useState(''); const [df, setDf] = useState<DateFormat>('auto');
+  const [exporting, setExporting] = useState(false);
+  const exportData = async () => { setExporting(true); const err = await downloadMyData(); setExporting(false); if (err) notify('Could not export', err); };
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState(''); const [busy, setBusy] = useState(false);
   useFocusEffect(useCallback(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -57,6 +64,11 @@ export default function Account() {
       <Input label="New password" value={pw} onChangeText={setPw} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
       <Input label="Confirm new password" value={pw2} onChangeText={setPw2} secureTextEntry textContentType="newPassword" autoComplete="new-password" onSubmitEditing={changePassword} />
       <View style={{ marginTop: 10 }}><Btn disabled={busy} t={busy ? 'Saving…' : 'Change password'} onPress={changePassword} /></View></Card>
+    <Card><Text style={s.h}>Your data</Text>
+      <Text style={[s.mu, { marginTop: 4 }]}>Download everything you've entered (animals, history, pairings, routine, settings and photo links) as one file.</Text>
+      <View style={{ marginTop: 8 }}><Btn disabled={exporting} t={exporting ? 'Preparing…' : 'Download my data'} onPress={exportData} /></View></Card>
+    <Card><Text style={s.h}>Help and legal</Text><View style={{ marginTop: 6 }}><LegalLinks /></View>
+      <Text style={[s.mu, { marginTop: 6 }]}>{APP_NAME} · version {appVersion}</Text></Card>
     <View style={{ gap: 8, marginTop: 20 }}><Btn t="Sign out" onPress={signOut} />
       <Btn danger t="Delete account" onPress={del} />
       <Text style={[s.mu, { textAlign: 'center' }]}>Deleting your account permanently removes all your animals, feeding records, pairings and routines.</Text></View>
