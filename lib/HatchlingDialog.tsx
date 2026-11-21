@@ -24,8 +24,8 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
     supabase.auth.getSession().then(({ data }) => setPattern(data.session?.user.user_metadata?.hatchling_pattern || DEFAULT_PATTERN));
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const n = parseInt(count, 10) || 0; const plan = usePlan();
-  const lib = useGeneLib(); const genes = lib.genes; const mg = useAnimalGenes(mother?.id); const fg = useAnimalGenes(father?.id);
-  const inherited = useMemo(() => hatchlingGenes(genes, mg, fg), [genes, mg, fg]);
+  const lib = useGeneLib(); const mg = useAnimalGenes(mother?.id); const fg = useAnimalGenes(father?.id);
+  const inherited = useMemo(() => hatchlingGenes(lib, mg, fg), [lib, mg, fg]);
   const names = useMemo(() => n > 0 && n <= 200 ? hatchlingNames(pattern, hatchDate, mother?.name ?? '', father?.name ?? '', n, getState().animals.map(a => a.name)) : [],
     [n, pattern, hatchDate, mother?.name, father?.name]);
   const num = (v: string) => (v.trim() ? parseInt(v, 10) : null);

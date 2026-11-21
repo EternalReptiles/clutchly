@@ -10,6 +10,18 @@ export type GeneState = 'visual' | 'super' | 'het' | 'possible_het';
 export type AnimalGene = { gene_key: string; state: GeneState; het_pct?: number | null };
 export type Lib = { genes: Map<string, Gene>; combos: Combo[] };
 
+const nameKey = (n: string) => n.trim().toLowerCase();
+/**
+ * The same gene can be listed under several species (Albino in carpets, olives, BHPs ...). Genes are matched by name,
+ * so any two animals can be paired: each gene_key maps to the first listed gene with that name.
+ */
+export function canonical(lib: Lib): (key: string) => string {
+  const first = new Map<string, string>();
+  for (const g of lib.genes.values()) if (!first.has(nameKey(g.name))) first.set(nameKey(g.name), g.key);
+  return key => { const g = lib.genes.get(key); return g ? first.get(nameKey(g.name)) ?? key : key; };
+}
+const canon = (c: (k: string) => string, ag: AnimalGene[]) => [...new Map(ag.map(a => [c(a.gene_key), { ...a, gene_key: c(a.gene_key) }])).values()];
+
 const isDominantType = (g: Gene) => g.inheritance === 'incomplete_dominant' || g.inheritance === 'dominant';
 const superName = (g: Gene) => g.super_name || `Super ${g.name}`;
 const order = (a: Gene, b: Gene) => (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name);
@@ -32,12 +44,13 @@ export function copies(q1: number, q2: number): [number, number, number] {
  */
 export function visualName(lib: Lib, shown: { g: Gene; n: number }[], traits: Gene[] = []): string {
   const vis = shown.filter(x => x.g.inheritance === 'recessive' ? x.n === 2 : x.n >= 1);
-  const comboUsable = new Set(vis.filter(x => x.g.inheritance === 'recessive' || x.n === 1 || x.g.has_super === false).map(x => x.g.key));
-  const species = vis[0]?.g.species;
-  const best = lib.combos.filter(c => c.species === species && c.groups.every(gr => gr.some(k => comboUsable.has(k))))
+  // Combinations match genes by name, so Albino + Axanthic is a Snow in any species.
+  const comboUsable = new Set(vis.filter(x => x.g.inheritance === 'recessive' || x.n === 1 || x.g.has_super === false).map(x => nameKey(x.g.name)));
+  const gn = (k: string) => nameKey(lib.genes.get(k)?.name ?? k);
+  const best = lib.combos.filter(c => c.groups.every(gr => gr.some(k => comboUsable.has(gn(k)))))
     .sort((a, b) => b.groups.length - a.groups.length)[0];
-  const used = new Set(best ? best.groups.map(gr => gr.find(k => comboUsable.has(k))!) : []);
-  const rest = vis.filter(x => !used.has(x.g.key));
+  const used = new Set(best ? best.groups.map(gr => gn(gr.find(k => comboUsable.has(gn(k)))!)) : []);
+  const rest = vis.filter(x => !used.has(nameKey(x.g.name)));
   const dom = rest.filter(x => isDominantType(x.g)).sort((a, b) => order(a.g, b.g)).map(x => x.n === 2 && x.g.has_super !== false ? superName(x.g) : x.g.name);
   const rec = rest.filter(x => x.g.inheritance === 'recessive').sort((a, b) => order(a.g, b.g)).map(x => x.g.name);
   return [...dom, ...(best ? [best.name] : []), ...rec, ...traits.sort(order).map(t => t.name)].join(' ');
@@ -72,8 +85,9 @@ export type CrossResult = {
   usesPossibleHets: boolean;
 };
 
-export function cross(lib: Lib, mother: AnimalGene[], father: AnimalGene[]): CrossResult {
-  const { genes } = lib;
+export function cross(lib: Lib, motherGenes: AnimalGene[], fatherGenes: AnimalGene[]): CrossResult {
+  const { genes } = lib; const c = canonical(lib);
+  const mother = canon(c, motherGenes), father = canon(c, fatherGenes);
   const m = new Map(mother.map(a => [a.gene_key, a])), f = new Map(father.map(a => [a.gene_key, a]));
   const keys = [...new Set([...m.keys(), ...f.keys()])].filter(k => genes.has(k)).sort((a, b) => order(genes.get(a)!, genes.get(b)!));
   const single = keys.map(k => genes.get(k)!).filter(g => g.inheritance !== 'polygenic');
@@ -126,7 +140,8 @@ export function cross(lib: Lib, mother: AnimalGene[], father: AnimalGene[]): Cro
  * carry (possible het, %), and recessive genes every baby shows (both parents visual). Visual single genes that only
  * some babies show are left for the breeder to set.
  */
-export function hatchlingGenes(genes: Map<string, Gene>, mother: AnimalGene[], father: AnimalGene[]): AnimalGene[] {
+export function hatchlingGenes(lib: Lib, motherGenes: AnimalGene[], fatherGenes: AnimalGene[]): AnimalGene[] {
+  const { genes } = lib; const c = canonical(lib); const mother = canon(c, motherGenes), father = canon(c, fatherGenes);
   const m = new Map(mother.map(a => [a.gene_key, a])), f = new Map(father.map(a => [a.gene_key, a]));
   const out: AnimalGene[] = [];
   for (const key of new Set([...m.keys(), ...f.keys()])) {

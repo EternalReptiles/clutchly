@@ -80,6 +80,18 @@ const SP = process.argv[2];
     if (await pg.getByText('Not recommended', { exact: false }).and(live).count()) throw new Error('still warned');
     await pg.screenshot({ path: `${SP}/gn-d-sunglow.png`, fullPage: true }); await back();
   });
+  await step('genes across species: an Olive python can be Albino and paired in the calculator', async () => {
+    await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('OP'); await B('Female').click();
+    await L('Species').click(); await L('Search species').fill('olive'); await pg.getByRole('button', { name: 'Olive python', exact: true }).and(live).first().click();
+    await B('Save').click(); await T('OP', { exact: true }).waitFor({ timeout: 8000 });
+    await T('OP', { exact: true }).click(); await B('Edit genes').click(); await T('Genes · Olive python').waitFor({ timeout: 8000 });
+    await T(/No genes listed for Olive python yet/).waitFor(); await pg.getByRole('button', { name: /^Show \d+$/ }).and(live).first().click();
+    await setGene('Albino', 'Visual'); await B('Done').click(); await T('Albino', { exact: true }).waitFor({ timeout: 5000 }); await back();
+    await tab('Pairings'); await B('Morph calculator').click(); await B('OP').click(); await B('JM').click();
+    await row('Zebra Albino: 1/4, 25%'); await row('Zebra het Albino: 1/4, 25%');
+    if (await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).count()) throw new Error('species chips still shown');
+    await pg.screenshot({ path: `${SP}/gn-e-olive.png`, fullPage: true }); await back();
+  });
   await step('hatchlings inherit possible hets from the parents', async () => {
     await T('JF × JM').click(); await L('Eggs laid').fill('2026-08-01'); await L('Hatched').fill('2026-10-01');
     await B('Create hatchlings').click(); await L('How many hatchlings to add').fill('2');

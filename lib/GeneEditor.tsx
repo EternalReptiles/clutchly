@@ -17,6 +17,13 @@ const choices = (g: Gene): [GeneState | 'none', string][] =>
 export const speciesGenes = (genes: Map<string, Gene>, species: string) => [...genes.values()].filter(g => g.species === species)
   .sort((a, b) => Number(a.inheritance === 'polygenic') - Number(b.inheritance === 'polygenic') || (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name));
 
+/** Every gene once (genes listed under several species, like Albino, are matched by name). */
+export const allGenes = (genes: Map<string, Gene>, exclude: Gene[] = []) => {
+  const seen = new Set(exclude.map(g => g.name.toLowerCase())); const out: Gene[] = [];
+  for (const g of [...genes.values()].sort((a, b) => Number(!!a.custom) - Number(!!b.custom))) { const k = g.name.toLowerCase(); if (!seen.has(k)) { seen.add(k); out.push(g); } }
+  return out.sort((a, b) => Number(a.inheritance === 'polygenic') - Number(b.inheritance === 'polygenic') || (a.sort ?? 99) - (b.sort ?? 99) || a.name.localeCompare(b.name));
+};
+
 /** One row per gene with its choices. Used for real animals and for made-up parents in the calculator. */
 export function GeneRows({ list, value, onSet }: { list: Gene[]; value: Map<string, AnimalGene>; onSet: (g: Gene, state: GeneState | 'none', pct?: number) => void }) {
   return (<>{list.map(g => { const cur = value.get(g.key); const v = cur?.state ?? 'none'; const ch = choices(g);
@@ -38,6 +45,10 @@ export function GeneEditor({ open, onClose, animalId, species }: { open: boolean
   const st = useStore(); const genes = useGenes();
   const mine = useMemo(() => new Map(st.animal_genes.filter(g => g.animal_id === animalId).map(g => [g.gene_key as string, g])), [st.animal_genes, animalId]);
   const list = useMemo(() => speciesGenes(genes, species), [genes, species]);
+  // Genes listed under other species (e.g. Albino for an Olive python), plus any of those this animal already has.
+  const others = useMemo(() => allGenes(genes, list), [genes, list]);
+  const [showOthers, setShowOthers] = useState(false);
+  const othersShown = showOthers ? others : others.filter(g => mine.has(g.key));
   const [newName, setNewName] = useState(''); const [newKind, setNewKind] = useState<Inheritance>('recessive');
 
   const set = (g: Gene, state: GeneState | 'none', pct?: number) => {
@@ -57,8 +68,13 @@ export function GeneEditor({ open, onClose, animalId, species }: { open: boolean
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={[s.row, { padding: 14, paddingBottom: 4 }]}><Text style={[s.h, { flex: 1 }]}>Genes · {species}</Text><Btn solid t="Done" onPress={onClose} /></View>
       <ScrollView style={{ paddingHorizontal: 14 }} keyboardShouldPersistTaps="handled">
-        {!list.length && <Text style={s.mu}>No genes listed for {species} yet. Add your own below.</Text>}
+        {!list.length && <Text style={s.mu}>No genes listed for {species} yet. Pick from other species or add your own below.</Text>}
         <GeneRows list={list} value={mine as unknown as Map<string, AnimalGene>} onSet={set} />
+        {others.length > 0 && <>
+          <View style={[s.row, { marginTop: 14 }]}><Text style={[s.h, { flex: 1 }]}>Genes from other species</Text>
+            <Btn t={showOthers ? 'Hide' : `Show ${others.length}`} onPress={() => setShowOthers(!showOthers)} /></View>
+          <Text style={s.mu}>Many genes turn up across pythons, like Albino or Axanthic. Genes with the same name are treated as the same gene.</Text>
+          <GeneRows list={othersShown} value={mine as unknown as Map<string, AnimalGene>} onSet={set} /></>}
         <Text style={[s.h, { marginTop: 18 }]}>Add your own gene</Text>
         <Text style={s.mu}>For genes not listed here. It's private to your account and available for all your {species}.</Text>
         <Input label="Gene name" value={newName} onChangeText={setNewName} />

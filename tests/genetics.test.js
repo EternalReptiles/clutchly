@@ -55,6 +55,13 @@ ok(r.lineBred[0]?.gene.name === 'Tiger' && r.lineBred[0].from.join() === 'mother
 ok(JSON.stringify(pct(G.cross(lib, [], []))) === '{"Normal":100}', 'no genes: 100% normal');
 ok(G.fraction(1 / 16) === '1/16' && G.fraction(3 / 64) === '3/64' && G.fraction(0.165) === '33/200', 'fractions');
 // Hatchlings
-let h = G.hatchlingGenes(genes, [A('alb', 'het'), A('jag', 'visual')], [A('alb', 'het'), A('axa', 'visual')]);
+let h = G.hatchlingGenes(lib, [A('alb', 'het'), A('jag', 'visual')], [A('alb', 'het'), A('axa', 'visual')]);
 ok(JSON.stringify(h) === '[{"gene_key":"alb","state":"possible_het","het_pct":67},{"gene_key":"axa","state":"het"}]', 'hatchlings: 67% pos het albino, het axanthic, jaguar left to set', h);
+// Genes across species: matched by name
+const olive = new Map([...genes, ['o-alb', { key: 'o-alb', species: 'Olive python', name: 'Albino', inheritance: 'recessive', sort: 10 }],
+  ['b-axa', { key: 'b-axa', species: 'Black-headed python', name: 'Axanthic', inheritance: 'recessive', sort: 11 }]]);
+const lib2 = { genes: olive, combos };
+ok(G.morphName(lib2, [A('o-alb', 'visual'), A('b-axa', 'visual')]) === 'Snow', 'combination by gene name in any species');
+r = G.cross(lib2, [A('o-alb', 'het')], [A('alb', 'het')]);
+ok(JSON.stringify(pct(r)) === '{"Normal het Albino":50,"Albino":25,"Normal":25}', 'Albino listed under two species is the same gene', pct(r));
 process.exit(fails ? 1 : 0);
