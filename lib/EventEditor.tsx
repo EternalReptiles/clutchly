@@ -22,7 +22,7 @@ export function EventEditor({ ev, onClose }: { ev: Ev | null; onClose: () => voi
   const title = ev.kind === 'feed' ? 'Feed' : ev.kind === 'weight' ? 'Weight' : 'Shed';
   return (<Modal visible animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+      <ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={s.h}>Edit {title.toLowerCase()}</Text>
         <DateField label="Date" value={d} onChange={v => v && setD(v)} />
         {ev.kind === 'feed' && <><Text style={[s.mu, { marginTop: 10 }]}>Result</Text>

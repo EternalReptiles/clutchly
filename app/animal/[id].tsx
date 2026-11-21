@@ -86,7 +86,7 @@ export default function AnimalScreen() {
 
   if (!isNew && !animal && st.ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This animal has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page} />;
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New animal' : a.name }} />
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"><Stack.Screen options={{ title: isNew ? 'New animal' : a.name }} />
     <Input label="Name / ID" value={a.name} onChangeText={v => setA({ ...a, name: v })} />
     <SpeciesPicker value={a.species} onChange={v => setA({ ...a, species: v })} />
     <Label t="Sex" /><Chips opts={SEXES} v={a.sex} on={v => setA({ ...a, sex: v })} />

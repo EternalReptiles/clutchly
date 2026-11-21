@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Alert, Platform, Pressable, Text, TextInput, View, StyleSheet, TextInputProps } from 'react-native';
+import React, { useId, useState } from 'react';
+import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Text, TextInput, View, StyleSheet, TextInputProps } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { fmt, fmtMD, iso } from './logic';
 
@@ -24,9 +24,19 @@ export const Card = ({ children, onPress }: { children: React.ReactNode; onPress
   ? <Pressable onPress={onPress} style={s.card}>{children}</Pressable>
   : <View style={s.card}>{children}</View>;
 export const Label = ({ t }: { t: string }) => <Text style={[s.mu, { marginTop: 10 }]}>{t}</Text>;
-export const Input = (p: TextInputProps & { label?: string }) => (
-  <View style={{ marginTop: 8 }}>{p.label && <Text style={s.mu}>{p.label}</Text>}
-    <TextInput placeholderTextColor={C.mu} keyboardAppearance="light" selectionColor={C.ink} cursorColor={C.ink} accessibilityLabel={p.label ?? p.placeholder} {...p} style={[s.in, p.style]} /></View>);
+// iPhone number keypads have no return key, so number fields get a bar above the keypad with a Done button.
+const NUMERIC = ['number-pad', 'decimal-pad', 'numeric', 'phone-pad'];
+export const Input = (p: TextInputProps & { label?: string }) => {
+  const id = useId(); const bar = Platform.OS === 'ios' && NUMERIC.includes(p.keyboardType ?? '');
+  return (<View style={{ marginTop: 8 }}>{p.label && <Text style={s.mu}>{p.label}</Text>}
+    <TextInput placeholderTextColor={C.mu} keyboardAppearance="light" selectionColor={C.ink} cursorColor={C.ink} accessibilityLabel={p.label ?? p.placeholder}
+      inputAccessoryViewID={bar ? id : undefined} {...p} style={[s.in, p.style]} />
+    {bar && <InputAccessoryView nativeID={id}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: '#f1f0ea', borderTopWidth: 1, borderTopColor: C.bd, paddingHorizontal: 12, paddingVertical: 6 }}>
+        <Pressable onPress={() => Keyboard.dismiss()} accessibilityRole="button" hitSlop={10} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: C.ink }}>
+          <Text style={{ color: C.bg, fontWeight: '700' }}>Done</Text></Pressable></View>
+    </InputAccessoryView>}</View>);
+};
 /** Option buttons. `v` is the selected option, or a list of them for multi-select. */
 export const Chips = ({ opts, v, on }: { opts: string[]; v: string | string[]; on: (x: string) => void }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>

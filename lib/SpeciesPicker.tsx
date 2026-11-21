@@ -24,7 +24,7 @@ export function SpeciesPicker({ label = 'Species', value, onChange, exclude = []
         <View style={{ paddingHorizontal: 14 }}>
           <TextInput value={q} onChangeText={setQ} placeholder="Search name or Latin name" placeholderTextColor={C.mu} autoFocus
             autoCorrect={false} autoCapitalize="none" accessibilityLabel="Search species" keyboardAppearance="light" style={s.in} /></View>
-        <SectionList sections={sections} keyExtractor={x => x.name} keyboardShouldPersistTaps="handled" stickySectionHeadersEnabled={false}
+        <SectionList sections={sections} keyExtractor={x => x.name} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" stickySectionHeadersEnabled={false}
           contentContainerStyle={{ padding: 14, paddingTop: 4 }}
           ListEmptyComponent={<Text style={[s.mu, { marginTop: 12 }]}>No match. Choose Other for species not listed.</Text>}
           renderSectionHeader={({ section }) => <Text style={[s.h, { fontSize: 15, marginTop: 14, marginBottom: 2 }]}>{section.title}</Text>}

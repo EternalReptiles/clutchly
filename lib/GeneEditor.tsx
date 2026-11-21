@@ -83,7 +83,7 @@ export function GeneEditor({ open, onClose, animalId, species, draft, onDraft }:
   return (<Modal visible={open} animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={[s.row, { padding: 14, paddingBottom: 4 }]}><Text style={[s.h, { flex: 1 }]}>Genes</Text><Btn solid t="Done" onPress={onClose} /></View>
-      <ScrollView style={{ paddingHorizontal: 14 }} keyboardShouldPersistTaps="handled">
+      <ScrollView style={{ paddingHorizontal: 14 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <GenePicker genes={genes} value={value} onSet={set} />
         <Text style={[s.h, { marginTop: 18 }]}>Add your own gene</Text>
         <Text style={s.mu}>For genes not listed here. It's private to your account and available for all your animals.</Text>

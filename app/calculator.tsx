@@ -14,7 +14,7 @@ const MINE = 'One of mine', MADE = 'Make one up';
 export default function Calculator() {
   const { animals } = useCollection(); const lib = useGeneLib();
   const mother = useParent(lib, animals, 'Female'), father = useParent(lib, animals, 'Male');
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Stack.Screen options={{ title: 'Morph calculator' }} />
     <Text style={s.mu}>Pick each parent from your animals, or make one up to see "what if" odds.</Text>
     <ParentCard title="Female" p={mother} />

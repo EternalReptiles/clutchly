@@ -35,7 +35,7 @@ export default function Welcome() {
     setBusy(false); r.replace('/');
   };
 
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Stack.Screen options={{ title: 'Welcome', headerBackVisible: false, gestureEnabled: false }} />
     <Text style={[s.h, { fontSize: 24 }]}>Welcome to {APP_NAME}</Text>
     <Text style={{ color: C.ink, marginTop: 6 }}>Two quick questions so your feeding and breeding seasons start in the right place. You can change everything later on the Season tab.</Text>

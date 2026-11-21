@@ -56,7 +56,7 @@ export default function Account() {
     await supabase.auth.signOut({ scope: 'local' });
   });
 
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Stack.Screen options={{ title: 'Account' }} />
     <Card><Text style={s.h}>Signed in as</Text><Text style={{ color: C.ink, marginTop: 4 }}>{email}</Text></Card>
     <Card><Text style={s.h}>Date format</Text>

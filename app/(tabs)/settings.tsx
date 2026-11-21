@@ -46,7 +46,7 @@ export default function Settings() {
   const shown = SPECIES.filter(sp => kept.includes(sp) || added.includes(sp) || rows.some(r => r.species === sp));
   // Animals saved with a species name that is no longer in the list still get a card.
   const unknown = [...kept, ...rows.map(r => r.species)].filter((sp, i, all) => !SPECIES.includes(sp) && all.indexOf(sp) === i);
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     {rows.length === 0 && <View style={[s.card, { borderColor: C.ink }]}>
       <Text style={s.h}>Set up your routine</Text>
       <Text style={{ color: C.ink, marginTop: 4 }}>{APP_NAME} doesn't assume a schedule. For each species you keep, set when you stop feeding for the season, when feeding resumes, when breeding starts, and how often you feed females and males.</Text>

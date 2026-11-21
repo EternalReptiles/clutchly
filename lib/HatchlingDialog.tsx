@@ -47,7 +47,7 @@ export function HatchlingDialog({ open, onClose, onCreated, pairing, mother, fat
   };
   return (<Modal visible={open} animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={s.page} keyboardShouldPersistTaps="handled">
+      <ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={s.h}>Create hatchlings</Text>
         <Text style={[s.mu, { marginTop: 4 }]}>{mother?.name ?? '?'} × {father?.name ?? '?'} · hatched {fmt(hatchDate)}. Each hatchling is added as a {mother?.species ?? ''} with sex Unknown, linked to both parents.</Text>
         {existingCount > 0 && <Text style={{ color: C.bad, marginTop: 6 }}>{existingCount} hatchling{existingCount === 1 ? ' has' : 's have'} already been created from this pairing.</Text>}

@@ -59,7 +59,7 @@ export default function PairingScreen() {
   // Don't show controls until the pairing has loaded, or a quick tap would save an empty pairing.
   if (!isNew && !stored && ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This pairing has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page}><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} /></View>;
-  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
+  return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
     <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
     <Label t="Male" />{males.length ? <Chips opts={males.map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n, 'Male') })} /> : <Text style={s.mu}>No males yet.</Text>}
     {isNew && <DateField label="Introduced" value={p.intro} onChange={v => setP({ ...p, intro: v })} optional />}
