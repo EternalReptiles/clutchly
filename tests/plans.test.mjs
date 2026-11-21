@@ -36,6 +36,13 @@ try {
   ok(race.filter(r => !r.error).length === 1, 'three simultaneous adds at 9 animals: exactly one gets in (no race past the limit)');
   x = await FREE.from('animals').insert({ name: 'F11', sex: 'Female' }); ok(!!x.error && /free_limit_reached/.test(x.error.message), '11th animal refused for a free user: ' + (x.error?.message || ''));
   x = await FREE.from('animals').select('id'); ok(x.data.length === 10, 'free user has exactly 10');
+  // Sold animals don't count, but un-selling can't be used to get past the limit.
+  const first = (await FREE.from('animals').select('id').order('name').limit(1).single()).data.id;
+  x = await FREE.from('animals').update({ status: 'Sold' }).eq('id', first).select(); ok(x.data?.length === 1, 'free user marks an animal Sold');
+  x = await FREE.from('animals').insert({ name: 'F11', sex: 'Female' }).select('id').single(); ok(!x.error, 'a Sold animal frees a place: 11th record allowed (10 owned)');
+  x = await FREE.from('animals').update({ status: 'Active' }).eq('id', first).select(); ok(!!x.error && /free_limit_reached/.test(x.error.message), 'un-selling at the limit is refused');
+  x = await FREE.from('animals').update({ notes: 'still editable' }).eq('id', first).select(); ok(x.data?.length === 1, 'Sold animal can still be edited');
+  x = await FREE.from('animals').insert({ name: 'F12', sex: 'Female' }); ok(!!x.error, 'adding another owned animal is refused (10 owned)');
   // Pro
   rows = await addN(PRO, 12, 'P'); ok(rows.every(r => !r.error), 'Pro user adds 12 animals');
   const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);

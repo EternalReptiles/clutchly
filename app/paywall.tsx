@@ -55,9 +55,9 @@ export default function Paywall() {
     {plan.isPro ? <Card><Text style={s.h}>You have Pro</Text>
         <Text style={{ color: C.ink, marginTop: 4 }}>{plan.expiresAt ? `${plan.productId?.includes('lifetime') ? 'Active' : 'Renews or ends'} ${fmt(plan.expiresAt.slice(0, 10))}.` : 'Active, with no end date.'}</Text>
         {plan.expiresAt && <View style={{ marginTop: 8 }}><Btn t="Manage subscription" onPress={() => Linking.openURL(manageSubscriptionsUrl)} /></View>}</Card>
-      : <Text style={{ color: C.ink, marginTop: 4 }}>The free plan includes every record-keeping feature for up to {plan.freeAnimals} animals. Pro adds:</Text>}
+      : <Text style={{ color: C.ink, marginTop: 4 }}>The free plan includes every record-keeping feature for up to {plan.freeAnimals} owned animals (animals marked Sold don't count). Pro adds:</Text>}
     <Card>
-      {[['Unlimited animals', `Free: up to ${plan.freeAnimals} (you have ${plan.count})`], ['Photos', 'A gallery and cover photo for every animal'],
+      {[['Unlimited animals', `Free: up to ${plan.freeAnimals} owned (you have ${plan.count})`], ['Photos', 'A gallery and cover photo for every animal'],
         ['Morning notifications', 'Feeds due, lays coming up and pairing season']].map(([a, b]) =>
         <View key={a} style={{ marginBottom: 8 }}><Text style={[s.h, { fontSize: 16 }]}>{a}</Text><Text style={s.mu}>{b}</Text></View>)}
       <Text style={s.mu}>Your data is never deleted. If Pro ends you keep everything and can view, edit and download it; you just can't add more than {plan.freeAnimals} animals or new photos.</Text>

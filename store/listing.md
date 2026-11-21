@@ -9,7 +9,7 @@ limits. "Clutchly" is the working name; if you rename the app (brand.json), upda
 
 **Category:** Lifestyle (primary). iOS secondary: Productivity.
 
-**Price:** Free, with an in-app subscription (Clutchly Pro, A$59.95/year).
+**Price:** Free, with an in-app subscription (Clutchly Pro, A$59.99/year).
 
 **Support URL:** `<siteUrl>/index.html` · **Privacy policy URL:** `<siteUrl>/privacy.html` · **Terms (EULA) URL:**
 `<siteUrl>/terms.html` (Apple: add the terms link to the description or set a custom EULA, because the app has a
@@ -60,7 +60,7 @@ entered at any time, or delete your account from inside the app.
 
 FREE AND PRO
 Clutchly is free for up to 10 animals with every record-keeping feature. Clutchly Pro adds unlimited animals, photos
-and notifications for A$59.95 a year. The subscription renews automatically unless cancelled at least 24 hours before
+and notifications for A$59.99 a year. The subscription renews automatically unless cancelled at least 24 hours before
 the end of the period; manage it in your Apple ID settings. If Pro ends, nothing is deleted.
 
 Terms of use: <siteUrl>/terms.html · Privacy policy: <siteUrl>/privacy.html

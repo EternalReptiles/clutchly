@@ -47,7 +47,8 @@ export default function AnimalScreen() {
     .sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })), [st.animals, id]);
 
   const save = () => {
-    if (isNew && !plan.isPro && plan.remaining <= 0) return goPro(`Free accounts can have up to ${plan.freeAnimals} animals, and you have ${plan.count}. Go Pro for unlimited animals. Your existing animals are never affected.`);
+    const takesPlace = a.status !== 'Sold' && (isNew || animal?.status === 'Sold'); // adding an owned animal, or un-selling one
+    if (takesPlace && !plan.isPro && plan.remaining <= 0) return goPro(`Free accounts can have up to ${plan.freeAnimals} owned animals (animals marked Sold don't count), and you have ${plan.count}. Mark an animal as Sold or delete one, or go Pro for unlimited animals.`);
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
     if (!a.species) return notify('Choose a species');
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;

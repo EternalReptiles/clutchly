@@ -52,7 +52,7 @@ offline mode (airplane mode, log feeds, turn it off again), and a sandbox purcha
 
 ## 6. Subscriptions (Apple, Google, RevenueCat)
 
-The app sells one thing: **Clutchly Pro**, a yearly auto-renewing subscription (A$59.95/year). A second, hidden product,
+The app sells one thing: **Clutchly Pro**, a yearly auto-renewing subscription (A$59.99/year). A second, hidden product,
 a **lifetime unlock**, is never shown in the app; you give it away with store codes. Both unlock the same RevenueCat
 entitlement, `pro`. Product IDs used in the code (`brand.json`): `clutchly_pro_yearly` and `clutchly_pro_lifetime`.
 If you change them, change them everywhere below and in `brand.json`.
@@ -67,8 +67,7 @@ If you change them, change them everywhere below and in `brand.json`.
    Apple's commission from 30% to 15% while you earn under US$1 million a year.
 4. **Create the app:** My Apps > + > New App, bundle ID `com.eternalreptiles.clutchly`, name from `brand.json`.
 5. **Create the subscription:** your app > Monetization > Subscriptions > create a group "Pro" > add a subscription
-   with Product ID `clutchly_pro_yearly`, duration 1 year, price A$59.95 (Apple only offers fixed price points; if
-   A$59.95 isn't one, pick the nearest, e.g. A$59.99, and tell me so the store text matches). Add a display name
+   with Product ID `clutchly_pro_yearly`, duration 1 year, price A$59.99. Add a display name
    ("Clutchly Pro") and description ("Unlimited animals, photos and notifications").
 6. **Create the lifetime unlock:** Monetization > In-App Purchases > + > Non-Consumable, Product ID
    `clutchly_pro_lifetime`, any price (e.g. A$149.99; nobody pays it, people get it with a code). In its review notes
@@ -86,7 +85,7 @@ If you change them, change them everywhere below and in `brand.json`.
 3. **Create the app** with package name `com.eternalreptiles.clutchly`, and upload a first build to *Internal testing*
    (products can only be created after a build exists). I can make that build with EAS once you've run `eas init`.
 4. **Create the subscription:** Monetize > Products > Subscriptions > Create, Product ID `clutchly_pro_yearly`, add a base
-   plan (ID `yearly`, auto-renewing, 1 year, A$59.95; let Google convert other countries).
+   plan (ID `yearly`, auto-renewing, 1 year, A$59.99; let Google convert other countries).
 5. **Create the lifetime unlock:** Monetize > Products > In-app products > Create, Product ID `clutchly_pro_lifetime`.
 6. **Give RevenueCat access:** follow RevenueCat's "Google Play service credentials" guide: create a Google Cloud service
    account, grant it access in Play Console (Users and permissions), download its JSON key. Also turn on Real-time

@@ -62,7 +62,7 @@ export default function Account() {
       <Chips opts={DATE_FORMATS.map(f => f[1])} v={DATE_FORMATS.find(f => f[0] === df)![1]} on={l => changeFormat(DATE_FORMATS.find(f => f[1] === l)![0])} />
       <Text style={[s.mu, { marginTop: 6 }]}>Today shows as {fmt(today())}</Text></Card>
     <Card><Text style={s.h}>Plan</Text>
-      <Text style={{ color: C.ink, marginTop: 4 }}>{plan.isPro ? `${APP_NAME} Pro${plan.expiresAt ? ` · ${plan.productId?.includes('lifetime') ? 'active until' : 'renews or ends'} ${fmt(plan.expiresAt.slice(0, 10))}` : ' · no end date'}` : `Free · ${plan.count} of ${plan.freeAnimals} animals`}</Text>
+      <Text style={{ color: C.ink, marginTop: 4 }}>{plan.isPro ? `${APP_NAME} Pro${plan.expiresAt ? ` · ${plan.productId?.includes('lifetime') ? 'active until' : 'renews or ends'} ${fmt(plan.expiresAt.slice(0, 10))}` : ' · no end date'}` : `Free · ${plan.count} of ${plan.freeAnimals} owned animals`}</Text>
       <View style={{ marginTop: 8 }}><Btn solid={!plan.isPro} t={plan.isPro ? 'Manage Pro' : 'Go Pro'} onPress={() => goPro()} /></View></Card>
     <NotificationSettings />
     <Card><Text style={s.h}>Change password</Text>

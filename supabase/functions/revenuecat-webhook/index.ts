@@ -31,6 +31,10 @@ Deno.serve(async req => {
   for (const id of ids) {
     const { data: user } = await db.auth.admin.getUserById(id);
     if (!user?.user) continue; // not one of our users (e.g. an anonymous RevenueCat id)
+    // Complimentary Pro set by hand in SQL (last_event_type 'MANUAL') is never changed by store events.
+    // (RevenueCat's own promotional grants are normal events and do expire.)
+    const { data: cur0 } = await db.from('subscriptions').select('last_event_type').eq('user_id', id).maybeSingle();
+    if (cur0?.last_event_type === 'MANUAL') continue;
     let row: Record<string, unknown> | null = null;
     if (rcKey) row = await fromRevenueCat(id, rcKey);
     else if (e.type === 'TRANSFER') row = { user_id: id, entitlement: ENTITLEMENT, active: (e.transferred_to ?? []).includes(id), expires_at: null,

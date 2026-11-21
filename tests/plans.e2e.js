@@ -36,7 +36,7 @@ const SP = process.argv[2];
     await B('Done').click(); await T('+ Add').click();
     await L('Name / ID').fill('FR11'); await L('Species').click(); await L('Search species').fill('carpet'); await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
     await B('Save').click();
-    await T(/^Free accounts can have up to 10 animals, and you have 10\./).waitFor({ timeout: 5000 });
+    await T(/^Free accounts can have up to 10 owned animals \(animals marked Sold don't count\), and you have 10\./).waitFor({ timeout: 5000 });
     await T('Subscriptions are available in the Clutchly app for iPhone and Android.').waitFor();
     await T(/Your data is never deleted\./).waitFor();
     await pg.getByRole('link', { name: 'Terms of use' }).and(live).first().waitFor();
@@ -44,7 +44,7 @@ const SP = process.argv[2];
     await B('Not now').click(); await back();
   });
   await step('Account plan card: Free · 10 of 10 animals; photos ask for Pro', async () => {
-    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Free · 10 of 10 animals').waitFor({ timeout: 5000 }); await back();
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Free · 10 of 10 owned animals').waitFor({ timeout: 5000 }); await back();
     await tab('Animals'); await T('FR01', { exact: true }).click(); await B('Add photo (Pro)').click();
     await T('Photos are part of Pro. Photos you added before stay visible.').waitFor({ timeout: 5000 }); await B('Not now').click(); await back();
   });

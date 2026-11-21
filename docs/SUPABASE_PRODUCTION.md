@@ -13,7 +13,7 @@ project**, so tests and experiments never touch their data.
 
 ## 2. Database (SQL Editor, in this order)
 1. `supabase/schema.sql`
-2. Every file in `supabase/migrations/`, in number order (`001` ... `009`). Each is safe to run again.
+2. Every file in `supabase/migrations/`, in number order (`001` ... `010`). Each is safe to run again.
 3. In `004_notification_cron.sql`, change the project URL to the production one **before** running it, and first run:
    `select vault.create_secret('<a long random value>', 'clutchly_cron_secret');`
    (Generate the value with `openssl rand -base64 32`. Use the same value for `CRON_SECRET` in step 4.)
@@ -45,7 +45,11 @@ project**, so tests and experiments never touch their data.
 Run `scripts/seed_demo.mjs` against production (see the comment at the top of the file): create the account, confirm
 its email in Authentication > Users, grant Pro with the SQL in the script's header, then run the script again.
 
-## 7. Before launch
+## 7. Your own account
+Sign up in the app with your own email, then make it Pro for good (Supabase SQL Editor):
+`insert into subscriptions (user_id, entitlement, active, expires_at, product_id, store, last_event_type, last_event_at) select id, 'pro', true, null, 'owner_account', 'PROMOTIONAL', 'MANUAL', now() from auth.users where email = '<your email>' on conflict (user_id) do update set active = true, expires_at = null, last_event_type = 'MANUAL';`
+
+## 8. Before launch
 - Delete any test users from production (Authentication > Users).
 - Turn on email alerts for project usage (Organization > Billing) so you know before hitting limits.
 - Storage: the `animal-photos` bucket is created by migration 006 and must stay **private**.
