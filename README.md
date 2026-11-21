@@ -1,4 +1,4 @@
-# Herdbook (working name)
+# Clutchly
 Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user signs up and sees only their own collection (enforced by Postgres row-level security).
 
 ## Setup
@@ -8,12 +8,12 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 4. Add `assets/icon.png` (1024x1024, from your logo).
 
 ## Before the stores
-- Change `bundleIdentifier` / `package` in app.json to your own.
+- `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
 - Supabase Auth: configure email templates, enable email confirmation, set up a real SMTP sender (Resend, Postmark).
 - Required: privacy policy URL, support URL, in-app account deletion (included). Apple: $99/yr developer account; Google Play: $25 once.
 - Build and submit: `npm i -g eas-cli && eas build -p ios && eas submit -p ios` (same for android).
 - If you add "Sign in with Google/Facebook", Apple requires also offering Sign in with Apple.
-- Rename the app and check the trademark before launch.
+- Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
 Offline mode, push notifications for due feeds, photos, CSV import/export, bulk add, hatchling IDs, subscriptions (RevenueCat), password reset screen.

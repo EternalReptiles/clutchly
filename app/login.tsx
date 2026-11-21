@@ -14,7 +14,7 @@ export default function Login() {
     else if (up && !r.data.session) notify('Check your email', 'Confirm your address, then sign in.');
   };
   return (<View style={[s.page, { justifyContent: 'center' }]}>
-    <Text style={{ fontFamily: serif, fontSize: 30, textAlign: 'center', color: C.ink }}>Herdbook</Text>
+    <Text style={{ fontFamily: serif, fontSize: 30, textAlign: 'center', color: C.ink }}>Clutchly</Text>
     <Text style={[s.mu, { textAlign: 'center' }]}>Feeding, sheds and breeding for your collection</Text>
     <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" autoComplete="email" />
     <Input label="Password" value={pw} onChangeText={setPw} secureTextEntry textContentType="password" autoComplete="password" />

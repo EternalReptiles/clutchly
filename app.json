@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Herdbook",
-    "slug": "herdbook",
-    "scheme": "herdbook",
+    "name": "Clutchly",
+    "slug": "clutchly",
+    "scheme": "clutchly",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,11 +10,11 @@
       "expo-router"
     ],
     "ios": {
-      "bundleIdentifier": "com.yourname.herdbook",
+      "bundleIdentifier": "com.eternalreptiles.clutchly",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.yourname.herdbook"
+      "package": "com.eternalreptiles.clutchly"
     },
     "web": {
       "output": "single",
