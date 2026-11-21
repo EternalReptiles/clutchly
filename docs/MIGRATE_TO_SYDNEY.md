@@ -45,3 +45,20 @@ are the only real users. Keep RLS on everything, never put the service_role key 
 10. **Commit and push** (website and web app redeploy themselves). Tell the owner: start Expo Go from a fresh
     download (or build TestFlight now), keep the old project paused for a couple of weeks as a backup, then delete
     it; delete the access token; set the RevenueCat webhook URL to the new project when RevenueCat is set up.
+
+## Done (2026-11-21)
+New project: `oybgqvhuromskcwcjyft` ("clutchly", Sydney). Old: `xtjoypcgzfotjzskmggw` (Tokyo, keep paused as backup).
+- Schema + migrations 001–014 applied (004 with the Sydney URL); 16 tables, all RLS on; policies, functions,
+  triggers, grants and seeds identical to the old project. Bucket `animal-photos` private with its 4 policies.
+- New cron secret in the vault and as `CRON_SECRET`; hourly job points at the Sydney `daily-digest`.
+- `daily-digest` and `revenuecat-webhook` deployed (`verify_jwt:false`). New `REVENUECAT_WEBHOOK_AUTH`
+  (`Bearer …`; the owner gets the value privately and enters it in RevenueCat later).
+- Auth: confirm email off (as before), site URL and redirect URLs set. **Email templates not applied:** Supabase
+  refuses custom templates on free projects without custom SMTP. Apply them (with the subjects above) once SMTP is set.
+- Data: owner and review account copied (users, identities, all public tables incl. `deleted_rows`, MANUAL Pro
+  rows); counts and row hashes match the old project. No photo files existed. Test accounts not copied.
+- App, `.env`, privacy policy (Sydney, Australia) and docs/SUPABASE_PRODUCTION.md updated.
+- Tests against Sydney all passed: rls (75), plans (42), digest.function (17), revenuecat, digest, and every browser
+  suite (ui, import, reset, species, offline, history, hatchlings, onboarding, export, plans, genes, photos). Owner and
+  review account signed in and see all their animals. Leftover throwaway test accounts deleted; only the two real
+  accounts remain. Tests create `clutchly.*@gmail.com` accounts: delete leftovers after any future run here.
