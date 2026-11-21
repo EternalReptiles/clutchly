@@ -13,6 +13,14 @@ export function LogoMark({ size = 28, faded }: { size?: number; faded?: boolean 
     accessibilityLabel={`${APP_NAME} logo`} />;
 }
 
+/** An animal's picture: its cover photo, or the logo on a cream tile when it has none. */
+export function AnimalAvatar({ uri, size, label }: { uri?: string | null; size: number; label?: string }) {
+  const box = { width: size, height: size, borderRadius: 10, borderWidth: 1, borderColor: C.bd, backgroundColor: C.bg };
+  return uri ? <Image source={{ uri }} style={box} resizeMode="cover" accessibilityLabel={label} />
+    : <View style={[box, { alignItems: 'center', justifyContent: 'center' }]} accessibilityLabel={label ? `${label}: no photo yet` : undefined}>
+      <Image source={LOGO} style={{ width: size * 0.72, height: size * 0.72 * RATIO, opacity: 0.6 }} resizeMode="contain" /></View>;
+}
+
 /** Logo and name, for the Overview header. */
 export function BrandTitle() {
   return (<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessibilityRole="header" accessibilityLabel={APP_NAME}>

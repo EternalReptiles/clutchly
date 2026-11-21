@@ -53,7 +53,8 @@ const SP = process.argv[2];
   });
   await step('animal screen: log feed on a past date, weight, history', async () => {
     await tab('Animals'); await T(/Female · fed 21 Nov 2026/).waitFor({ timeout: 8000 });
-    await T('ER002', { exact: true }).click(); await L('Date').fill('2026-11-10');
+    await T('ER001', { exact: true }).click(); await T(/^Next feed /).waitFor({ timeout: 8000 }); await T('Every 7 days, from the default.').waitFor(); await pg.getByLabel(/back$/i).and(live).first().click();
+    await T('ER002', { exact: true }).click(); await T(/^Feed (due today|overdue)/).waitFor({ timeout: 8000 }); await L('Date').fill('2026-11-10');
     await L('Food').fill('medium rat'); await T('Fed', { exact: true }).click(); await T('10 Nov 2026 · Fed (medium rat)').waitFor({ timeout: 8000 });
     await L('Weight (g)').fill('850'); await T('Weight', { exact: true }).click(); await T('10 Nov 2026 · 850 g').waitFor({ timeout: 8000 });
     await shot('animal-detail');

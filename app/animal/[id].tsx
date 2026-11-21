@@ -5,9 +5,11 @@ import { GeneEditor } from '../../lib/GeneEditor';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { insert, insertMany, remove, update, useStore } from '../../lib/store';
-import { SEXES, fmt, today } from '../../lib/logic';
+import { SEXES, addDays, diffDays, fmt, interval, isPaused, seasonFor, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { PhotoGallery } from '../../lib/PhotoGallery';
+import { AnimalAvatar } from '../../lib/Brand';
+import { coverOf, useSignedUrls } from '../../lib/photos';
 import { usePlan } from '../../lib/plan';
 import { goPro } from '../../lib/goPro';
 import { WeightChart } from '../../lib/WeightChart';
@@ -40,6 +42,16 @@ export default function AnimalScreen() {
   }, [animal, isNew, loaded, st.animals]);
   const allEv = useMemo(() => (st.events as Ev[]).filter(e => e.animal_id === id).sort(newestFirst), [st.events, id]);
   const ev = allEv;
+  // When the next feed is due, and where the interval comes from (this animal, the species routine, or the default).
+  const feedInfo = useMemo(() => {
+    if (isNew || !animal) return null;
+    const sc = seasonFor(st.season_settings as any, animal.species);
+    const every = interval(animal as any, sc);
+    const from = animal.feed_every ? 'this animal\'s own interval' : (animal.sex === 'Male' ? sc.male_every : sc.female_every) ? `your ${animal.species} routine` : 'the default';
+    const last = allEv.find(e => e.kind === 'feed')?.on_date;
+    const next = last ? addDays(last, every) : today();
+    return { every, from, next, paused: isPaused(sc, today()) };
+  }, [isNew, animal, st.season_settings, allEv]);
   const weights = useMemo(() => weightSeries(allEv), [allEv]);
   const sheds = useMemo(() => shedStats(allEv), [allEv]);
   const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
@@ -50,6 +62,8 @@ export default function AnimalScreen() {
   const myGenes = useMemo(() => isNew ? [...draftGenes.values()] : savedGenes, [isNew, draftGenes, savedGenes]);
   const morph = morphName(geneLib, myGenes);
   const [genesOpen, setGenesOpen] = useState(false);
+  const cover = isNew ? null : coverOf(st.animal_photos, id);
+  const coverUrl = useSignedUrls(cover ? [cover.path as string] : [])[cover?.path as string] ?? null;
   const mother = animal?.mother_id ? st.animals.find(x => x.id === animal.mother_id) : undefined;
   const father = animal?.father_id ? st.animals.find(x => x.id === animal.father_id) : undefined;
   const offspring = useMemo(() => st.animals.filter(x => x.mother_id === id || x.father_id === id)
@@ -87,6 +101,11 @@ export default function AnimalScreen() {
   if (!isNew && !animal && st.ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This animal has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page} />;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"><Stack.Screen options={{ title: isNew ? 'New animal' : a.name }} />
+    {!isNew && animal && <View style={[s.row, { marginBottom: 8 }]}>
+      <AnimalAvatar uri={coverUrl} size={72} label={animal.name} />
+      <View style={{ flex: 1, marginLeft: 10 }}><Text style={[s.h, { fontSize: 22 }]}>{animal.name}</Text>
+        <Text style={{ color: morph ? C.ink : C.mu }}>{morph || animal.species}</Text>
+        {morph ? <Text style={s.mu}>{animal.species} · {animal.sex}</Text> : <Text style={s.mu}>{animal.sex}</Text>}</View></View>}
     <Input label="Name / ID" value={a.name} onChangeText={v => setA({ ...a, name: v })} />
     <SpeciesPicker value={a.species} onChange={v => setA({ ...a, species: v })} />
     <Label t="Sex" /><Chips opts={SEXES} v={a.sex} on={v => setA({ ...a, sex: v })} />
@@ -107,6 +126,9 @@ export default function AnimalScreen() {
     </View>}
     {!isNew && genesSection}
     {!isNew && <PhotoGallery animalId={id} />}
+    {feedInfo && <View style={[s.card, { marginTop: 14 }]} accessibilityLabel="Next feed">
+      <Text style={s.h}>{feedInfo.paused ? 'Feeding pause' : feedInfo.next <= today() ? (feedInfo.next < today() ? `Feed overdue by ${diffDays(today(), feedInfo.next)} days` : 'Feed due today') : `Next feed ${fmt(feedInfo.next)}`}</Text>
+      <Text style={s.mu}>{feedInfo.paused ? 'The feeding pause for this species is on (Season tab).' : `Every ${feedInfo.every} days, from ${feedInfo.from}.`}</Text></View>}
     {!isNew && <><Text style={[s.h, { marginTop: 22 }]}>Log</Text>
       <DateField label="Date" value={day} onChange={v => setDay(v || today())} />
       <Input label="Food" value={food} onChangeText={setFood} placeholder="e.g. medium rat" />
