@@ -23,6 +23,17 @@ limits, functions and secrets. *Why:* real users' data shouldn't live in the tes
 
 ## 3. Legal pages and support site
 
+**Website and web app (clutchly.com.au).** The home page, support/privacy/terms pages and the web app (at `/app`) are
+built by `scripts/build_web.mjs` and published by GitHub Actions (`.github/workflows/pages.yml`) on every push to `main`.
+One-time setup:
+- GitHub > the repository > Settings > Pages > Source: **GitHub Actions**. Custom domain: `clutchly.com.au`, then tick
+  **Enforce HTTPS** once it's offered (can take up to a day).
+- At your domain registrar (DNS): four **A** records for `clutchly.com.au` (host `@`) pointing to `185.199.108.153`,
+  `185.199.109.153`, `185.199.110.153` and `185.199.111.153`, and a **CNAME** for `www` pointing to
+  `eternalreptiles.github.io`. Remove any other A/AAAA records for `@` (e.g. a parked page).
+- Supabase > Authentication > URL Configuration > Redirect URLs: add `https://clutchly.com.au/app/reset-password`, so
+  "Forgot password" on the web returns to the app.
+
 1. **Fill in the placeholders.** Open `site/_templates/privacy.html`, `terms.html` and `support.html` and replace every
    `[BRACKETED]` item: business name, ABN, support email, postal address, dates, backup retention, liability cap.
    Then run `node scripts/build_site.mjs` to regenerate the pages in `/site`.
