@@ -1,7 +1,8 @@
 import { speciesInfo, type Range } from './species';
 export { SPECIES } from './species';
-export const SEXES = ['Female', 'Male'];
+export const SEXES = ['Female', 'Male', 'Unknown']; // Unknown: unsexed (e.g. hatchlings); fed on the female interval
 export type Animal = { id: string; name: string; species: string; sex: string; status: string; dob?: string | null;
+  mother_id?: string | null; father_id?: string | null; pairing_id?: string | null; created_at?: string;
   feed_every?: number | null; notes?: string | null; last_feed?: string | null; last_shed?: string | null; last_weight?: number | null };
 
 // Per-species, per-user settings (the user's routine). New accounts start with none: no feeding pause, no pairing dates.

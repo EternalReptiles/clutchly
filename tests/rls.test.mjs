@@ -73,9 +73,18 @@ x = await B.from('animal_photos').insert({ animal_id: bf.data.id, path: pathA })
 x = await anonClient().storage.from('animal-photos').download(pathA); ok(!!x.error, 'logged-out cannot download photos');
 x = await A.storage.from('animal-photos').upload(`${uidA}/x/not-a-photo.txt`, new Uint8Array([1]), { contentType: 'text/plain' }); ok(!!x.error, 'bucket refuses non-JPEG files');
 
+// Hatchlings: parent and pairing links must stay within one account.
+x = await A.from('animals').insert({ name: 'H1', species: 'Carpet', sex: 'Unknown', mother_id: f.data.id, father_id: m.data.id, pairing_id: p.data.id }).select().single();
+ok(!x.error, 'A creates a hatchling linked to own parents and pairing ' + (x.error?.message || ''));
+x = await B.from('animals').insert({ name: 'stolen-mum', sex: 'Unknown', mother_id: f.data.id }); ok(!!x.error, "B cannot link to A's animal as mother");
+x = await B.from('animals').insert({ name: 'stolen-dad', sex: 'Unknown', father_id: m.data.id }); ok(!!x.error, "B cannot link to A's animal as father");
+x = await B.from('animals').insert({ name: 'stolen-clutch', sex: 'Unknown', pairing_id: p.data.id }); ok(!!x.error, "B cannot link to A's pairing");
+x = await B.from('animals').update({ mother_id: f.data.id }).eq('id', bf.data.id).select(); ok(!!x.error || !x.data?.length, "B cannot re-parent own animal onto A's");
+x = await A.from('animals').insert({ name: 'bad-sex', sex: 'Hermaphrodite' }); ok(!!x.error, 'sex must be Female, Male or Unknown');
+
 // Delete accounts
 x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.error?.message || ''));
-x = await A.from('animals').select('id'); ok(x.data?.length === 2, 'A data survives B deletion');
+x = await A.from('animals').select('id'); ok(x.data?.length === 3, 'A data survives B deletion (2 animals + 1 hatchling)');
 x = await A.rpc('delete_my_account'); ok(!x.error, 'A delete account ' + (x.error?.message || ''));
 x = await mk().auth.signInWithPassword({ email: ea, password: pw }); ok(!!x.error, 'A cannot sign in after deletion');
 const A2 = mk(); await A2.auth.signUp({ email: ea, password: pw }); x = await A2.from('animals').select('*'); ok(x.data?.length === 0, 'A data was deleted with account');

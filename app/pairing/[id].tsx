@@ -6,6 +6,7 @@ import { insert, remove, update } from '../../lib/store';
 import { Pairing, estimates, fmt, pairStatus, seasonFor, today } from '../../lib/logic';
 import { Repro, speciesInfo, words } from '../../lib/species';
 import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
+import { HatchlingDialog } from '../../lib/HatchlingDialog';
 
 type DateKey = 'intro' | 'removed' | 'ovulation' | 'prelay_shed' | 'laid' | 'hatched';
 // Date fields for the female's species: pre-lay shed for pythons only; live-bearers are born, not laid and hatched.
@@ -44,6 +45,10 @@ export default function PairingScreen() {
   const est = estimates(p, seasonFor(cfg, female?.species || 'Other'));
   const estText = !p.laid && est.lay ? ` · ${w.est} ${fmt(est.lay)}` : p.laid && !p.hatched && est.hatch ? ` · estimated hatch ${fmt(est.hatch)}` : '';
   const females = pick('Female'), males = pick('Male');
+  // Hatchlings can be created once the pairing has a hatch date (live-bearers: a birth date).
+  const hatchDate = isNew ? null : repro === 'live' ? p.laid : p.hatched;
+  const young = animals.filter(a => a.pairing_id === id);
+  const [hatchOpen, setHatchOpen] = useState(false);
 
   // Don't show controls until the pairing has loaded, or a quick tap would save an empty pairing.
   if (!isNew && !stored && ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This pairing has been deleted.</Text></View>;
@@ -63,6 +68,13 @@ export default function PairingScreen() {
       {datesFor(repro).map(([k, l]) => <DateField key={k} optional label={l} value={p[k]} onChange={v => setP({ ...p, [k]: v })} />)}
       <Input label={w.clutch} keyboardType="number-pad" value={p.clutch != null ? String(p.clutch) : ''} onChangeText={v => setP({ ...p, clutch: v ? parseInt(v, 10) || null : null })} />
       {repro !== 'live' && <Input label="Fertile eggs" keyboardType="number-pad" value={p.fertile != null ? String(p.fertile) : ''} onChangeText={v => setP({ ...p, fertile: v ? parseInt(v, 10) || null : null })} />}
+      {hatchDate && <View style={[s.card, { marginTop: 14 }]}>
+        <Text style={s.h}>{repro === 'live' ? 'Babies' : 'Hatchlings'} ({young.length})</Text>
+        {young.map(a => <Pressable key={a.id} onPress={() => r.push(`/animal/${a.id}`)} accessibilityRole="link" style={{ paddingVertical: 4 }}>
+          <Text style={{ color: C.ink, textDecorationLine: 'underline' }}>{a.name}</Text></Pressable>)}
+        <View style={{ marginTop: 8 }}><Btn solid t={repro === 'live' ? 'Add babies' : 'Create hatchlings'} onPress={() => { save(); setHatchOpen(true); }} /></View>
+        <HatchlingDialog open={hatchOpen} onClose={() => setHatchOpen(false)} onCreated={c => setP(x => ({ ...x, ...c }))} pairing={{ ...p, id }}
+          mother={female} father={animals.find(a => a.id === p.male_id)} hatchDate={hatchDate} existingCount={young.length} /></View>}
       <Input label="Notes" multiline value={p.notes || ''} onChangeText={v => setP({ ...p, notes: v })} /></>}
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}><Btn solid t={isNew ? 'Create' : 'Save'} onPress={() => save()} />
       {!isNew && <Btn danger t="Delete" onPress={del} />}</View>

@@ -56,7 +56,7 @@ const SB = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).host;
     await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('OFF1'); await pickCarpet(d1); await T('Save', { exact: true }).click();
     await T('OFF1', { exact: true }).click(); await L('Weight (g)').fill('321'); await T('Weight', { exact: true }).click(); await T(/321 g$/).waitFor({ timeout: 5000 }); await back();
     await T('F2', { exact: true }).click(); await L('Name / ID').fill('F2-renamed'); await T('Save', { exact: true }).click(); await T('F2-renamed', { exact: true }).waitFor({ timeout: 5000 });
-    await T('F2-renamed', { exact: true }).click(); await T(/· Shed$/).click(); await pg.waitForTimeout(300); await back();
+    await T('F2-renamed', { exact: true }).click(); await T(/· Shed$/).click(); await pg.getByRole('button', { name: 'Delete', exact: true }).last().click(); await pg.waitForTimeout(300); await back();
     const txt = await pill(pg).first().textContent(); if (!/Offline · [5-9] to sync/.test(txt)) throw new Error('pill: ' + txt);
   });
   await step(pg, 'offline: nothing reached the server yet', async () => {

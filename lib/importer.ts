@@ -30,6 +30,7 @@ export function parseSex(v: string): string | null {
   const k = v.trim().toLowerCase();
   if (['f', 'female', '0.1', '♀'].includes(k)) return 'Female';
   if (['m', 'male', '1.0', '♂'].includes(k)) return 'Male';
+  if (['u', 'unknown', 'unsexed', '?', '0.0.1'].includes(k)) return 'Unknown';
   return null;
 }
 
@@ -94,7 +95,7 @@ export function parseImport(text: string, dayFirst: boolean, existingNames: stri
     const species = parseSpecies(v.species ?? '');
     if (!species) errs.push(v.species?.trim() ? `Unknown species "${v.species.trim()}". Use a name from the species list (or Other)` : 'Species missing');
     const sex = parseSex(v.sex ?? '');
-    if (!sex) errs.push(v.sex?.trim() ? `Sex "${v.sex.trim()}" should be F or M` : 'Sex missing');
+    if (!sex) errs.push(v.sex?.trim() ? `Sex "${v.sex.trim()}" should be F, M or U (unknown)` : 'Sex missing');
     const dob = parseDate(v.dob ?? '', dayFirst), lf = parseDate(v.last_feed ?? '', dayFirst);
     if (dob?.startsWith('!')) errs.push('Hatch date: ' + dob.slice(1));
     if (lf?.startsWith('!')) errs.push('Last feed: ' + lf.slice(1));

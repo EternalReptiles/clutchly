@@ -52,6 +52,16 @@ average number of days between sheds, and the share of feeds refused in the last
 entries. "Full history" filters by type (feeds, sheds, weights) and date range; tap any entry to edit its date, result,
 food, weight or note, or to delete it. The calculations are in `lib/history.ts` (unit-tested in `tests/history.test.js`).
 
+## Hatchlings
+Once a pairing has a hatch date (live-bearers: a birth date), "Create hatchlings" asks for the clutch size, fertile eggs,
+how many to add and an ID pattern, previews the names, then adds them as animals: species from the mother, sex Unknown,
+hatch date, linked to both parents and to the pairing. The pairing's clutch and fertile counts are updated.
+- ID pattern placeholders: `{YYYY}` / `{YY}` hatch year, `{###}` running number (one # per digit), `{MOTHER}` `{FATHER}`.
+  Numbering continues after the highest existing ID with that pattern and year; the pattern is remembered per user.
+- Animal screens show parents and offspring. Deleting a parent keeps the offspring and clears the link.
+- Sex can now be Female, Male or Unknown (fed on the female interval; not offered for pairings).
+- Migration `007_hatchlings.sql` (parent/pairing links, checked to belong to the same user).
+
 ## Push notifications
 Each morning (at the hour and timezone the user picks in Account > Notifications) the `daily-digest` Edge Function sends
 one notification per alert type, only when something is due: feeds due today (skipping Sold animals and species in their
@@ -90,10 +100,10 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 
 ## Tests
 - `npm run typecheck`
-- `node --experimental-strip-types tests/digest.test.mjs`: notification rules.
+- `node --experimental-strip-types tests/digest.test.mjs`: notification rules. `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js` and `tests/history.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js` and `tests/hatchlings.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
@@ -104,4 +114,4 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-CSV export, hatchling IDs, subscriptions (RevenueCat).
+CSV export, subscriptions (RevenueCat).

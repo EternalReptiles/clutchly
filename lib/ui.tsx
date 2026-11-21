@@ -29,7 +29,7 @@ export const Input = (p: TextInputProps & { label?: string }) => (
     <TextInput placeholderTextColor={C.mu} keyboardAppearance="light" selectionColor={C.ink} cursorColor={C.ink} accessibilityLabel={p.label ?? p.placeholder} {...p} style={[s.in, p.style]} /></View>);
 export const Chips = ({ opts, v, on }: { opts: string[]; v: string; on: (x: string) => void }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-    {opts.map(o => <Pressable key={o} onPress={() => on(o)} accessibilityRole="button" accessibilityState={{ selected: v === o }} style={[s.btn, v === o && { backgroundColor: C.ink, borderColor: C.ink }]}>
+    {opts.map(o => <Pressable key={o} onPress={() => on(o)} accessibilityRole="button" aria-selected={v === o} style={[s.btn, v === o && { backgroundColor: C.ink, borderColor: C.ink }]}>
       <Text style={{ color: v === o ? C.bg : C.ink }}>{o}</Text></Pressable>)}</View>);
 
 /**

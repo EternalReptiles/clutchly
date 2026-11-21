@@ -103,7 +103,14 @@ function applyLocal(t: Table, op: Op, key: string, row?: Row) {
       extra.events = state.events.filter(e => e.animal_id !== key);
       extra.pairings = state.pairings.filter(p => p.female_id !== key && p.male_id !== key);
       extra.animal_photos = state.animal_photos.filter(p => p.animal_id !== key);
+      // Offspring keep existing; their link to this parent is cleared (the database does the same).
+      rows = rows.map(r => r.mother_id === key || r.father_id === key ? { ...r, mother_id: r.mother_id === key ? null : r.mother_id, father_id: r.father_id === key ? null : r.father_id } : r);
+      const goneP = new Set(state.pairings.filter(p => p.female_id === key || p.male_id === key).map(p => p.id));
+      if (goneP.size) rows = rows.map(r => goneP.has(r.pairing_id) ? { ...r, pairing_id: null } : r);
       schedulePersist('events', 'pairings', 'animal_photos');
+    }
+    if (t === 'pairings') {
+      extra.animals = state.animals.map(a => a.pairing_id === key ? { ...a, pairing_id: null } : a); schedulePersist('animals');
     }
     set({ [t]: rows, ...extra } as Partial<State>);
   } else {

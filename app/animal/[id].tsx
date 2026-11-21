@@ -39,6 +39,10 @@ export default function AnimalScreen() {
   const sheds = useMemo(() => shedStats(allEv), [allEv]);
   const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
   const [editing, setEditing] = useState<Ev | null>(null);
+  const mother = animal?.mother_id ? st.animals.find(x => x.id === animal.mother_id) : undefined;
+  const father = animal?.father_id ? st.animals.find(x => x.id === animal.father_id) : undefined;
+  const offspring = useMemo(() => st.animals.filter(x => x.mother_id === id || x.father_id === id)
+    .sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })), [st.animals, id]);
 
   const save = () => {
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
@@ -67,6 +71,15 @@ export default function AnimalScreen() {
     <Input label="Feed every N days (blank = species default from the Season tab)" keyboardType="number-pad" value={a.feed_every} onChangeText={v => setA({ ...a, feed_every: v })} />
     <Input label="Notes" multiline value={a.notes} onChangeText={v => setA({ ...a, notes: v })} />
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
+    {!isNew && (mother || father || offspring.length > 0) && <View style={{ marginTop: 14 }}>
+      <Text style={s.h}>Family</Text>
+      {(mother || father) && <Text style={{ color: C.ink, marginTop: 4 }}>Parents: {mother ? <Text style={{ textDecorationLine: 'underline' }} onPress={() => r.push(`/animal/${mother.id}`)} accessibilityRole="link">{mother.name}</Text> : '?'}
+        {' × '}{father ? <Text style={{ textDecorationLine: 'underline' }} onPress={() => r.push(`/animal/${father.id}`)} accessibilityRole="link">{father.name}</Text> : '?'}</Text>}
+      {offspring.length > 0 && <><Text style={[s.mu, { marginTop: 6 }]}>Offspring ({offspring.length})</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+          {offspring.map(o => <Pressable key={o.id} onPress={() => r.push(`/animal/${o.id}`)} accessibilityRole="link" style={s.btn}>
+            <Text style={{ color: C.ink }}>{o.name}</Text></Pressable>)}</View></>}
+    </View>}
     {!isNew && <PhotoGallery animalId={id} />}
     {!isNew && <><Text style={[s.h, { marginTop: 22 }]}>Log</Text>
       <DateField label="Date" value={day} onChange={v => setDay(v || today())} />
