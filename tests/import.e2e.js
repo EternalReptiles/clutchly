@@ -20,6 +20,8 @@ const SP = process.argv[2];
     await L('Email').fill(email); await L('Password').fill('Imp-test-pass-1'); await T('Create account', { exact: true }).click();
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await pg.getByRole('tab', { name: 'Animals' }).click(); await T('+ Add').click(); await L('Name / ID').fill('ER001');
+    await L('Species').click(); await L('Search species').fill('carpet');
+    await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
     await T('Save', { exact: true }).click(); await T('ER001', { exact: true }).waitFor({ timeout: 8000 });
   });
   await step('paste lines -> preview shows ready rows and problems', async () => {
