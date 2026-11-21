@@ -68,7 +68,8 @@ export function DateField({ label, value, onChange, mode = 'date', optional }:
     });
   } else {
     const press = () => {
-      if (Platform.OS === 'android') {
+      if (mode === 'monthDay') setOpen(o => !o);   // our own month + day chooser (no year)
+      else if (Platform.OS === 'android') {
         DateTimePickerAndroid.open({ value: toDate(), mode: 'date',
           onChange: (e, d) => { if (e.type === 'set' && d) onChange(fromDate(d)); } });
       } else setOpen(o => !o);
@@ -79,10 +80,35 @@ export function DateField({ label, value, onChange, mode = 'date', optional }:
   return (<View style={{ marginTop: 8 }}>
     {label && <Text style={s.mu}>{label}</Text>}
     <View style={s.row}>{control}{optional && value ? <Btn t="Clear" onPress={() => { onChange(null); setOpen(false); }} /> : null}</View>
-    {open && Platform.OS === 'ios' && <View style={[s.card, { alignItems: 'center' }]}>
+    {open && mode === 'monthDay' && Platform.OS !== 'web' && <View style={s.card}>
+      <MonthDayPicker value={value} onChange={onChange} />
+      <View style={{ alignItems: 'center', marginTop: 8 }}><Btn solid t="Done" onPress={() => setOpen(false)} /></View></View>}
+    {open && mode === 'date' && Platform.OS === 'ios' && <View style={[s.card, { alignItems: 'center' }]}>
       <DateTimePicker value={toDate()} mode="date" display="inline" themeVariant="light" accentColor={C.ink}
         onChange={(_e, d) => { if (d) onChange(fromDate(d)); }} />
       <Btn solid t="Done" onPress={() => setOpen(false)} /></View>}
+  </View>);
+}
+
+/** Month and day for dates that repeat every year ('MM-DD'): month buttons, then the days of that month. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS_IN = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function MonthDayPicker({ value, onChange }: { value?: string | null; onChange: (v: string) => void }) {
+  const m = value ? parseInt(value.slice(0, 2), 10) : new Date().getMonth() + 1;
+  const d = value ? parseInt(value.slice(3, 5), 10) : 0;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const pick = (month: number, day: number) => onChange(`${pad(month)}-${pad(Math.min(day, DAYS_IN[month - 1]))}`);
+  const cell = (sel: boolean) => [s.btn, { width: '13%' as const, paddingHorizontal: 0, alignItems: 'center' as const }, sel && { backgroundColor: C.ink, borderColor: C.ink }];
+  return (<View>
+    <Text style={s.mu}>Month</Text>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+      {MONTHS.map((n, i) => <Pressable key={n} onPress={() => pick(i + 1, d || 1)} accessibilityRole="button" aria-selected={m === i + 1}
+        style={[s.btn, { width: '15%', paddingHorizontal: 0, alignItems: 'center' }, m === i + 1 && { backgroundColor: C.ink, borderColor: C.ink }]}>
+        <Text style={{ color: m === i + 1 ? C.bg : C.ink }}>{n}</Text></Pressable>)}</View>
+    <Text style={[s.mu, { marginTop: 10 }]}>Day</Text>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 4 }}>
+      {Array.from({ length: DAYS_IN[m - 1] }, (_, i) => i + 1).map(n => <Pressable key={n} onPress={() => pick(m, n)} accessibilityRole="button"
+        aria-selected={d === n} style={cell(d === n)}><Text style={{ color: d === n ? C.bg : C.ink }}>{n}</Text></Pressable>)}</View>
   </View>);
 }
 
