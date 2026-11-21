@@ -20,7 +20,7 @@ export default function Pairings() {
       renderItem={({ item: p }) => {
         const f = animals[p.female_id!]; const e = estimates(p, seasonFor(cfg, f?.species || 'Other'));
         const rp = speciesInfo(f?.species).repro; const w = words(rp);
-        const when = p.laid ? (!p.hatched && e.hatch ? ` · hatch ~ ${fmt(e.hatch)}` : '') : e.lay ? ` · ${rp === 'live' ? 'birth' : 'lay'} ~ ${fmt(e.lay)}` : '';
+        const when = e.prelay ? ` · pre-lay shed ~ ${fmt(e.prelay)}` : p.laid ? (!p.hatched && e.hatch ? ` · hatch ~ ${fmt(e.hatch)}` : '') : e.lay ? ` · ${rp === 'live' ? 'birth' : 'lay'} ~ ${fmt(e.lay)}` : '';
         return (<Card onPress={() => r.push(`/pairing/${p.id}`)}>
           <Text style={s.h}>{f?.name ?? '?'} × {animals[p.male_id!]?.name ?? '?'}</Text>
           <Text style={s.mu}>{pairStatus(p, f?.species)} · {p.locks?.length || 0} {(p.locks?.length || 0) === 1 ? w.lock : w.locks.toLowerCase()}{when}</Text></Card>);

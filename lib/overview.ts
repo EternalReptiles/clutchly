@@ -5,7 +5,7 @@ import { addDays, diffDays, estimates, isPaused, nextFeed, seasonFor, type Anima
 export type Ev = { animal_id: string; kind: string; on_date: string; ok: boolean | null; created_at?: string };
 export type DayItem =
   | { kind: 'feed'; animals: Animal[] }
-  | { kind: 'lay' | 'hatch'; pairing: Pairing; female?: Animal; male?: Animal }
+  | { kind: 'prelay' | 'lay' | 'hatch'; pairing: Pairing; female?: Animal; male?: Animal }
   | { kind: 'season'; text: string };
 export type Overview = {
   dueNow: { a: Animal; due: string }[];
@@ -37,6 +37,7 @@ export function overview(animals: Animal[], events: Ev[], pairings: Pairing[], s
     const feeds = active.filter(a => feedOn(a, d) === d).sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
     if (feeds.length) items.push({ kind: 'feed', animals: feeds });
     for (const o of open) {
+      if (o.e.prelay === d) items.push({ kind: 'prelay', pairing: o.p, female: o.female, male: o.male });
       if (!o.p.laid && o.e.lay === d) items.push({ kind: 'lay', pairing: o.p, female: o.female, male: o.male });
       if (o.p.laid && o.e.hatch === d) items.push({ kind: 'hatch', pairing: o.p, female: o.female, male: o.male });
     }

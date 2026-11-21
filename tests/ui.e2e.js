@@ -71,20 +71,22 @@ const SP = process.argv[2];
     await T('ER001 × ER002').click(); await T('Locks (0)').waitFor();
     await L('Lock date').fill('2026-06-12'); await T('+ Log lock').click(); await T('Locks (1)').waitFor({ timeout: 8000 });
     await L('Lock date').fill('2026-06-05'); await T('+ Log lock').click(); await T('Locks (2)').waitFor({ timeout: 8000 });
+    await L('Ovulation').fill('2026-08-08'); await T('Save', { exact: true }).click();
+    await T(/^Ovulated · pre-lay shed expected 1 Sept? 2026$/).waitFor({ timeout: 8000 });
+    if (!/^Expected around 1 Sept? 2026 \(/.test(await L('Expected Pre-lay shed').textContent())) throw new Error('no expected date under Pre-lay shed');
+    await shot('pairing-expected');
     await L('Pre-lay shed').fill('2026-09-01'); await T('Save', { exact: true }).click();
-    await T(/estimated lay 26 Sept? 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
+    await T(/lay expected 26 Sept? 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
     await pg.getByLabel(/back$/i).and(live).first().click(); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 });
     await pg.getByText('Locks (2)').waitFor({ state: 'detached', timeout: 8000 }); // let the closing screen finish animating away
     await T('ER001 × ER002').click(); await L('Eggs laid').fill('2026-09-28'); await T('Save', { exact: true }).click();
-    await T('Eggs laid · estimated hatch 22 Nov 2026').waitFor({ timeout: 8000 });
+    await T('Eggs laid · hatch expected 22 Nov 2026').waitFor({ timeout: 8000 });
     await pg.getByLabel(/back$/i).and(live).first().click(); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairings');
   });
   await step('season settings: change, persists after reload, clear', async () => {
     await tab('Season'); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 });
-    for (const [label, want] of [['Feed females every (days)', '7 (suggested)'], ['Days from pre-lay shed to lay', '25 (typical 21–28)'],
-      ['Days from ovulation to lay', '49 (typical 42–55)'], ['Days from lay to hatch', '55 (typical 52–58)']]) {
-      const got = await L(label).getAttribute('placeholder'); if (got !== want) throw new Error(`${label} placeholder: ${got}`);
-    }
+    if (await L('Feed females every (days)').getAttribute('placeholder') !== '7 (suggested)') throw new Error('feed placeholder');
+    await L('Pre-lay shed to lay: 25 days').waitFor(); await L('Ovulation to lay: 49 days').waitFor(); await L('Lay to hatch: 55 days').waitFor();
     await shot('season-carpet');
     await L('Pairing starts').fill('2000-06-15'); await pg.waitForTimeout(1500);
     await L('Feed females every (days)').fill('10'); await L('Feed females every (days)').blur(); await pg.waitForTimeout(1500);

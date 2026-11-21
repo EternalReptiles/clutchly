@@ -66,7 +66,7 @@ export default function Overview() {
           ? <Text key={i} style={{ color: C.ink }}>{`Feed (${it.animals.length}): ${it.animals.map(a => a.name).join(', ')}`}</Text>
           : it.kind === 'season' ? <Text key={i} style={{ color: C.ink }}>{it.text}</Text>
             : <Pressable key={i} onPress={() => go({ pairingId: it.pairing.id })} accessibilityRole="button">
-              <Text style={{ color: C.ink }}>{`${pairName(it.female, it.male)}: ${it.kind === 'hatch' ? 'estimated hatch' : words(speciesInfo(it.female?.species).repro).est}`}</Text></Pressable>)}
+              <Text style={{ color: C.ink }}>{`${pairName(it.female, it.male)}: ${it.kind === 'hatch' ? 'estimated hatch' : it.kind === 'prelay' ? 'pre-lay shed expected' : words(speciesInfo(it.female?.species).repro).est}`}</Text></Pressable>)}
       </View>)}</Card>
       {o.later.map(x => <Text key={x.text} style={[s.mu, { marginTop: 4 }]}>{x.text} on {fmt(x.date)} (in {diffDays(x.date, t)} days)</Text>)}
 

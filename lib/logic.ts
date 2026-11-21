@@ -63,14 +63,27 @@ export function isPaused(s: Season | undefined, d: string) {
 export type Pairing = { id?: string; female_id?: string; male_id?: string; intro?: string | null; removed?: string | null;
   ovulation?: string | null; prelay_shed?: string | null; laid?: string | null; hatched?: string | null;
   clutch?: number | null; fertile?: number | null; locks: string[]; notes?: string | null };
-// Estimated lay (or birth, for live-bearers) and hatch dates. `s` is the female's species settings.
-// User's number first, then the species suggestion; no estimate if neither exists.
-export function estimates(p: Pairing, s: Season): { lay: string | null; hatch: string | null } {
+// Estimated dates for a pairing, from fixed reference figures for the female's species (see lib/species.ts; the
+// middle of each typical range). `s` is the female's species settings (only its species is used here).
+//   prelay: expected pre-lay shed (pythons), from ovulation: ovulation-to-lay minus pre-lay-shed-to-lay days
+//   lay:    the lay (or birth, for live-bearers): from the pre-lay shed if recorded, else from ovulation / mating
+//   hatch:  from the lay date
+export function estimates(p: Pairing, s: Season): { prelay: string | null; lay: string | null; hatch: string | null } {
   const sg = suggested(s.species); const repro = speciesInfo(s.species).repro;
-  const prelay = s.prelay_to_lay || sg.prelay_to_lay, ovul = s.ovul_to_lay || sg.ovul_to_lay, hatch = s.lay_to_hatch || sg.lay_to_hatch;
+  const prelay = sg.prelay_to_lay, ovul = sg.ovul_to_lay, hatch = sg.lay_to_hatch;
+  const estPrelay = repro === 'python' && !p.laid && !p.prelay_shed && p.ovulation && ovul && prelay && ovul > prelay
+    ? addDays(p.ovulation, ovul - prelay) : null;
   const lay = p.laid || (repro === 'python' && p.prelay_shed && prelay ? addDays(p.prelay_shed, prelay)
     : p.ovulation && ovul ? addDays(p.ovulation, ovul) : null);
-  return { lay, hatch: repro === 'live' ? null : p.hatched || (p.laid && hatch ? addDays(p.laid, hatch) : null) };
+  return { prelay: estPrelay, lay, hatch: repro === 'live' ? null : p.hatched || (p.laid && hatch ? addDays(p.laid, hatch) : null) };
+}
+/** The next stage still to happen and its expected date, e.g. after ovulation: { key: 'prelay_shed', date }. */
+export function nextStage(p: Pairing, s: Season): { key: 'prelay_shed' | 'laid' | 'hatched'; date: string } | null {
+  const e = estimates(p, s);
+  if (e.prelay) return { key: 'prelay_shed', date: e.prelay };
+  if (!p.laid && e.lay) return { key: 'laid', date: e.lay };
+  if (p.laid && !p.hatched && e.hatch) return { key: 'hatched', date: e.hatch };
+  return null;
 }
 export const estLay = (p: Pairing, s: Season) => estimates(p, s).lay;
 export function pairStatus(p: Pairing, species?: string) {

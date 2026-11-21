@@ -57,34 +57,33 @@ const SP = process.argv[2];
     for (const gone of ['Pre-lay shed', 'Hatched', 'Fertile eggs', 'Eggs laid']) if (await pg.getByLabel(gone, { exact: true }).and(live).count()) throw new Error(gone + ' should be hidden');
     await L('Born').waitFor(); await L('Litter size').waitFor();
     await L('Mating').fill('2026-08-01'); await T('Save', { exact: true }).click();
-    await T('Gravid · estimated birth 14 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairing-live');
+    await T('Gravid · birth expected 14 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairing-live');
     await back(); await T('Gravid · 1 mating · birth ~ 14 Nov 2026').waitFor({ timeout: 8000 });
   });
   await step('egg-laying lizard pairing: no pre-lay shed, estimated lay then hatch', async () => {
     await pair('BD1', 'BD2'); await T('Matings (0)').waitFor();
     if (await pg.getByLabel('Pre-lay shed', { exact: true }).and(live).count()) throw new Error('pre-lay shed should be hidden');
     await L('Mating / ovulation').fill('2026-08-01'); await T('Save', { exact: true }).click();
-    await T('Gravid · estimated lay 29 Aug 2026').waitFor({ timeout: 8000 });
+    await T('Gravid · lay expected 29 Aug 2026').waitFor({ timeout: 8000 });
     await L('Eggs laid').fill('2026-08-30'); await T('Save', { exact: true }).click();
-    await T('Eggs laid · estimated hatch 3 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairing-egg');
+    await T('Eggs laid · hatch expected 3 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairing-egg');
     await back(); await T('Eggs laid · 0 matings · hatch ~ 3 Nov 2026').waitFor({ timeout: 8000 });
   });
   await step('Season: only kept species, fields per type, typical ranges', async () => {
     await tab('Season'); await T('Tiliqua', { exact: true }).waitFor({ timeout: 8000 });
     if (await count('Carpet', { exact: true })) throw new Error('Carpet shown but not kept');
-    if (await L('Days from mating to birth').getAttribute('placeholder') !== '105 (typical 90–120)') throw new Error('birth placeholder');
-    if (await L('Days from mating / ovulation to lay').getAttribute('placeholder') !== '28 (typical 21–35)') throw new Error('lay placeholder');
-    if (await L('Days from lay to hatch').getAttribute('placeholder') !== '65 (typical 55–75)') throw new Error('hatch placeholder');
-    if (await pg.getByLabel('Days from lay to hatch', { exact: true }).and(live).count() !== 1) throw new Error('hatch field should only show for the dragon');
-    if (await pg.getByLabel('Days from pre-lay shed to lay', { exact: true }).and(live).count() !== 0) throw new Error('no pythons kept');
+    await L('Mating to birth: 105 days').waitFor(); await L('Mating / ovulation to lay: 28 days').waitFor(); await L('Lay to hatch: 65 days').waitFor();
+    if (await pg.getByLabel(/^Lay to hatch:/).and(live).count() !== 1) throw new Error('hatch time should only show for the dragon');
+    if (await pg.getByLabel(/^Pre-lay shed to lay:/).and(live).count() !== 0) throw new Error('no pythons kept');
+    if (await pg.getByRole('textbox', { name: /to lay|to birth|to hatch/i }).and(live).count()) throw new Error('breeding times should not be editable');
     await shot('season-types');
   });
-  await step('Season: add a routine for another species; user number overrides suggestion', async () => {
+  await step('Season: add a routine for another species; breeding times are fixed', async () => {
     await L('Choose species').click(); await L('Search species').fill('woma');
     await pg.getByRole('button', { name: 'Woma', exact: true }).and(live).first().click();
     await T('Aspidites ramsayi', { exact: true }).waitFor({ timeout: 5000 });
-    const f = pg.getByLabel('Days from mating to birth', { exact: true }).and(live).first(); await f.fill('100'); await f.blur(); await pg.waitForTimeout(1500);
-    await tab('Pairings'); await T('Gravid · 1 mating · birth ~ 9 Nov 2026').waitFor({ timeout: 8000 });
+    await L(/^Pre-lay shed to lay: \d+ days$/).waitFor();
+    await tab('Pairings'); await T('Gravid · 1 mating · birth ~ 14 Nov 2026').waitFor({ timeout: 8000 });
   });
   await step('import recognises new species names', async () => {
     await tab('Animals'); await T('Bulk add', { exact: true }).click();

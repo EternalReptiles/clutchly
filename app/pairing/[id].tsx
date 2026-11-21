@@ -5,7 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCollection } from '../../lib/derived';
 import { insert, remove, update } from '../../lib/store';
-import { Pairing, estimates, fmt, pairStatus, seasonFor, today } from '../../lib/logic';
+import { Pairing, diffDays, fmt, nextStage, pairStatus, seasonFor, today } from '../../lib/logic';
 import { Repro, speciesInfo, words } from '../../lib/species';
 import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
 import { HatchlingDialog } from '../../lib/HatchlingDialog';
@@ -45,8 +45,11 @@ export default function PairingScreen() {
   const female = animals.find(a => a.id === p.female_id); const male = animals.find(a => a.id === p.male_id);
   const geneLib = useGeneLib(); const femaleGenes = useAnimalGenes(p.female_id); const maleGenes = useAnimalGenes(p.male_id);
   const repro = speciesInfo(female?.species).repro; const w = words(repro);
-  const est = estimates(p, seasonFor(cfg, female?.species || 'Other'));
-  const estText = !p.laid && est.lay ? ` · ${w.est} ${fmt(est.lay)}` : p.laid && !p.hatched && est.hatch ? ` · estimated hatch ${fmt(est.hatch)}` : '';
+  // The next stage still to come, with its expected date (e.g. after ovulation: the pre-lay shed).
+  const next = nextStage(p, seasonFor(cfg, female?.species || 'Other'));
+  const nextName = next ? (next.key === 'prelay_shed' ? 'pre-lay shed' : next.key === 'laid' ? w.est.replace('estimated ', '') : 'hatch') : '';
+  const estText = next ? ` · ${nextName} expected ${fmt(next.date)}` : '';
+  const inDays = (d: string) => { const n = diffDays(d, today()); return n > 1 ? `in ${n} days` : n === 1 ? 'tomorrow' : n === 0 ? 'today' : `${-n} days ago`; };
   const females = pick('Female'), males = pick('Male');
   // Hatchlings can be created once the pairing has a hatch date (live-bearers: a birth date).
   const hatchDate = isNew ? null : repro === 'live' ? p.laid : p.hatched;
@@ -70,7 +73,10 @@ export default function PairingScreen() {
         <Text style={{ color: C.ink }}>{fmt(d)}</Text></Pressable>)}
       {(p.locks || []).length > 0 && <Text style={s.mu}>Tap a {w.lock} to remove it.</Text>}
       <Text style={[s.h, { marginTop: 18 }]}>Dates</Text>
-      {datesFor(repro).map(([k, l]) => <DateField key={k} optional label={l} value={p[k]} onChange={v => setP({ ...p, [k]: v })} />)}
+      {datesFor(repro).map(([k, l]) => <View key={k}>
+        <DateField optional label={l} value={p[k]} onChange={v => setP({ ...p, [k]: v })} />
+        {next?.key === k && !p[k] && <Text style={[s.mu, { color: C.ink }]} accessibilityLabel={`Expected ${l}`}>Expected around {fmt(next.date)} ({inDays(next.date)})</Text>}
+      </View>)}
       <Input label={w.clutch} keyboardType="number-pad" value={p.clutch != null ? String(p.clutch) : ''} onChangeText={v => setP({ ...p, clutch: v ? parseInt(v, 10) || null : null })} />
       {repro !== 'live' && <Input label="Fertile eggs" keyboardType="number-pad" value={p.fertile != null ? String(p.fertile) : ''} onChangeText={v => setP({ ...p, fertile: v ? parseInt(v, 10) || null : null })} />}
       {hatchDate && <View style={[s.card, { marginTop: 14 }]}>

@@ -25,4 +25,15 @@ ok(JSON.stringify(o.last7) === '{"fed":0,"refused":1,"sheds":1,"weights":1}', 'l
 ok(o.week.lays === 1 && o.week.hatches === 1, 'week totals');
 const paused = O.overview(animals, events, [], [{ species: 'Carpet', pause_from: d(-3).slice(5), pause_to: d(3).slice(5) }], t);
 ok(paused.dueNow.length === 0 && paused.days[3].items.some(i => i.text === 'Feeding starts again · Carpet'), 'feeding pause: nothing due, restart shown', paused.days[3]);
+// Next stage for a pairing (fixed reference figures; carpet 49 ovulation-to-lay, 25 pre-lay-to-lay, 55 lay-to-hatch)
+const C = { species: 'Carpet', prelay_to_lay: 99, ovul_to_lay: 99, lay_to_hatch: 99 };   // stored numbers are ignored
+const ns = p => L.nextStage({ locks: [], ...p }, C);
+ok(ns({}) === null, 'nothing recorded: no next stage');
+ok(JSON.stringify(ns({ ovulation: '2026-09-01' })) === '{"key":"prelay_shed","date":"2026-09-25"}', 'after ovulation: pre-lay shed 24 days later', ns({ ovulation: '2026-09-01' }));
+ok(JSON.stringify(ns({ ovulation: '2026-09-01', prelay_shed: '2026-09-23' })) === '{"key":"laid","date":"2026-10-18"}', 'after pre-lay shed: lay 25 days later');
+ok(JSON.stringify(ns({ laid: '2026-10-18' })) === '{"key":"hatched","date":"2026-12-12"}', 'after lay: hatch 55 days later');
+ok(ns({ laid: '2026-10-18', hatched: '2026-12-10' }) === null, 'hatched: done');
+ok(JSON.stringify(L.nextStage({ locks: [], ovulation: '2026-09-01' }, { species: 'Bearded dragon' })) === '{"key":"laid","date":"2026-09-26"}' || L.nextStage({ locks: [], ovulation: '2026-09-01' }, { species: 'Bearded dragon' })?.key === 'laid', 'non-python: straight to lay');
+const op = O.overview(animals, [], [{ id: 'p9', female_id: 'F1', male_id: 'M1', ovulation: d(-21), locks: [] }], seasons, t);
+ok(op.days.some(x => x.date === d(3) && x.items.some(i => i.kind === 'prelay')), 'Overview shows the expected pre-lay shed', op.days.map(x => x.items.map(i => i.kind)));
 process.exit(fails ? 1 : 0);
