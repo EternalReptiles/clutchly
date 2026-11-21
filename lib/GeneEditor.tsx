@@ -50,16 +50,25 @@ export function GeneRows({ list, value, onSet }: { list: Gene[]; value: Map<stri
     </View>); })}</>);
 }
 
-/** Edit one animal's genes. Changes save straight away (and sync like everything else). */
-export function GeneEditor({ open, onClose, animalId, species }: { open: boolean; onClose: () => void; animalId: string; species: string }) {
+/**
+ * Edit one animal's genes. For a saved animal, changes save straight away (and sync like everything else).
+ * For a new animal (no animalId yet), the genes are a draft held by the caller and saved with the animal.
+ */
+export function GeneEditor({ open, onClose, animalId, species, draft, onDraft }: { open: boolean; onClose: () => void; animalId?: string; species: string;
+  draft?: Map<string, AnimalGene>; onDraft?: (m: Map<string, AnimalGene>) => void }) {
   const st = useStore(); const genes = useGenes();
   const mine = useMemo(() => new Map(st.animal_genes.filter(g => g.animal_id === animalId).map(g => [g.gene_key as string, g])), [st.animal_genes, animalId]);
   const list = useMemo(() => allGenes(genes), [genes]);
-  const value = useMemo(() => { const c = canonical({ genes, combos: [] });
-    return new Map([...mine.values()].map(r => [c(r.gene_key as string), r as unknown as AnimalGene])); }, [mine, genes]);
+  const value = useMemo(() => { if (draft) return draft; const c = canonical({ genes, combos: [] });
+    return new Map([...mine.values()].map(r => [c(r.gene_key as string), r as unknown as AnimalGene])); }, [mine, genes, draft]);
   const [newName, setNewName] = useState(''); const [newKind, setNewKind] = useState<Inheritance>('recessive');
   const set = (g: Gene, state: GeneState | 'none', pct?: number) => {
     const cur = value.get(g.key) as any;
+    if (draft && onDraft) { const n = new Map(draft);
+      if (state === 'none') n.delete(g.key);
+      else n.set(g.key, { gene_key: g.key, state, het_pct: state === 'possible_het' ? (pct ?? cur?.het_pct ?? 50) : null });
+      return onDraft(n); }
+    if (!animalId) return;
     if (state === 'none') { if (cur) remove('animal_genes', cur.id); return; }
     const het_pct = state === 'possible_het' ? (pct ?? cur?.het_pct ?? 50) : null;
     if (cur) update('animal_genes', cur.id, { state, het_pct });

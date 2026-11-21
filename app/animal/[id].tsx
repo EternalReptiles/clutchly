@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { morphName } from '../../lib/genetics';
+import { morphName, type AnimalGene } from '../../lib/genetics';
 import { useAnimalGenes, useGeneLib } from '../../lib/useGenes';
 import { GeneEditor } from '../../lib/GeneEditor';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { insert, remove, update, useStore } from '../../lib/store';
+import { insert, insertMany, remove, update, useStore } from '../../lib/store';
 import { SEXES, fmt, today } from '../../lib/logic';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { PhotoGallery } from '../../lib/PhotoGallery';
@@ -44,7 +44,11 @@ export default function AnimalScreen() {
   const sheds = useMemo(() => shedStats(allEv), [allEv]);
   const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
   const [editing, setEditing] = useState<Ev | null>(null);
-  const geneLib = useGeneLib(); const myGenes = useAnimalGenes(isNew ? null : id); const morph = morphName(geneLib, myGenes);
+  const geneLib = useGeneLib(); const savedGenes = useAnimalGenes(isNew ? null : id);
+  // A new animal's genes are held here and saved with it.
+  const [draftGenes, setDraftGenes] = useState<Map<string, AnimalGene>>(new Map());
+  const myGenes = useMemo(() => isNew ? [...draftGenes.values()] : savedGenes, [isNew, draftGenes, savedGenes]);
+  const morph = morphName(geneLib, myGenes);
   const [genesOpen, setGenesOpen] = useState(false);
   const mother = animal?.mother_id ? st.animals.find(x => x.id === animal.mother_id) : undefined;
   const father = animal?.father_id ? st.animals.find(x => x.id === animal.father_id) : undefined;
@@ -59,7 +63,9 @@ export default function AnimalScreen() {
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;
     if (every !== null && (isNaN(every) || every < 1 || every > 365)) return notify('Feed interval must be 1 to 365 days, or blank');
     const body = { name, species: a.species, sex: a.sex, status: a.status, dob: a.dob, feed_every: every, notes: a.notes.trim() || null };
-    if (isNew) insert('animals', body); else update('animals', id, body);
+    if (isNew) { const row = insert('animals', body);
+      insertMany('animal_genes', [...draftGenes.values()].map(x => ({ animal_id: row.id, gene_key: x.gene_key, state: x.state, het_pct: x.het_pct ?? null }))); }
+    else update('animals', id, body);
     r.back();
   };
   const log = (kind: Ev['kind'], extra: Partial<Ev> = {}) => {
@@ -68,6 +74,15 @@ export default function AnimalScreen() {
   };
   const logWeight = () => { const n = parseFloat(g.replace(',', '.')); if (!(n > 0)) return notify('Enter a weight in grams'); log('weight', { grams: n }); };
   const del = () => confirm('Delete animal?', 'Its history and pairings are deleted too.', 'Delete', () => { remove('animals', id); r.back(); });
+
+  const genesSection = (
+    <View style={{ marginTop: 14 }}>
+      <Text style={s.h}>Genes</Text>
+      <Text style={{ color: morph ? C.ink : C.mu, marginTop: 2 }}>{morph || (isNew ? 'None yet. Add any genes it has or carries.' : 'No genes recorded.')}</Text>
+      <View style={{ marginTop: 8 }}><Btn t={isNew ? (draftGenes.size ? 'Edit genes' : 'Add genes') : 'Edit genes'} onPress={() => setGenesOpen(true)} /></View>
+      <GeneEditor open={genesOpen} onClose={() => setGenesOpen(false)} animalId={isNew ? undefined : id} species={a.species || animal?.species || 'Other'}
+        draft={isNew ? draftGenes : undefined} onDraft={setDraftGenes} />
+    </View>);
 
   if (!isNew && !animal && st.ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This animal has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page} />;
@@ -79,6 +94,7 @@ export default function AnimalScreen() {
     <DateField optional label="Hatch date" value={a.dob} onChange={v => setA({ ...a, dob: v })} />
     <Input label="Feed every N days (blank = species default from the Season tab)" keyboardType="number-pad" value={a.feed_every} onChangeText={v => setA({ ...a, feed_every: v })} />
     <Input label="Notes" multiline value={a.notes} onChangeText={v => setA({ ...a, notes: v })} />
+    {isNew && genesSection}
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
     {!isNew && (mother || father || offspring.length > 0) && <View style={{ marginTop: 14 }}>
       <Text style={s.h}>Family</Text>
@@ -89,12 +105,7 @@ export default function AnimalScreen() {
           {offspring.map(o => <Pressable key={o.id} onPress={() => r.push(`/animal/${o.id}`)} accessibilityRole="link" style={s.btn}>
             <Text style={{ color: C.ink }}>{o.name}</Text></Pressable>)}</View></>}
     </View>}
-    {!isNew && <View style={{ marginTop: 14 }}>
-      <Text style={s.h}>Genes</Text>
-      <Text style={{ color: morph ? C.ink : C.mu, marginTop: 2 }}>{morph || 'No genes recorded.'}</Text>
-      <View style={{ marginTop: 8 }}><Btn t="Edit genes" onPress={() => setGenesOpen(true)} /></View>
-      <GeneEditor open={genesOpen} onClose={() => setGenesOpen(false)} animalId={id} species={a.species || animal?.species || 'Other'} />
-    </View>}
+    {!isNew && genesSection}
     {!isNew && <PhotoGallery animalId={id} />}
     {!isNew && <><Text style={[s.h, { marginTop: 22 }]}>Log</Text>
       <DateField label="Date" value={day} onChange={v => setDay(v || today())} />

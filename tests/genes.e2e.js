@@ -27,6 +27,16 @@ const SP = process.argv[2];
     await L('Email').fill(`clutchly.gn.${Date.now()}@gmail.com`); await L('Password').fill('Gn-test-pass-1'); await B('Create account').click();
     await B('Skip for now').click({ timeout: 15000 }); await addAnimal('JF', 'Female'); await addAnimal('JM', 'Male');
   });
+  await step('genes can be set while adding a new animal (saved with it)', async () => {
+    await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('NG'); await B('Female').click();
+    await T('None yet. Add any genes it has or carries.').waitFor(); await B('Add genes').click(); await L('Search genes').waitFor({ timeout: 8000 });
+    await setGene('Albino', 'Visual'); await setGene('Axanthic', 'Visual'); await B('Done').click();
+    await T('Snow', { exact: true }).waitFor({ timeout: 5000 }); await B('Edit genes').waitFor();
+    await B('Save').click(); await T('NG', { exact: true }).waitFor({ timeout: 8000 });
+    await pg.waitForTimeout(2500); await pg.reload({ waitUntil: 'networkidle' }); await tab('Animals');
+    await T('Snow', { exact: true }).waitFor({ timeout: 10000 });
+    await T('NG', { exact: true }).click(); await T('Snow', { exact: true }).waitFor({ timeout: 5000 }); await back();
+  });
   await step('female: Jaguar visual, het Albino (descriptions shown)', async () => {
     await T('JF', { exact: true }).click(); await T('No genes recorded.').waitFor(); await B('Edit genes').click();
     await L('Search genes').waitFor({ timeout: 8000 }); await T(/Heavily reduces dark pigment and alters pattern/).waitFor();
