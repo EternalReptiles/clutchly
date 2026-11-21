@@ -40,6 +40,11 @@ export type DateFormat = 'auto' | 'au' | 'us';
 export const DATE_FORMATS: [DateFormat, string][] = [['auto', 'Phone setting'], ['au', 'Australian'], ['us', 'US']];
 let locale: string | undefined;
 export const setDateFormat = (f?: string | null) => { locale = f === 'au' ? 'en-AU' : f === 'us' ? 'en-US' : undefined; };
+// True if dates are written day-first (31/01/2024) for this user: their setting, or the phone's region.
+export const isDayFirst = () => {
+  const parts = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'numeric', year: 'numeric' }).formatToParts(new Date(2024, 0, 31));
+  return parts.findIndex(p => p.type === 'day') < parts.findIndex(p => p.type === 'month');
+};
 export const fmt = (d?: string | null) => d ? noon(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
 export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : '–';
 

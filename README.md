@@ -10,7 +10,7 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 ## Tests
 - `npm run typecheck`
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`: clicks through the web build with Playwright; see the comment at the top of the file.
+- `tests/ui.e2e.js` and `tests/import.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Before the stores
 - `bundleIdentifier` / `package` are `com.eternalreptiles.clutchly`. They cannot change once the app is published in the stores.
@@ -21,4 +21,4 @@ Expo + Supabase app for reptile feeding, shed and breeding tracking. Each user s
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-Offline mode, push notifications for due feeds, photos, CSV import/export, bulk add, hatchling IDs, subscriptions (RevenueCat), password reset screen.
+Offline mode, push notifications for due feeds, photos, CSV export, hatchling IDs, subscriptions (RevenueCat), password reset screen.
