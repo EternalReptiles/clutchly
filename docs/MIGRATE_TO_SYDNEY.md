@@ -53,8 +53,8 @@ New project: `oybgqvhuromskcwcjyft` ("clutchly", Sydney). Old: `xtjoypcgzfotjzsk
 - New cron secret in the vault and as `CRON_SECRET`; hourly job points at the Sydney `daily-digest`.
 - `daily-digest` and `revenuecat-webhook` deployed (`verify_jwt:false`). New `REVENUECAT_WEBHOOK_AUTH`
   (`Bearer …`; the owner gets the value privately and enters it in RevenueCat later).
-- Auth: confirm email off (as before), site URL and redirect URLs set. **Email templates not applied:** Supabase
-  refuses custom templates on free projects without custom SMTP. Apply them (with the subjects above) once SMTP is set.
+- Auth: confirm email off (as before), site URL and redirect URLs set. Custom SMTP (Resend, Japan region) added by
+  the owner, then the branded templates and subjects applied and the email limit raised to 100 an hour.
 - Data: owner and review account copied (users, identities, all public tables incl. `deleted_rows`, MANUAL Pro
   rows); counts and row hashes match the old project. No photo files existed. Test accounts not copied.
 - App, `.env`, privacy policy (Sydney, Australia) and docs/SUPABASE_PRODUCTION.md updated.
