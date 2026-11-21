@@ -58,6 +58,7 @@ New project: `oybgqvhuromskcwcjyft` ("clutchly", Sydney). Old: `xtjoypcgzfotjzsk
 - Data: owner and review account copied (users, identities, all public tables incl. `deleted_rows`, MANUAL Pro
   rows); counts and row hashes match the old project. No photo files existed. Test accounts not copied.
 - App, `.env`, privacy policy (Sydney, Australia) and docs/SUPABASE_PRODUCTION.md updated.
-- Tests against Sydney passed: rls (75), plans (42), digest.function (17), revenuecat, digest; browser suites ui,
-  import, reset, species so far (rest running). They create throwaway `clutchly.*@gmail.com` accounts; delete them
-  from the Sydney project after testing (it is production).
+- Tests against Sydney all passed: rls (75), plans (42), digest.function (17), revenuecat, digest, and every browser
+  suite (ui, import, reset, species, offline, history, hatchlings, onboarding, export, plans, genes, photos). Owner and
+  review account signed in and see all their animals. Leftover throwaway test accounts deleted; only the two real
+  accounts remain. Tests create `clutchly.*@gmail.com` accounts: delete leftovers after any future run here.
