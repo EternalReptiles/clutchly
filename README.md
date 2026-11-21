@@ -19,6 +19,34 @@ The mark (a python brooding a clutch of eggs, engraved style) is drawn by code, 
 
 To use a different logo, put it at `assets/logo.png` (black on white or transparent) and run step 3.
 
+## Push notifications
+Each morning (at the hour and timezone the user picks in Account > Notifications) the `daily-digest` Edge Function sends
+one notification per alert type, only when something is due: feeds due today (skipping Sold animals and species in their
+feeding pause), lays/births expected in 7 days, and a species' pairing start in 3 days. Nothing is sent on quiet days.
+
+How it fits together:
+- `device_tokens` (one row per phone; `register_device_token()` moves a token if the phone signs in to another account)
+  and `notification_settings`, both with row-level security. Migration `003_notifications.sql`.
+- `supabase/functions/daily-digest/`: `digest.ts` holds the rules (unit-tested in `tests/digest.test.mjs`); `shared/` is a
+  copy of `lib/logic.ts` and `lib/species.ts` made by `node scripts/sync_function_shared.mjs` (re-run it after changing those).
+- pg_cron calls the function at 1 minute past every hour (`004_notification_cron.sql`); the function only sends to users
+  whose chosen hour has just started locally, once per day. The call carries a shared secret (`CRON_SECRET` on the function,
+  `clutchly_cron_secret` in the database vault). The service role key exists only inside the function.
+- Tokens are removed on sign out, when the user turns notifications off for a phone, when Expo reports a phone as gone,
+  and with the account.
+
+The app asks for permission only when the user taps "Turn on" (Account, or a one-time card on Today once they have animals).
+
+Remote notifications do not work in Expo Go. To try them you need a development build:
+1. `npx eas init` (links the app to an Expo project and writes its projectId into app.json).
+2. Android: create a Firebase project, add the Android app `com.eternalreptiles.clutchly`, put `google-services.json` in the
+   project and set `"googleServicesFile": "./google-services.json"` under `android` in app.json, then upload an FCM V1
+   service-account key with `npx eas credentials`. iOS: needs an Apple Developer account; EAS sets up the push key.
+3. `npx eas build --profile development --platform android` (or ios), install it, sign in, Account > Turn on notifications.
+
+Deploying the function after changes: `supabase functions deploy daily-digest --no-verify-jwt` (Supabase CLI), or the
+Management API. Test it with `CRON_SECRET=... node --env-file=.env tests/digest.function.test.mjs`.
+
 ## Password reset emails
 In Supabase, **Authentication > URL Configuration > Redirect URLs**, add:
 - `clutchly://reset-password` (the installed app)
@@ -29,6 +57,8 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 
 ## Tests
 - `npm run typecheck`
+- `node --experimental-strip-types tests/digest.test.mjs`: notification rules.
+- `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
 - `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js` and `tests/species.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
@@ -41,4 +71,4 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
 - Check the "Clutchly" name is free in both stores and not trademarked in your markets before launch.
 
 ## Not built yet
-Offline mode, push notifications for due feeds, photos, CSV export, hatchling IDs, subscriptions (RevenueCat).
+Offline mode, photos, CSV export, hatchling IDs, subscriptions (RevenueCat).

@@ -4,6 +4,8 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { DATE_FORMATS, DateFormat, fmt, setDateFormat, today } from '../lib/logic';
 import { Btn, C, Card, Chips, Input, confirm, notify, s } from '../lib/ui';
+import { NotificationSettings } from '../lib/NotificationSettings';
+import { disablePushHere, signOutAndForgetDevice } from '../lib/notifications';
 
 export default function Account() {
   const [email, setEmail] = useState(''); const [df, setDf] = useState<DateFormat>('auto');
@@ -26,10 +28,12 @@ export default function Account() {
     if (error) return notify('Could not change password', error.message);
     setPw(''); setPw2(''); notify('Password changed');
   };
-  const signOut = async () => { const { error } = await supabase.auth.signOut(); if (error) notify('Error', error.message); };
+  const signOut = async () => { const { error } = await signOutAndForgetDevice(); if (error) notify('Error', error.message); };
   const del = () => confirm('Delete account?', 'All your animals and records are permanently deleted. This cannot be undone.', 'Delete', async () => {
     const { error } = await supabase.rpc('delete_my_account');
     if (error) return notify('Could not delete account', error.message);
+    // The account's device tokens were deleted with it; forget this phone's copy too.
+    await disablePushHere().catch(() => {});
     await supabase.auth.signOut({ scope: 'local' });
   });
 
@@ -39,6 +43,7 @@ export default function Account() {
     <Card><Text style={s.h}>Date format</Text>
       <Chips opts={DATE_FORMATS.map(f => f[1])} v={DATE_FORMATS.find(f => f[0] === df)![1]} on={l => changeFormat(DATE_FORMATS.find(f => f[1] === l)![0])} />
       <Text style={[s.mu, { marginTop: 6 }]}>Today shows as {fmt(today())}</Text></Card>
+    <NotificationSettings />
     <Card><Text style={s.h}>Change password</Text>
       <Input label="New password" value={pw} onChangeText={setPw} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
       <Input label="Confirm new password" value={pw2} onChangeText={setPw2} secureTextEntry textContentType="newPassword" autoComplete="new-password" onSubmitEditing={changePassword} />

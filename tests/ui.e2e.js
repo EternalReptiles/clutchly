@@ -73,6 +73,7 @@ const SP = process.argv[2];
     await L('Pre-lay shed').fill('2026-09-01'); await T('Save', { exact: true }).click();
     await T(/estimated lay 26 Sept? 2026/).waitFor({ timeout: 8000 }); await shot('pairing-detail');
     await pg.getByLabel(/back$/i).and(live).first().click(); await T(/^Pre-lay shed · 2 locks · lay ~ 26 Sept? 2026$/).waitFor({ timeout: 8000 });
+    await pg.getByText('Locks (2)').waitFor({ state: 'detached', timeout: 8000 }); // let the closing screen finish animating away
     await T('ER001 × ER002').click(); await L('Eggs laid').fill('2026-09-28'); await T('Save', { exact: true }).click();
     await T('Eggs laid · estimated hatch 22 Nov 2026').waitFor({ timeout: 8000 });
     await pg.getByLabel(/back$/i).and(live).first().click(); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 }); await shot('pairings');
@@ -101,6 +102,23 @@ const SP = process.argv[2];
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ Nov 22, 2026').waitFor({ timeout: 8000 });
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Australian', { exact: true }).click(); await pg.waitForTimeout(1500); await shot('account');
     await pg.getByLabel(/back$/i).and(live).first().click(); await tab('Pairings'); await T('Eggs laid · 2 locks · hatch ~ 22 Nov 2026').waitFor({ timeout: 8000 });
+  });
+  await step('notification settings: toggle, time, timezone persist', async () => {
+    const acct = () => pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
+    await acct(); await T('Notifications are sent to the Clutchly phone app. These settings apply to all your phones.').waitFor({ timeout: 8000 });
+    const before = await L('Notification time').textContent();
+    await pg.getByRole('switch', { name: 'Lay or birth coming up' }).and(live).first().click(); await pg.waitForTimeout(800);
+    await T('+', { exact: true }).click(); await pg.waitForTimeout(800);
+    await L('Timezone').fill('Not/AZone'); await L('Timezone').blur(); await pg.waitForTimeout(500);
+    if (!logs.some(l => l.includes('Unknown timezone'))) throw new Error('bad timezone accepted');
+    await L('Timezone').fill('Australia/Perth'); await L('Timezone').blur(); await pg.waitForTimeout(1500);
+    await shot('notifications');
+    await pg.reload({ waitUntil: 'networkidle' }); await acct(); await pg.waitForTimeout(1500);
+    if (await pg.getByRole('switch', { name: 'Lay or birth coming up' }).and(live).first().isChecked()) throw new Error('toggle not saved');
+    if (!(await pg.getByRole('switch', { name: 'Feeds due today' }).and(live).first().isChecked())) throw new Error('other toggle changed');
+    if (await L('Notification time').textContent() === before) throw new Error('time not saved: ' + before);
+    if (await L('Timezone').inputValue() !== 'Australia/Perth') throw new Error('timezone not saved');
+    await pg.getByLabel(/back$/i).and(live).first().click(); await pg.getByRole('tab', { name: 'Today' }).waitFor();
   });
   await step('account button: change password, sign in with the new one', async () => {
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await L('New password').fill('Changed-pass-2'); await L('Confirm new password').fill('Changed-pass-2');

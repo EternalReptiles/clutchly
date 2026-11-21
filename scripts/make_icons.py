@@ -49,6 +49,9 @@ def main():
     place(m, 1024, 0.56).save(ASSETS / 'adaptive-icon.png', optimize=True)
     # Splash: mark on transparent; expo-splash-screen centres it on the cream background.
     place(m, 1024, 0.96).save(ASSETS / 'splash-icon.png', optimize=True)
+    # Android notification icon: white silhouette on transparent (Android tints it).
+    ni = place(m, 96, 0.9); white = Image.new('RGBA', ni.size, (255, 255, 255, 0)); white.putalpha(ni.getchannel('A'))
+    white.save(ASSETS / 'notification-icon.png', optimize=True)
     # Web favicon.
     place(m, 48, 0.9, CREAM).save(ASSETS / 'favicon.png', optimize=True)
     print('Wrote', ', '.join(p.name for p in sorted(ASSETS.glob('*.png'))))

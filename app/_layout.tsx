@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { refreshPushToken } from '../lib/notifications';
 import { setDateFormat } from '../lib/logic';
 import { C, serif } from '../lib/ui';
 
@@ -17,6 +18,9 @@ export default function Root() {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => { if (session !== undefined) SplashScreen.hideAsync().catch(() => {}); }, [session]);
+  // Expo push tokens can change; keep this phone's registration current (never prompts).
+  const uid = session?.user.id;
+  useEffect(() => { if (uid) refreshPushToken(); }, [uid]);
 
   setDateFormat(session?.user.user_metadata?.date_format);
   const signedIn = !!session;

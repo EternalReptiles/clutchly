@@ -1,4 +1,4 @@
-import { Range, speciesInfo } from './species';
+import { speciesInfo, type Range } from './species';
 export { SPECIES } from './species';
 export const SEXES = ['Female', 'Male'];
 export type Animal = { id: string; name: string; species: string; sex: string; status: string; dob?: string | null;
@@ -46,6 +46,7 @@ export const isDayFirst = () => {
   return parts.findIndex(p => p.type === 'day') < parts.findIndex(p => p.type === 'month');
 };
 export const fmt = (d?: string | null) => d ? noon(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
+export const fmtHour = (h: number) => new Date(2000, 0, 1, h).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : '–';
 
 export const interval = (a: Animal, s: Season) =>

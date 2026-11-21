@@ -7,6 +7,7 @@ const mk = () => createClient(U, K, { auth: { persistSession: false, autoRefresh
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const ts = Date.now(), pw = 'Test-pass-' + ts;
 const A = mk(), B = mk();
+const anonClient = mk;
 const ea = `clutchly.test.a.${ts}@gmail.com`, eb = `clutchly.test.b.${ts}@gmail.com`;
 let r = await A.auth.signUp({ email: ea, password: pw }); ok(!r.error && r.data.session, 'A sign up ' + (r.error?.message || ''));
 r = await B.auth.signUp({ email: eb, password: pw }); ok(!r.error && r.data.session, 'B sign up ' + (r.error?.message || ''));
@@ -39,6 +40,19 @@ x = await B.from('pairings').update({ locks: ['2026-01-01'] }).eq('id', p.data.i
 x = await A.from('animals').select('*').eq('id', f.data.id).single(); ok(x.data?.name === 'ER001', 'A animal intact');
 const anon = mk(); x = await anon.from('animals').select('*'); ok(!!x.error || x.data.length === 0, 'logged-out sees nothing');
 x = await anon.rpc('delete_my_account'); ok(!!x.error, 'logged-out cannot call delete_my_account');
+
+// Push notifications: tokens and settings are private, and a token can only belong to one account.
+const tok = 'ExponentPushToken[rls-test-' + ts + ']';
+x = await A.rpc('register_device_token', { p_token: tok, p_platform: 'ios' }); ok(!x.error, 'A registers a device token ' + (x.error?.message || ''));
+x = await A.from('notification_settings').insert({ notify_hour: 6, timezone: 'Australia/Perth' }); ok(!x.error, 'A saves notification settings');
+for (const tb of ['device_tokens', 'notification_settings']) { x = await B.from(tb).select('*'); ok(!x.error && x.data.length === 0, `B sees 0 rows in ${tb}`); }
+x = await B.from('device_tokens').delete().eq('token', tok).select(); ok(!x.data?.length, "B cannot delete A's token");
+x = await B.from('notification_settings').update({ notify_hour: 1 }).eq('user_id', r.data.user.id).select(); ok(!x.data?.length, "B cannot change A's settings");
+x = await B.from('device_tokens').insert({ token: 'ExponentPushToken[sneaky]', platform: 'ios' }); ok(!!x.error, 'direct token insert refused (must use the RPC)');
+x = await anonClient().rpc('register_device_token', { p_token: 'ExponentPushToken[anon]', p_platform: 'ios' }); ok(!!x.error, 'logged-out cannot register a token');
+x = await B.rpc('register_device_token', { p_token: tok, p_platform: 'ios' }); ok(!x.error, 'same phone signs in as B: token moves to B');
+x = await A.from('device_tokens').select('*'); ok(x.data?.length === 0, "A no longer gets notifications on B's phone");
+x = await B.from('device_tokens').select('token'); ok(x.data?.length === 1 && x.data[0].token === tok, 'B owns the token now');
 
 // Delete accounts
 x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.error?.message || ''));
