@@ -117,12 +117,13 @@ const SP = process.argv[2];
     if (!logs.some(l => l.includes('Unknown timezone'))) throw new Error('bad timezone accepted');
     await L('Timezone').fill('Australia/Perth'); await L('Timezone').blur(); await pg.waitForTimeout(1500);
     await shot('notifications');
-    await pg.reload({ waitUntil: 'networkidle' }); await acct(); await pg.waitForTimeout(1500);
+    await pg.reload({ waitUntil: 'networkidle' }); await pg.waitForTimeout(1500);   // refresh keeps you on Account
+    await L('Timezone').waitFor({ timeout: 10000 });
     if (await pg.getByRole('switch', { name: 'Lay or birth coming up' }).and(live).first().isChecked()) throw new Error('toggle not saved');
     if (!(await pg.getByRole('switch', { name: 'Feeds due today' }).and(live).first().isChecked())) throw new Error('other toggle changed');
     if (await L('Notification time').textContent() === before) throw new Error('time not saved: ' + before);
     if (await L('Timezone').inputValue() !== 'Australia/Perth') throw new Error('timezone not saved');
-    await pg.getByLabel(/back$/i).and(live).first().click(); await pg.getByRole('tab', { name: 'Overview' }).waitFor();
+    await pg.getByRole('button', { name: 'Home', exact: true }).and(live).first().click(); await pg.getByRole('tab', { name: 'Overview' }).waitFor();   // no history after a refresh: Home
   });
   await step('account button: change password, sign in with the new one', async () => {
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await L('New password').fill('Changed-pass-2'); await L('Confirm new password').fill('Changed-pass-2');

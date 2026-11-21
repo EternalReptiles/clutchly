@@ -25,7 +25,7 @@ const brand = require('../brand.json');
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('login screen links to privacy, terms and support', async () => {
     await T('By creating an account you agree to the terms of use and privacy policy.').waitFor();
-    await opens('Privacy policy', 'privacy.html'); await opens('Terms of use', 'terms.html'); await opens('Support', 'index.html');
+    await opens('Privacy policy', 'privacy.html'); await opens('Terms of use', 'terms.html'); await opens('Support', 'support.html');
   });
   await step('sign up and add records', async () => {
     await L('Email').fill(`clutchly.ex.${Date.now()}@gmail.com`); await L('Password').fill('Ex-test-pass-1'); await B('Create account').click();

@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { Platform, Pressable, Text } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { refreshPushToken } from '../lib/notifications';
@@ -43,11 +44,15 @@ export default function Root() {
   if (session === undefined) return <StatusBar style="dark" />;
   return (<>
     <StatusBar style="dark" />
-    <Stack screenOptions={{
+    <Stack screenOptions={({ navigation }) => ({
       headerStyle: { backgroundColor: C.bg }, headerTintColor: C.ink, headerShadowVisible: false,
       headerTitleStyle: { fontFamily: serif, color: C.ink }, contentStyle: { backgroundColor: C.bg },
       headerBackTitle: 'Back', headerRight: () => <SyncPill />,
-    }}>
+      // Web: after a browser refresh (or an opened link) there's no screen to go back to, so offer Home instead.
+      ...(Platform.OS === 'web' && !navigation.canGoBack() ? { headerLeft: () =>
+        <Pressable onPress={() => router.replace('/')} accessibilityRole="button" accessibilityLabel="Home" style={{ paddingHorizontal: 12 }}>
+          <Text style={{ color: C.ink, fontSize: 16 }}>‹ Home</Text></Pressable> } : {}),
+    })}>
       {/* Routes are only reachable when the guard is true; expo-router redirects otherwise. */}
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
