@@ -23,7 +23,7 @@ export default function Animals() {
   const morphs = useMemo(() => { const by: Record<string, any[]> = {}; for (const g of animal_genes) (by[g.animal_id] ??= []).push(g);
     return Object.fromEntries(Object.entries(by).map(([k, v]) => [k, morphName(genes, v)])); }, [animal_genes, genes]);
   return (<View style={s.page}><View style={s.row}><View style={{ flex: 1 }}><Input placeholder="Search" value={q} onChangeText={setQ} /></View>
-    <View style={{ marginTop: 8, flexDirection: 'row', gap: 6 }}><Btn t="Bulk add" onPress={() => r.push('/import')} /><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
+    <View style={{ marginTop: 8, flexDirection: 'row', gap: 6 }}><Btn t="Feed" onPress={() => r.push('/feed')} /><Btn t="Bulk add" onPress={() => r.push('/import')} /><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
     <FlatList data={l} keyExtractor={a => a.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
       ListEmptyComponent={!ready || rows.length ? <Text style={[s.mu, { marginTop: 12 }]}>{!ready ? 'Loading your collection…' : 'No matches.'}</Text>

@@ -64,6 +64,7 @@ export default function Root() {
         <Stack.Screen name="calculator" options={{ title: 'Morph calculator' }} />
         <Stack.Screen name="paywall" options={{ title: 'Pro', presentation: 'modal' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
+        <Stack.Screen name="feed" options={{ title: 'Feed several' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />

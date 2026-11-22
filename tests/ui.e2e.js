@@ -20,6 +20,10 @@ const SP = process.argv[2];
   const until = async (fn, want, msg) => { for (let i = 0; i < 16; i++) { if (await fn() === want) return; await pg.waitForTimeout(500); } throw new Error(msg + ' (got ' + await fn() + ')'); };
   let n = 0; const shot = name => pg.screenshot({ path: `${SP}/ui-${String(++n).padStart(2, '0')}-${name}.png` });
   let fails = 0;
+  // Dates relative to today, shown the way the app shows them (en-AU): the feed logged from Today, and one 12 days ago.
+  const dayISO = k => { const d = new Date(); d.setDate(d.getDate() - k); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const dayAU = k => new Date(dayISO(k) + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const TODAY = dayAU(0), PAST = dayAU(12), PAST_ISO = dayISO(12);
   const step = async (name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await shot('FAIL'); } };
   const email = `clutchly.ui.${Date.now()}@gmail.com`, pw = 'Ui-test-pass-1';
   const signIn = async () => { await L('Email').fill(email); await L('Password').fill(pw); await T('Sign in', { exact: true }).click(); };
@@ -52,16 +56,16 @@ const SP = process.argv[2];
     await T('Fed', { exact: true }).click(); await gone(T('ER001', { exact: true }));
   });
   await step('animal screen: log feed on a past date, weight, history', async () => {
-    await tab('Animals'); await T(/Female · fed 21 Nov 2026/).waitFor({ timeout: 8000 });
+    await tab('Animals'); await T(new RegExp(`Female · fed ${TODAY}`)).waitFor({ timeout: 8000 });
     await T('ER001', { exact: true }).click(); await T(/^Next feed /).waitFor({ timeout: 8000 }); await T('Every 7 days, from the default.').waitFor(); await pg.getByLabel(/back$/i).and(live).first().click();
-    await T('ER002', { exact: true }).click(); await T(/^Feed (due today|overdue)/).waitFor({ timeout: 8000 }); await L('Date').fill('2026-11-10');
-    await L('Food').fill('medium rat'); await T('Fed', { exact: true }).click(); await T('10 Nov 2026 · Fed (medium rat)').waitFor({ timeout: 8000 });
-    await L('Weight (g)').fill('850'); await T('Weight', { exact: true }).click(); await T('10 Nov 2026 · 850 g').waitFor({ timeout: 8000 });
+    await T('ER002', { exact: true }).click(); await T(/^Feed (due today|overdue)/).waitFor({ timeout: 8000 }); await L('Date').fill(PAST_ISO);
+    await L('Food').fill('medium rat'); await T('Fed', { exact: true }).click(); await T(`${PAST} · Fed (medium rat)`).waitFor({ timeout: 8000 });
+    await L('Weight (g)').fill('850'); await T('Weight', { exact: true }).click(); await T(`${PAST} · 850 g`).waitFor({ timeout: 8000 });
     await shot('animal-detail');
   });
-  await step('delete a history entry (via the entry editor)', async () => { await T('10 Nov 2026 · 850 g').click(); await pg.getByRole('button', { name: 'Delete', exact: true }).last().click(); await gone(T('10 Nov 2026 · 850 g')); });
-  await step('back button; list shows last feed', async () => { await pg.getByLabel(/back$/i).and(live).first().click(); await T(/Male · fed 10 Nov 2026/).waitFor({ timeout: 8000 }); await shot('animals'); });
-  await step('Today: male fed 10 Nov is not due (21-day default)', async () => {
+  await step('delete a history entry (via the entry editor)', async () => { await T(`${PAST} · 850 g`).click(); await pg.getByRole('button', { name: 'Delete', exact: true }).last().click(); await gone(T(`${PAST} · 850 g`)); });
+  await step('back button; list shows last feed', async () => { await pg.getByLabel(/back$/i).and(live).first().click(); await T(new RegExp(`Male · fed ${PAST}`)).waitFor({ timeout: 8000 }); await shot('animals'); });
+  await step('Today: male fed 12 days ago is not due (21-day default)', async () => {
     await tab('Overview'); await T('Nothing due today.').waitFor({ timeout: 8000 });
   });
   await step('create pairing', async () => {
