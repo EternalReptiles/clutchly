@@ -19,7 +19,7 @@ export type Overview = {
 export function overview(animals: Animal[], events: Ev[], pairings: Pairing[], seasons: Season[], t: string): Overview {
   const active = animals.filter(a => a.status !== 'Sold');
   const byId = new Map(animals.map(a => [a.id, a]));
-  const feedOn = (a: Animal, d: string) => { const sc = seasonFor(seasons, a.species); return !isPaused(sc, d) ? nextFeed(a, sc) : null; };
+  const feedOn = (a: Animal, d: string) => { const sc = seasonFor(seasons, a.species); return !isPaused(sc, d) ? nextFeed(a, sc, t) : null; };
 
   const dueNow = active.map(a => ({ a, due: feedOn(a, t) })).filter((x): x is { a: Animal; due: string } => !!x.due && x.due <= t)
     .sort((x, y) => x.due.localeCompare(y.due) || x.a.name.localeCompare(y.a.name, undefined, { numeric: true }));

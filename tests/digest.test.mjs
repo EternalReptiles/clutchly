@@ -31,7 +31,8 @@ const prelay = '2026-11-03'; // + 25 = 2026-11-28 = today + 7
 d = buildDigest(today, all, [pf, pm], [], [{ female_id: 'PF', male_id: 'PM', prelay_shed: prelay, locks: [] }]);
 ok(d.some(m => m.kind === 'lay' && m.body === 'PF × PM'), 'lay alert 7 days before estimated lay');
 ok(!buildDigest(today, all, [pf, pm], [], [{ female_id: 'PF', male_id: 'PM', prelay_shed: '2026-11-04', locks: [] }]).some(m => m.kind === 'lay'), 'no lay alert 6 days before');
-ok(!buildDigest(today, all, [pf, pm], [{ species: 'Carpet', prelay_to_lay: 30 }], [{ female_id: 'PF', male_id: 'PM', prelay_shed: prelay, locks: [] }]).some(m => m.kind === 'lay'), "user's own days override the suggestion");
+// Breeding times are fixed reference figures per species (see lib/logic.ts estimates): an old saved number doesn't move the estimate.
+ok(buildDigest(today, all, [pf, pm], [{ species: 'Carpet', prelay_to_lay: 30 }], [{ female_id: 'PF', male_id: 'PM', prelay_shed: prelay, locks: [] }]).some(m => m.kind === 'lay'), 'fixed breeding times: a saved prelay_to_lay is ignored');
 const bt = A('BT', 'Female', 'Blue-tongue skink', '2026-11-20'), bm = A('BM', 'Male', 'Blue-tongue skink', '2026-11-20');
 // Blue-tongue: mating + 105 days (suggested) = birth. 2026-08-15 + 105 = 2026-11-28 = today + 7.
 d = buildDigest(today, all, [bt, bm], [], [{ female_id: 'BT', male_id: 'BM', ovulation: '2026-08-15', locks: [] }]);

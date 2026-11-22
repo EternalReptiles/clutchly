@@ -191,14 +191,24 @@ date), ranges, the latest good-egg count against the clutch size, when eggs were
 `017_incubation.sql`; a table new to a phone's cache is loaded in full on its next sync). Logic in `lib/incubation.ts`
 (`tests/incubation.test.js`), screen in `lib/IncubationLog.tsx` (`tests/incubation.e2e.js`).
 
+## QR labels
+Animals tab > Labels (or Print label on an animal) prints labels for tubs and enclosures: a QR code with the animal's
+name, morph, species, sex and hatch date. Sizes (`lib/labels.ts`, exact millimetres so they print at 100%): A4 sheets
+of 21 (63.5 × 38.1 mm, Avery L7160) or 14 (99.1 × 38.1 mm, L7163) with "labels already used" to start part-way down a
+sheet, and label printers at 62 × 29 mm (Brother DK-11209) or 57 × 32 mm (Dymo 11354), one per page. Phones use the
+system print dialog or Save PDF (`expo-print`); the web prints from a hidden frame. The QR code is the animal's web
+address (`https://clutchly.com.au/app/animal/<id>`), so any phone camera opens it; the app's Scan button (Animals tab,
+phones only, `app/scan.tsx` with `expo-camera`) opens it in the app. `tests/labels.test.mjs` renders every size and
+decodes its QR code; `tests/labels.e2e.js` checks the print screen.
+
 ## Tests
 - `npm run typecheck`
-- `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts. `tests/incubation.test.js`: incubation summary.
+- `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts. `tests/incubation.test.js`: incubation summary. `tests/labels.test.mjs`: label layouts and QR codes (see its header).
 - `RC_AUTH=... CRON_SECRET=... node --env-file=.env tests/plans.test.mjs`: free vs Pro vs lapsed, enforced by the database. Tests that need Pro use `tests/makePro.cjs` (sends the webhook a sandbox purchase). `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `RC_AUTH=... node --env-file=.env tests/transfer.test.mjs`: handovers, including every refusal (wrong code, own animal, used, cancelled, buyer's free limit).
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js`, `tests/handover.e2e.js` and `tests/incubation.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js`, `tests/handover.e2e.js`, `tests/incubation.e2e.js` and `tests/labels.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Store readiness
 - `brand.json` holds the name, identifiers, version, site address, support email and RevenueCat keys; `app.config.ts`

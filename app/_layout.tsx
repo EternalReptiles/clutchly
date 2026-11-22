@@ -67,6 +67,8 @@ export default function Root() {
         <Stack.Screen name="feed" options={{ title: 'Feed several' }} />
         <Stack.Screen name="claim/index" options={{ title: 'Handover code' }} />
         <Stack.Screen name="licence" options={{ title: 'Wildlife licence' }} />
+        <Stack.Screen name="labels" options={{ title: 'Print labels' }} />
+        <Stack.Screen name="scan" options={{ title: 'Scan a label' }} />
         <Stack.Screen name="records" options={{ title: 'Sales and purchases' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

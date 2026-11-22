@@ -27,9 +27,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       ...(config.plugins ?? []),
+      ['expo-camera', {
+        cameraPermission: `${name} uses the camera to photograph your animals and scan their QR labels.`,
+        microphonePermission: false, recordAudioAndroid: false,
+      }],
       ['expo-image-picker', {
         photosPermission: `${name} uses your photos so you can add pictures of your animals.`,
-        cameraPermission: `${name} uses the camera so you can photograph your animals.`,
+        cameraPermission: `${name} uses the camera to photograph your animals and scan their QR labels.`,
         microphonePermission: false,
       }],
     ],

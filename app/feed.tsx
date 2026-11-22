@@ -20,7 +20,7 @@ export default function FeedSeveral() {
   const t = today();
   // Every animal still in the collection, due ones first (most overdue first), then by name.
   const rows = useMemo(() => animals.filter(a => a.status !== 'Sold').map(a => {
-    const sc = seasonFor(seasons, a.species); const paused = isPaused(sc, t); const next = nextFeed(a, sc);
+    const sc = seasonFor(seasons, a.species); const paused = isPaused(sc, t); const next = nextFeed(a, sc, t);
     return { a, paused, next, due: !paused && next <= t };
   }).sort((x, y) => Number(y.due) - Number(x.due) || (x.due ? x.next.localeCompare(y.next) : 0) || x.a.name.localeCompare(y.a.name, undefined, { numeric: true })),
   [animals, seasons, t]);

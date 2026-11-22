@@ -115,7 +115,7 @@ export default function AnimalScreen() {
     <Input label="Feed every N days (blank = species default from the Season tab)" keyboardType="number-pad" value={a.feed_every} onChangeText={v => setA({ ...a, feed_every: v })} />
     <Input label="Notes" multiline value={a.notes} onChangeText={v => setA({ ...a, notes: v })} />
     {isNew && genesSection}
-    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
+    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn t="Print label" onPress={() => r.push(`/labels?ids=${id}`)} />}{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
     {isNew && <Text style={[s.mu, { marginTop: 14 }]}>Bought it from a breeder who uses Clutchly? <Text style={{ textDecorationLine: 'underline', color: C.ink }} accessibilityRole="link" onPress={() => r.push('/claim')}>Enter their handover code</Text> to get its records.</Text>}
     {!isNew && (mother || father || offspring.length > 0) && <View style={{ marginTop: 14 }}>
       <Text style={s.h}>Family</Text>
