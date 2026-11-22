@@ -5,8 +5,9 @@ Moved there from the old Tokyo project `xtjoypcgzfotjzskmggw` ("Reptile Tracking
 `docs/MIGRATE_TO_SYDNEY.md`. Steps 1, 2 and 4 below are done, and so are the reviewer and owner accounts (copied with
 their passwords). Custom SMTP is Resend (domain clutchly.com.au, region Japan; sender no-reply@clutchly.com.au, "Clutchly"), and the
 branded templates and subjects from `supabase/email-templates/` are applied, with an email limit of 100 an hour.
-Still to do: Pro plan, "Confirm email" on with minimum password length 8 (left as on the old project
-for now), and the RevenueCat webhook URL.
+"Confirm email" is on (since 22 Nov 2026), so the automated tests, which sign up throwaway accounts and sign
+straight in, need a separate test project (point `.env` at it). Still to do: Pro plan, minimum password length 8,
+and the RevenueCat webhook URL.
 Auth URL configuration in use: Site URL `https://clutchly.com.au/app`; redirect URLs
 `https://clutchly.com.au/app/reset-password`, `clutchly://reset-password`, `exp://**` (remove that one at launch).
 
