@@ -163,15 +163,24 @@ species filter, "Mark due as fed" and "Mark all as fed". Saves through the local
 ## Handing an animal over to its buyer
 On an animal's page, "Make a handover link" gives a one-time link (`https://clutchly.com.au/app/claim/XXXXX-XXXXX`,
 30 days) to send the buyer. The buyer opens it (signed out they see what's being handed over, sign in or sign up, and
-come back to it), taps "Add to my collection", and gets their own copy: the animal, its feeding, shed and weight
-history and its genes (the seller's private genes are recreated in the buyer's list), with "From <seller> on <date>.
-Parents: X × Y" in the notes. The seller's notes and entry notes only go if they tick "Include my notes"; photos are
-not copied. The seller's animal is then marked Sold. Buyers can also type the code (new animal screen, Bulk add).
-- Migration `015_transfers.sql`: table `transfers` (sellers can read their own; nobody writes it directly) and the
-  functions `create_transfer`, `cancel_transfer`, `transfer_preview` (also for signed-out users, by code) and
-  `accept_transfer`, which checks the code, refuses the seller and second uses, and applies the buyer's free limit.
-- App: `lib/transfers.ts`, `lib/Handover.tsx` (the seller's card), `app/claim/[code].tsx` and `app/claim/index.tsx`.
-  Handovers need a connection; the copy reaches the buyer's phone with the next sync.
+come back to it) and taps "Ask to add to my collection". The seller sees the request, with the buyer's name, licence
+and address, on Overview and the animal's page, and approves or declines. Approving gives the buyer their own copy:
+the animal, its feeding, shed and weight history, genes (the seller's private genes are recreated in the buyer's list)
+and photos, with "From <seller> on <date>. Parents: X × Y" in the notes; the seller's licence details go to the buyer;
+the seller's animal is marked Sold. The seller's notes and entry notes only go if they tick "Include my notes".
+Declining (or the buyer withdrawing) clears the request and the link works again. Buyers can also type the code (new
+animal screen, Bulk add), and come back to the link to see whether it was approved.
+- Migrations `015_transfers.sql` (table `transfers`; nobody writes it directly), `020_handover_approval.sql`:
+  `create_transfer`, `cancel_transfer`, `transfer_preview` (also signed out, by code), `accept_transfer` (now only asks:
+  one request at a time, licence and plan room checked), `withdraw_request`, `decline_transfer` and `approve_transfer`
+  (the copy; the buyer's free limit applies, checked with `clutchly_pro`, since `is_pro` only answers for the caller).
+- Edge Function `handover-approve` (JWT verification off; it passes the seller's token to `approve_transfer`) then
+  copies the photo files into the buyer's folder with the service role, which storage needs.
+- App: `lib/transfers.ts`, `lib/Handover.tsx` (the seller's card), `app/claim/[code].tsx`, `app/claim/index.tsx`, and
+  the "Handover waiting for you" card on Overview. Handovers need a connection; the copy reaches the buyer's phone with
+  the next sync.
+- Tests: with "Confirm email" on, pass `SUPABASE_SECRET_KEY` (tests only) so `tests/signup.mjs` creates confirmed
+  accounts; `tests/transfer.test.mjs` (71 checks) and `tests/handover.e2e.js`.
 
 ## Wildlife licences
 Account > Wildlife licence saves the user's licence once (full name, number, state, class, expiry, address, phone;
@@ -179,7 +188,7 @@ table `licences`, private to its owner). Every handover swaps them: the seller n
 address saved to make a link, and the buyer needs the same to accept (checked by the database, migration
 `018_licence_required.sql`, whatever app version calls it). Both sets are copied into the handover when it's accepted
 (so the record doesn't change if a licence does) and never travel through the link before. Both sides see the other's
-details on the animal page, and Account > Sales and purchases lists every handover with them (shareable as text).
+details on the animal page (the seller sees the buyer's with the request), and Account > Sales and purchases lists every handover with them (shareable as text).
 Accepted handovers are kept as each side's record even if the animal or the other account is deleted later. With no
 business name on the link, the buyer's note says who it's from using the seller's licence name. Migrations
 `016_licences.sql` and `018`; `app/licence.tsx`, `app/records.tsx`; checked in `tests/transfer.test.mjs` and
@@ -206,6 +215,10 @@ remembered and opened after signing in. `tests/labels.test.mjs` renders every si
 decodes its QR code; `tests/labels.e2e.js` checks the print screen.
 
 ## Tests
+"Confirm email" is on in the live project. The database tests (`rls`, `plans`, `transfer`, `digest.function`) and
+`tests/handover.e2e.js` work there when given `SUPABASE_SECRET_KEY` (they then create already-confirmed throwaway
+accounts and delete them). The other browser suites sign up through the app, so run them against a test project with
+"Confirm email" off (point `.env` at it).
 - `npm run typecheck`
 - `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts. `tests/incubation.test.js`: incubation summary. `tests/labels.test.mjs`: label layouts and QR codes (see its header).
 - `RC_AUTH=... CRON_SECRET=... node --env-file=.env tests/plans.test.mjs`: free vs Pro vs lapsed, enforced by the database. Tests that need Pro use `tests/makePro.cjs` (sends the webhook a sandbox purchase). `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).

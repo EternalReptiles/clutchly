@@ -12,16 +12,18 @@ import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
 import { usePlan } from '../../lib/plan';
 import { goPro } from '../../lib/goPro';
-import { PENDING_KEY } from '../../lib/transfers';
+import { PENDING_KEY, awaitingApproval, type Transfer } from '../../lib/transfers';
 import { PENDING_ANIMAL_KEY } from '../../lib/labels';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Overview() {
   const r = useRouter(); const { ready, animals, seasons, events, pairings } = useCollection();
   const rows = animals.filter(a => a.status !== 'Sold'); const cfg = ready ? seasons : null;
-  const [askPush, setAskPush] = useState(false); const plan = usePlan(); const [refreshing, setRefreshing] = useState(false);
+  const [askPush, setAskPush] = useState(false); const [requests, setRequests] = useState<Transfer[]>([]); const plan = usePlan(); const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   // Offer reminders once the user has animals (not on first launch), until they turn them on or say no.
+  // Handovers waiting for this seller's approval (online only; nothing shows offline).
+  useFocusEffect(useCallback(() => { awaitingApproval().then(setRequests, () => {}); }, []));
   useFocusEffect(useCallback(() => { (async () => {
     // Someone opened a handover link before signing in: take them back to it.
     const claim = await AsyncStorage.getItem(PENDING_KEY).catch(() => null);
@@ -47,6 +49,9 @@ export default function Overview() {
     {cfg && cfg.length === 0 ? <Card onPress={() => r.navigate('/settings')}>
       <Text style={s.h}>Set up your routine</Text>
       <Text style={s.mu}>Add your feeding pause, pairing dates and feed intervals for each species on the Season tab. Until then, feeds are due every {FALLBACK.female_every} days for females and {FALLBACK.male_every} for males. Tap to start.</Text></Card> : null}
+    {requests.map(t => <Card key={t.code} onPress={() => t.animal_id && r.push(`/animal/${t.animal_id}`)}>
+      <Text style={s.h}>Handover waiting for you</Text>
+      <Text style={{ color: C.ink }}>{t.buyer_licence?.full_name ?? 'A buyer'} has asked for {t.animal_name ?? 'an animal'}. Tap to check their details and approve.</Text></Card>)}
     {askPush && rows.length > 0 ? <Card>
       <Text style={s.h}>Morning reminders?</Text>
       <Text style={s.mu}>Get one notification a morning with how many animals are due, and a heads-up before lays and pairing season.</Text>

@@ -2,12 +2,13 @@
 //   RC_AUTH='Bearer ...' CRON_SECRET=... node --env-file=.env tests/digest.function.test.mjs
 // Creates a throwaway account (needs "Confirm email" off), then deletes it.
 import { createClient } from '@supabase/supabase-js';
+import { signUp } from './signup.mjs';
 const U = process.env.EXPO_PUBLIC_SUPABASE_URL, K = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY, SECRET = process.env.CRON_SECRET;
 if (!U || !K || !SECRET) { console.error('Need EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY and CRON_SECRET'); process.exit(1); }
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const fn = (qs, secret = SECRET) => fetch(`${U}/functions/v1/daily-digest?${qs}`, { method: 'POST', headers: { 'x-cron-secret': secret } });
 const c = createClient(U, K, { auth: { persistSession: false } });
-const su = await c.auth.signUp({ email: `clutchly.fn.${Date.now()}@gmail.com`, password: 'Fn-test-pass-1' });
+const su = await signUp(c, { email: `clutchly.fn.${Date.now()}@gmail.com`, password: 'Fn-test-pass-1' });
 const uid = su.data.user.id;
 await (await import('./makePro.cjs')).default(uid); // notifications are a Pro feature
 try {
