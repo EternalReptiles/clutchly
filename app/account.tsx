@@ -77,7 +77,10 @@ export default function Account() {
     <Card><Text style={s.h}>Your data</Text>
       <Text style={[s.mu, { marginTop: 4 }]}>Download everything you've entered (animals, history, pairings, routine, settings and photo links) as one file.</Text>
       <View style={{ marginTop: 8 }}><Btn disabled={exporting} t={exporting ? 'Preparing…' : 'Download my data'} onPress={exportData} /></View></Card>
-    <Card><Text style={s.h}>Help and legal</Text><View style={{ marginTop: 6 }}><LegalLinks /></View>
+    <Card><Text style={s.h}>Help and support</Text>
+      <Text style={[s.mu, { marginTop: 4 }]}>Answers to common questions, or send us a message.</Text>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}><Btn t="Help" onPress={() => router.push('/support')} /><Btn t="Contact support" onPress={() => router.push('/support/contact')} /></View>
+      <View style={{ marginTop: 10 }}><LegalLinks /></View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}><LogoMark size={28} />
         <Text style={s.mu}>{APP_NAME} · version {appVersion}</Text></View></Card>
     <View style={{ gap: 8, marginTop: 20 }}><Btn t="Sign out" onPress={signOut} />

@@ -47,7 +47,7 @@ export default function Root() {
   const router = useRouter(); const segments = useSegments();
   const onboarded = !!session?.user.user_metadata?.onboarded;
   useEffect(() => {
-    if (!uid || onboarded || segments[0] === 'welcome' || segments[0] === 'reset-password' || segments[0] === 'claim') return;
+    if (!uid || onboarded || segments[0] === 'welcome' || segments[0] === 'reset-password' || segments[0] === 'claim' || segments[0] === 'support') return;
     AsyncStorage.getItem(`clutchly.onboarded.${uid}`).then(v => { if (!v) router.replace('/welcome'); }, () => {});
   }, [uid, onboarded, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const signedIn = !!session;
@@ -91,6 +91,10 @@ export default function Root() {
       <Stack.Screen name="reset-password" options={{ title: 'New password' }} />
       {/* A handover link: shows what's being handed over to anyone with the link; accepting needs an account. */}
       <Stack.Screen name="claim/[code]" options={{ title: 'Handover' }} />
+      {/* Help and contact work signed out too (someone who can't sign in needs them most). Named "support", not "help":
+          signed out, the router opens the first page in alphabetical order that's allowed, which must stay "login". */}
+      <Stack.Screen name="support/index" options={{ title: 'Help' }} />
+      <Stack.Screen name="support/contact" options={{ title: 'Contact support' }} />
     </Stack>
   </>);
 }
