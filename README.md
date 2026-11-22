@@ -173,14 +173,32 @@ not copied. The seller's animal is then marked Sold. Buyers can also type the co
 - App: `lib/transfers.ts`, `lib/Handover.tsx` (the seller's card), `app/claim/[code].tsx` and `app/claim/index.tsx`.
   Handovers need a connection; the copy reaches the buyer's phone with the next sync.
 
+## Wildlife licences
+Account > Wildlife licence saves the user's licence once (name, number, state, class, expiry, address, phone; table
+`licences`, private to its owner). A handover can carry it: the seller ticks "Include my licence details" when making
+the link, the buyer ticks "Share my licence details with the seller" when accepting. The details are copied into the
+handover when it's accepted (so the record doesn't change if a licence does) and never travel through the link before.
+Both sides see the other's details on the animal page, and Account > Sales and purchases lists every handover with
+them (shareable as text). Accepted handovers are kept as each side's record even if the animal or the other account is
+deleted later. Migration `016_licences.sql`; `app/licence.tsx`, `app/records.tsx`; checked in `tests/transfer.test.mjs`
+and `tests/handover.e2e.js`.
+
+## Incubation log
+On a pairing once eggs are laid (not live-bearers): the incubator's name and target temperature, and readings with
+temperature, humidity, good eggs and a note. The card shows the day of incubation (lay day = day 0, stopping at the hatch
+date), ranges, the latest good-egg count against the clutch size, when eggs were last checked, and readings more than
+1 °C from the target in red. Readings save straight away and sync offline (table `incubation_logs`, migration
+`017_incubation.sql`; a table new to a phone's cache is loaded in full on its next sync). Logic in `lib/incubation.ts`
+(`tests/incubation.test.js`), screen in `lib/IncubationLog.tsx` (`tests/incubation.e2e.js`).
+
 ## Tests
 - `npm run typecheck`
-- `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts.
+- `node --experimental-strip-types tests/digest.test.mjs` and `tests/revenuecat.test.mjs`: notification and webhook rules. `tests/templates.test.js`: hemisphere shifts. `tests/incubation.test.js`: incubation summary.
 - `RC_AUTH=... CRON_SECRET=... node --env-file=.env tests/plans.test.mjs`: free vs Pro vs lapsed, enforced by the database. Tests that need Pro use `tests/makePro.cjs` (sends the webhook a sandbox purchase). `tests/history.test.js` and `tests/hatchlings.test.js`: stats and ID patterns (see the comment at the top of each).
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `RC_AUTH=... node --env-file=.env tests/transfer.test.mjs`: handovers, including every refusal (wrong code, own animal, used, cancelled, buyer's free limit).
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js` and `tests/handover.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js`, `tests/handover.e2e.js` and `tests/incubation.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Store readiness
 - `brand.json` holds the name, identifiers, version, site address, support email and RevenueCat keys; `app.config.ts`

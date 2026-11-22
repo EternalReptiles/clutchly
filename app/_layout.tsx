@@ -66,6 +66,8 @@ export default function Root() {
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
         <Stack.Screen name="feed" options={{ title: 'Feed several' }} />
         <Stack.Screen name="claim/index" options={{ title: 'Handover code' }} />
+        <Stack.Screen name="licence" options={{ title: 'Wildlife licence' }} />
+        <Stack.Screen name="records" options={{ title: 'Sales and purchases' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />

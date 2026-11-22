@@ -5,12 +5,16 @@ import { Platform, Share } from 'react-native';
 import brand from '../brand.json';
 import { supabase } from './supabase';
 import { getState } from './store';
+import { fmt } from './logic';
 
-export type Transfer = { code: string; animal_id: string; from_name: string | null; include_notes: boolean;
-  created_at: string; expires_at: string; accepted_at: string | null };
+export type Licence = { full_name?: string | null; licence_no?: string | null; region?: string | null; licence_class?: string | null;
+  expires?: string | null; address?: string | null; phone?: string | null };
+export type Transfer = { code: string; animal_id: string | null; new_animal_id: string | null; seller_id: string | null; accepted_by: string | null;
+  from_name: string | null; include_notes: boolean; share_seller_licence: boolean; animal_name: string | null; species: string | null;
+  created_at: string; expires_at: string; accepted_at: string | null; seller_licence: Licence | null; buyer_licence: Licence | null };
 export type Preview = { code: string; from_name: string | null; expires_at: string; accepted: boolean; mine: boolean;
   name: string; species: string; sex: string; dob: string | null; feeds: number; sheds: number; weights: number;
-  genes: { name: string; state: string; het_pct: number | null }[] };
+  genes: { name: string; state: string; het_pct: number | null }[]; seller_licence: boolean };
 
 export const PENDING_KEY = 'clutchly.pendingClaim';
 export const FROM_KEY = 'clutchly.handoverFrom';
@@ -20,13 +24,21 @@ export const cleanCode = (s: string) => (s.trim().split('/').pop() ?? '').replac
 export const showCode = (c: string) => c.length === 10 ? `${c.slice(0, 5)}-${c.slice(5)}` : c;
 export const claimLink = (c: string) => `${brand.siteUrl.replace(/\/+$/, '')}/app/claim/${showCode(c)}`;
 
-/** The newest handover for an animal (null if none), or undefined when offline. */
-export async function latestTransfer(animalId: string): Promise<Transfer | null | undefined> {
-  const r = await supabase.from('transfers').select('*').eq('animal_id', animalId).order('created_at', { ascending: false }).limit(1);
-  return r.error ? undefined : (r.data[0] as Transfer) ?? null;
+/** An animal's handovers: the newest one out (as seller) and the one it arrived with (as buyer). Undefined when offline. */
+export async function handoversOf(animalId: string): Promise<{ out: Transfer | null; in: Transfer | null } | undefined> {
+  const r = await supabase.from('transfers').select('*').or(`animal_id.eq.${animalId},new_animal_id.eq.${animalId}`).order('created_at', { ascending: false });
+  if (r.error) return undefined;
+  const rows = r.data as Transfer[];
+  return { out: rows.find(t => t.animal_id === animalId) ?? null, in: rows.find(t => t.new_animal_id === animalId) ?? null };
 }
-export async function createTransfer(animalId: string, fromName: string, includeNotes: boolean) {
-  const r = await supabase.rpc('create_transfer', { p_animal: animalId, p_from_name: fromName, p_include_notes: includeNotes });
+/** Every handover this user was part of, either side, newest first (accepted ones are the sales and purchases record). */
+export async function allTransfers(): Promise<Transfer[]> {
+  const r = await supabase.from('transfers').select('*').not('accepted_at', 'is', null).order('accepted_at', { ascending: false });
+  if (r.error) throw new Error(friendly(r.error.message));
+  return r.data as Transfer[];
+}
+export async function createTransfer(animalId: string, fromName: string, includeNotes: boolean, shareLicence: boolean) {
+  const r = await supabase.rpc('create_transfer', { p_animal: animalId, p_from_name: fromName, p_include_notes: includeNotes, p_share_licence: shareLicence });
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as string;
 }
@@ -36,8 +48,8 @@ export async function previewTransfer(code: string): Promise<Preview | null> {
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as Preview | null;
 }
-export async function acceptTransfer(code: string): Promise<string> {
-  const r = await supabase.rpc('accept_transfer', { p_code: code });
+export async function acceptTransfer(code: string, shareLicence: boolean): Promise<string> {
+  const r = await supabase.rpc('accept_transfer', { p_code: code, p_share_licence: shareLicence });
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as string;
 }
@@ -63,3 +75,20 @@ export async function shareLink(name: string, code: string): Promise<'shared' | 
     await nav.clipboard.writeText(link); return 'copied';
   } catch { return 'failed'; }
 }
+
+// Wildlife licence (table licences, one row per user; Account > Wildlife licence).
+export const REGIONS = ['QLD', 'NSW', 'VIC', 'SA', 'WA', 'TAS', 'NT', 'ACT', 'Other'];
+export async function getLicence(): Promise<Licence | null> {
+  const r = await supabase.from('licences').select('full_name,licence_no,region,licence_class,expires,address,phone').maybeSingle();
+  if (r.error) throw new Error(friendly(r.error.message));
+  return r.data;
+}
+export async function saveLicence(l: Licence) {
+  const { data } = await supabase.auth.getSession(); const uid = data.session?.user.id; if (!uid) throw new Error('Sign in first.');
+  const r = await supabase.from('licences').upsert({ user_id: uid, ...l, updated_at: new Date().toISOString() });
+  if (r.error) throw new Error(friendly(r.error.message));
+}
+export const hasLicence = (l?: Licence | null) => !!(l && (l.licence_no?.trim() || l.full_name?.trim()));
+/** Licence details as lines of text, for showing and for sharing a record. */
+export const licenceLines = (l: Licence) => [l.full_name, [l.licence_no && `Licence ${l.licence_no}`, l.region, l.licence_class].filter(Boolean).join(' · '),
+  l.expires && `Expires ${fmt(l.expires)}`, l.address, l.phone].filter(Boolean) as string[];

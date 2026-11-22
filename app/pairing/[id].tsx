@@ -9,6 +9,7 @@ import { Pairing, diffDays, fmt, nextStage, pairStatus, seasonFor, today } from 
 import { Repro, speciesInfo, words } from '../../lib/species';
 import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
 import { HatchlingDialog } from '../../lib/HatchlingDialog';
+import { IncubationLog } from '../../lib/IncubationLog';
 
 type DateKey = 'intro' | 'removed' | 'ovulation' | 'prelay_shed' | 'laid' | 'hatched';
 // Date fields for the female's species: pre-lay shed for pythons only; live-bearers are born, not laid and hatched.
@@ -18,7 +19,7 @@ const datesFor = (r: Repro): [DateKey, string][] => {
     ...(r === 'python' ? [['prelay_shed', 'Pre-lay shed'] as [DateKey, string]] : []), ['laid', w.laid],
     ...(r !== 'live' ? [['hatched', 'Hatched'] as [DateKey, string]] : [])];
 };
-const FIELDS = ['female_id', 'male_id', 'intro', 'removed', 'ovulation', 'prelay_shed', 'laid', 'hatched', 'clutch', 'fertile', 'locks', 'notes'] as const;
+const FIELDS = ['female_id', 'male_id', 'intro', 'removed', 'ovulation', 'prelay_shed', 'laid', 'hatched', 'clutch', 'fertile', 'locks', 'notes', 'incubator', 'target_temp'] as const;
 
 export default function PairingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const isNew = id === 'new'; const r = useRouter();
@@ -79,6 +80,7 @@ export default function PairingScreen() {
       </View>)}
       <Input label={w.clutch} keyboardType="number-pad" value={p.clutch != null ? String(p.clutch) : ''} onChangeText={v => setP({ ...p, clutch: v ? parseInt(v, 10) || null : null })} />
       {repro !== 'live' && <Input label="Fertile eggs" keyboardType="number-pad" value={p.fertile != null ? String(p.fertile) : ''} onChangeText={v => setP({ ...p, fertile: v ? parseInt(v, 10) || null : null })} />}
+      {repro !== 'live' && p.laid && <IncubationLog id={id} p={p} setP={setP} />}
       {hatchDate && <View style={[s.card, { marginTop: 14 }]}>
         <Text style={s.h}>{repro === 'live' ? 'Babies' : 'Hatchlings'} ({young.length})</Text>
         {young.map(a => <Pressable key={a.id} onPress={() => r.push(`/animal/${a.id}`)} accessibilityRole="link" style={{ paddingVertical: 4 }}>

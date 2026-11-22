@@ -37,6 +37,13 @@ export const Input = (p: TextInputProps & { label?: string }) => {
           <Text style={{ color: C.bg, fontWeight: '700' }}>Done</Text></Pressable></View>
     </InputAccessoryView>}</View>);
 };
+/** A tick box with its label. */
+export const Check = ({ on, set, t }: { on: boolean; set: (v: boolean) => void; t: string }) => (
+  <Pressable onPress={() => set(!on)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} aria-checked={on} accessibilityLabel={t}
+    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+    <View style={{ width: 22, height: 22, borderRadius: 4, borderWidth: 1.5, borderColor: C.ink, backgroundColor: on ? C.ink : C.card, alignItems: 'center', justifyContent: 'center' }}>
+      {on && <Text style={{ color: C.bg, fontWeight: '700' }}>✓</Text>}</View>
+    <Text style={{ color: C.ink, flex: 1 }}>{t}</Text></Pressable>);
 /** Option buttons. `v` is the selected option, or a list of them for multi-select. */
 export const Chips = ({ opts, v, on }: { opts: string[]; v: string | string[]; on: (x: string) => void }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>

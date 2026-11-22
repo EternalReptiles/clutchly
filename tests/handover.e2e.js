@@ -27,9 +27,18 @@ const SP = process.argv[2];
     await S.T('Save', { exact: true }).click(); await S.T('HO1', { exact: true }).click();
     await S.L('Food').fill('small rat'); await S.B('Fed').click(); await S.T(/· Fed \(small rat\)$/).waitFor();
   });
+  const licence = async (x, name, no, region, addr) => { await x.L('Full name (as on the licence)').fill(name); await x.L('Licence number').fill(no);
+    await x.B(region).click(); await x.L('Address').fill(addr); await x.B('Save').click(); };
+  await step('seller: saves their wildlife licence from Account', async () => {
+    const back = () => S.pg.getByLabel(/back$/i).filter({ visible: true }).first().click();
+    await back(); await S.B('Account').click(); await S.B('Wildlife licence').click();
+    await licence(S, 'Sam Seller', 'WRL-S1', 'QLD', '1 Python St, Sippy Downs QLD 4556'); await S.B('Sales and purchases').waitFor();
+    await back(); await S.T('HO1', { exact: true }).click(); await S.B('Make a handover link').waitFor({ timeout: 10000 });
+  });
   await step('seller: make a handover link', async () => {
-    await S.B('Make a handover link').click(); await S.L('Your name or business (shown to the buyer)').fill('Test Breeder');
-    await S.B('Make link').click(); await S.T(/^Waiting for the buyer/).waitFor({ timeout: 10000 });
+    await S.B('Make a handover link').click();
+    if (await S.pg.getByRole('checkbox', { name: /^Include my wildlife licence details \(WRL-S1\)/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('licence not ticked by default'); await S.L('Your name or business (shown to the buyer)').fill('Test Breeder');
+    await S.B('Make link').click(); await S.T(/^Waiting for the buyer.*with your licence details/).waitFor({ timeout: 10000 });
     const label = await S.pg.getByLabel(/^Handover code /).first().getAttribute('aria-label'); code = label.replace('Handover code ', '');
     if (!/^[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code)) throw new Error('code ' + code);
     await S.T(`https://clutchly.com.au/app/claim/${code}`).waitFor();
@@ -45,16 +54,28 @@ const SP = process.argv[2];
   });
   await step('buyer: creates an account and comes back to the link', async () => {
     await U.B('Sign in or create account').click(); await signUp(U, 'b');
-    await U.B('Add to my collection').waitFor({ timeout: 15000 });
+    await U.B('Add to my collection').waitFor({ timeout: 15000 }); await U.T("The seller's wildlife licence details come with it.").waitFor();
+  });
+  await step('buyer: adds their licence from the link and comes back', async () => {
+    await U.pg.getByRole('link', { name: 'add your wildlife licence' }).first().click();
+    await licence(U, 'Bea Buyer', 'WRL-B2', 'NSW', '2 Gecko Rd, Sydney NSW 2000'); await U.B('Add to my collection').waitFor({ timeout: 10000 });
+    if (await U.pg.getByRole('checkbox', { name: /^Share my wildlife licence details \(WRL-B2\)/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('share not ticked');
   });
   await step('buyer: accepts and gets the animal with its history', async () => {
     await U.B('Add to my collection').click(); await U.T(/· Fed \(small rat\)$/).waitFor({ timeout: 15000 });
     const notes = await U.L('Notes').inputValue(); if (!/^From Test Breeder on /.test(notes)) throw new Error('notes: ' + notes);
+    await U.T(/^From Sam Seller on /).waitFor(); await U.T('Licence WRL-S1 · QLD').waitFor(); await U.T('1 Python St, Sippy Downs QLD 4556').waitFor();
     await U.pg.screenshot({ path: `${SP}/ho-c-buyer-animal.png`, fullPage: true });
   });
   await step('seller: sees it handed over and marked Sold', async () => {
     await S.pg.reload({ waitUntil: 'networkidle' }); await S.T(/^Handed over on /).waitFor({ timeout: 15000 });
     if (await S.pg.getByRole('button', { name: 'Sold', exact: true }).first().getAttribute('aria-selected') !== 'true') throw new Error('not Sold');
+    await S.T('Licence WRL-B2 · NSW').waitFor(); await S.T('2 Gecko Rd, Sydney NSW 2000').waitFor();
+  });
+  await step('seller: sales and purchases record', async () => {
+    await S.pg.goto('http://localhost:8099/records', { waitUntil: 'networkidle' }); await S.T('HO1 · Carpet', { exact: true }).waitFor({ timeout: 10000 });
+    await S.T(/· Sold$/).waitFor(); await S.T('Bea Buyer', { exact: true }).waitFor(); await S.T(/^Your licence WRL-S1 was shared/).waitFor();
+    await S.pg.screenshot({ path: `${SP}/ho-d-records.png`, fullPage: true });
   });
   await step('the link can\'t be used again', async () => {
     await U.pg.goto(`http://localhost:8099/claim/${code}`, { waitUntil: 'networkidle' }); await U.T('This animal has already been added to a collection.').waitFor({ timeout: 10000 });
