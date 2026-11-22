@@ -9,8 +9,8 @@ import { supabase } from '../../lib/supabase';
 import { fmt } from '../../lib/logic';
 import { syncFresh } from '../../lib/store';
 import { goPro } from '../../lib/goPro';
-import { Btn, C, Check, s } from '../../lib/ui';
-import { PENDING_KEY, acceptTransfer, cleanCode, getLicence, hasLicence, previewTransfer, showCode, type Licence, type Preview } from '../../lib/transfers';
+import { Btn, C, s } from '../../lib/ui';
+import { PENDING_KEY, SWAP_TEXT, acceptTransfer, cleanCode, getLicence, licenceComplete, previewTransfer, showCode, type Licence, type Preview } from '../../lib/transfers';
 
 const STATE: Record<string, string> = { visual: '', super: 'Super ', het: 'het ', possible_het: 'possible het ' };
 
@@ -18,7 +18,7 @@ export default function Claim() {
   const { code: raw } = useLocalSearchParams<{ code: string }>(); const code = cleanCode(raw ?? ''); const r = useRouter();
   const [p, setP] = useState<Preview | null | undefined>(undefined); const [err, setErr] = useState('');
   const [signedIn, setSignedIn] = useState<boolean | null>(null); const [busy, setBusy] = useState(false);
-  const [lic, setLic] = useState<Licence | null>(null); const [shareLic, setShareLic] = useState(true);
+  const [lic, setLic] = useState<Licence | null>(null);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
     previewTransfer(code).then(setP, e => { setErr(e.message); setP(null); });
@@ -27,7 +27,7 @@ export default function Claim() {
   useFocusEffect(useCallback(() => { supabase.auth.getSession().then(({ data }) => { if (data.session) getLicence().then(setLic, () => {}); }); }, []));
   const accept = async () => {
     setBusy(true); setErr('');
-    try { const id = await acceptTransfer(code, shareLic && hasLicence(lic)); await syncFresh(); r.replace(`/animal/${id}`); }
+    try { const id = await acceptTransfer(code); await syncFresh(); r.replace(`/animal/${id}`); }
     catch (e: any) { setErr(e.message); setBusy(false); }
   };
   const signIn = async () => { await AsyncStorage.setItem(PENDING_KEY, code).catch(() => {}); r.replace('/login'); };
@@ -52,10 +52,13 @@ export default function Claim() {
             <View style={{ marginTop: 10 }}><Btn solid t="Sign in or create account" onPress={signIn} /></View></>
           : signedIn ? <>
             <Text style={[s.mu, { marginTop: 8 }]}>You'll get your own copy with its history and genes, to keep logging. Link expires {fmt(p.expires_at.slice(0, 10))}.</Text>
-            {p.seller_licence && <Text style={[s.mu, { marginTop: 6 }]}>The seller's wildlife licence details come with it.</Text>}
-            {hasLicence(lic) ? <Check on={shareLic} set={setShareLic} t={`Share my wildlife licence details (${lic!.licence_no || lic!.full_name}) with the seller`} />
-              : <Text style={[s.mu, { marginTop: 6 }]}>To send the seller your licence details too, <Text style={{ color: C.ink, textDecorationLine: 'underline' }} accessibilityRole="link" onPress={() => r.push('/licence')}>add your wildlife licence</Text> first, then come back to this link.</Text>}
-            <View style={{ marginTop: 10 }}><Btn solid disabled={busy} t={busy ? 'Adding…' : 'Add to my collection'} onPress={accept} /></View></> : null}
+            <Text style={[s.mu, { marginTop: 6 }]}>{SWAP_TEXT}</Text>
+            {licenceComplete(lic) ? <>
+              <Text style={{ color: C.ink, marginTop: 6 }}>Yours: {lic!.full_name}, licence {lic!.licence_no}, {lic!.address}</Text>
+              <View style={{ marginTop: 10 }}><Btn solid disabled={busy} t={busy ? 'Adding…' : 'Add to my collection'} onPress={accept} /></View></>
+            : <>
+              <Text style={{ color: C.ink, marginTop: 6 }}>First, add your full name, wildlife licence number and address. You'll come back here.</Text>
+              <View style={{ marginTop: 10 }}><Btn solid t="Add my licence details" onPress={() => r.push('/licence')} /></View></>}</> : null}
         {err ? <View style={{ marginTop: 10 }}><Text style={{ color: C.bad }}>{err}</Text>
           {/Go Pro/.test(err) && <View style={{ marginTop: 8 }}><Btn t="See Pro" onPress={() => goPro()} /></View>}</View> : null}
       </>}

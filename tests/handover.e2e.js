@@ -29,16 +29,16 @@ const SP = process.argv[2];
   });
   const licence = async (x, name, no, region, addr) => { await x.L('Full name (as on the licence)').fill(name); await x.L('Licence number').fill(no);
     await x.B(region).click(); await x.L('Address').fill(addr); await x.B('Save').click(); };
-  await step('seller: saves their wildlife licence from Account', async () => {
-    const back = () => S.pg.getByLabel(/back$/i).filter({ visible: true }).first().click();
-    await back(); await S.B('Account').click(); await S.B('Wildlife licence').click();
-    await licence(S, 'Sam Seller', 'WRL-S1', 'QLD', '1 Python St, Sippy Downs QLD 4556'); await S.B('Sales and purchases').waitFor();
-    await back(); await S.T('HO1', { exact: true }).click(); await S.B('Make a handover link').waitFor({ timeout: 10000 });
+  await step('seller: no link until their licence details are saved', async () => {
+    await S.B('Make a handover link').click(); await S.T(/^First, add your full name, wildlife licence number and address/).waitFor();
+    if (await S.B('Make link').count()) throw new Error('Make link offered without a licence');
+    await S.B('Add my licence details').click(); await licence(S, 'Sam Seller', 'WRL-S1', 'QLD', '1 Python St, Sippy Downs QLD 4556');
+    await S.B('Make a handover link').waitFor({ timeout: 10000 });
   });
   await step('seller: make a handover link', async () => {
-    await S.B('Make a handover link').click();
-    if (await S.pg.getByRole('checkbox', { name: /^Include my wildlife licence details \(WRL-S1\)/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('licence not ticked by default'); await S.L('Your name or business (shown to the buyer)').fill('Test Breeder');
-    await S.B('Make link').click(); await S.T(/^Waiting for the buyer.*with your licence details/).waitFor({ timeout: 10000 });
+    await S.B('Make a handover link').click(); await S.T(/Yours: Sam Seller, licence WRL-S1\./).waitFor();
+    await S.L('Your name or business (shown to the buyer)').fill('Test Breeder');
+    await S.B('Make link').click(); await S.T(/^Waiting for the buyer.*you swap names, licence numbers and addresses/).waitFor({ timeout: 10000 });
     const label = await S.pg.getByLabel(/^Handover code /).first().getAttribute('aria-label'); code = label.replace('Handover code ', '');
     if (!/^[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code)) throw new Error('code ' + code);
     await S.T(`https://clutchly.com.au/app/claim/${code}`).waitFor();
@@ -54,12 +54,13 @@ const SP = process.argv[2];
   });
   await step('buyer: creates an account and comes back to the link', async () => {
     await U.B('Sign in or create account').click(); await signUp(U, 'b');
-    await U.B('Add to my collection').waitFor({ timeout: 15000 }); await U.T("The seller's wildlife licence details come with it.").waitFor();
+    await U.B('Add my licence details').waitFor({ timeout: 15000 }); await U.T(/^Your full name, wildlife licence number and address go to the other person/).waitFor();
+    if (await U.B('Add to my collection').count()) throw new Error('accept offered without a licence');
   });
   await step('buyer: adds their licence from the link and comes back', async () => {
-    await U.pg.getByRole('link', { name: 'add your wildlife licence' }).first().click();
+    await U.B('Add my licence details').click();
     await licence(U, 'Bea Buyer', 'WRL-B2', 'NSW', '2 Gecko Rd, Sydney NSW 2000'); await U.B('Add to my collection').waitFor({ timeout: 10000 });
-    if (await U.pg.getByRole('checkbox', { name: /^Share my wildlife licence details \(WRL-B2\)/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('share not ticked');
+    await U.T('Yours: Bea Buyer, licence WRL-B2, 2 Gecko Rd, Sydney NSW 2000').waitFor();
   });
   await step('buyer: accepts and gets the animal with its history', async () => {
     await U.B('Add to my collection').click(); await U.T(/· Fed \(small rat\)$/).waitFor({ timeout: 15000 });

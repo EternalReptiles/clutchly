@@ -174,14 +174,16 @@ not copied. The seller's animal is then marked Sold. Buyers can also type the co
   Handovers need a connection; the copy reaches the buyer's phone with the next sync.
 
 ## Wildlife licences
-Account > Wildlife licence saves the user's licence once (name, number, state, class, expiry, address, phone; table
-`licences`, private to its owner). A handover can carry it: the seller ticks "Include my licence details" when making
-the link, the buyer ticks "Share my licence details with the seller" when accepting. The details are copied into the
-handover when it's accepted (so the record doesn't change if a licence does) and never travel through the link before.
-Both sides see the other's details on the animal page, and Account > Sales and purchases lists every handover with
-them (shareable as text). Accepted handovers are kept as each side's record even if the animal or the other account is
-deleted later. Migration `016_licences.sql`; `app/licence.tsx`, `app/records.tsx`; checked in `tests/transfer.test.mjs`
-and `tests/handover.e2e.js`.
+Account > Wildlife licence saves the user's licence once (full name, number, state, class, expiry, address, phone;
+table `licences`, private to its owner). Every handover swaps them: the seller needs full name, licence number and
+address saved to make a link, and the buyer needs the same to accept (checked by the database, migration
+`018_licence_required.sql`, whatever app version calls it). Both sets are copied into the handover when it's accepted
+(so the record doesn't change if a licence does) and never travel through the link before. Both sides see the other's
+details on the animal page, and Account > Sales and purchases lists every handover with them (shareable as text).
+Accepted handovers are kept as each side's record even if the animal or the other account is deleted later. With no
+business name on the link, the buyer's note says who it's from using the seller's licence name. Migrations
+`016_licences.sql` and `018`; `app/licence.tsx`, `app/records.tsx`; checked in `tests/transfer.test.mjs` and
+`tests/handover.e2e.js`.
 
 ## Incubation log
 On a pairing once eggs are laid (not live-bearers): the incubator's name and target temperature, and readings with

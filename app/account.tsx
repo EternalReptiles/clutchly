@@ -67,7 +67,7 @@ export default function Account() {
       <View style={{ marginTop: 8 }}><Btn solid={!plan.isPro} t={plan.isPro ? 'Manage Pro' : 'Go Pro'} onPress={() => goPro()} /></View></Card>
     <NotificationSettings />
     <Card><Text style={s.h}>Wildlife licence</Text>
-      <Text style={[s.mu, { marginTop: 4 }]}>Save it once to swap details with the other person when you hand an animal over or receive one (only when you tick it).</Text>
+      <Text style={[s.mu, { marginTop: 4 }]}>Save it once: handovers swap your full name, licence number and address with the other person's.</Text>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}><Btn t="Wildlife licence" onPress={() => router.push('/licence')} />
         <Btn t="Sales and purchases" onPress={() => router.push('/records')} /></View></Card>
     <Card><Text style={s.h}>Change password</Text>

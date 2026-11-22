@@ -9,9 +9,13 @@ const mk = () => createClient(U, K, { auth: { persistSession: false, autoRefresh
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const ts = Date.now(), pw = 'Tr-pass-' + ts;
 const user = async tag => { const c = mk(); const r = await c.auth.signUp({ email: `clutchly.tr${tag}.${ts}@gmail.com`, password: pw }); if (r.error) throw r.error; return { c, id: r.data.user.id }; };
-const S = await user('s'), B = await user('b'), X = await user('x'), F = await user('f');
+const S = await user('s'), B = await user('b'), X = await user('x'), F = await user('f'), N = await user('n');
 const one = async q => { const r = await q; if (r.error) throw new Error(r.error.message); return r.data; };
 try {
+  // Handovers always swap licence details, so everyone taking part has them saved (N has none).
+  await one(S.c.from('licences').insert({ full_name: 'Sam Seller', licence_no: 'WRL-111', region: 'QLD', licence_class: 'Recreational', address: '1 Python St, Sippy Downs QLD 4556' }));
+  await one(B.c.from('licences').insert({ full_name: 'Bea Buyer', licence_no: 'WRL-222', region: 'NSW', address: '2 Gecko Rd, Sydney NSW 2000' }));
+  for (const [u, nm] of [[X, 'Xavier'], [F, 'Fay']]) await one(u.c.from('licences').insert({ full_name: nm, licence_no: 'WRL-' + nm, address: '3 Skink St' }));
   // Seller: parents, an animal with history, a library gene, a private gene and notes.
   const [mum, dad] = await one(S.c.from('animals').insert([{ name: 'Ruby', species: 'Carpet', sex: 'Female' }, { name: 'Jag', species: 'Carpet', sex: 'Male' }]).select());
   const a = (await one(S.c.from('animals').insert({ name: 'ER101', species: 'Carpet', sex: 'Male', dob: '2026-02-01', feed_every: 10, notes: 'Private: paid cash', mother_id: mum.id, father_id: dad.id }).select()))[0];
@@ -59,7 +63,7 @@ try {
   r = await S.c.rpc('cancel_transfer', { p_code: c2 }); r = await mk().rpc('transfer_preview', { p_code: c2 }); ok(r.data === null, 'cancelled link no longer works');
   const c3 = (await S.c.rpc('create_transfer', { p_animal: a2.id, p_include_notes: true })).data; ok(c3 && c3 !== c2, 'new link after cancelling');
   r = await X.c.rpc('accept_transfer', { p_code: c3 }); const x2 = (await one(X.c.from('animals').select('notes').eq('id', r.data)))[0];
-  ok(/^From a breeder on .*\nEats well$/.test(x2?.notes ?? ''), 'seller\'s notes included when ticked; no parents line: ' + JSON.stringify(x2?.notes));
+  ok(/^From Sam Seller on .*\nEats well$/.test(x2?.notes ?? ''), 'notes included when ticked; no business name: the licence name; no parents line: ' + JSON.stringify(x2?.notes));
 
   // A full free plan can't take another animal; Pro can.
   await one(F.c.from('animals').insert(Array.from({ length: 10 }, (_, i) => ({ name: `F${i}`, species: 'Carpet', sex: 'Female' }))));
@@ -71,8 +75,6 @@ try {
   await makePro(F.id); r = await F.c.rpc('accept_transfer', { p_code: c4 }); ok(!r.error, 'after going Pro the buyer can accept');
 
   // Wildlife licences: private to their owner; swapped only when ticked, and only once accepted.
-  await one(S.c.from('licences').insert({ full_name: 'Sam Seller', licence_no: 'WRL-111', region: 'QLD', licence_class: 'Recreational', address: '1 Python St, Sippy Downs QLD 4556' }));
-  await one(B.c.from('licences').insert({ full_name: 'Bea Buyer', licence_no: 'WRL-222', region: 'NSW', address: '2 Gecko Rd, Sydney NSW 2000' }));
   r = await B.c.from('licences').select('*'); ok(r.data?.length === 1 && r.data[0].licence_no === 'WRL-222', 'each person reads only their own licence');
   r = await B.c.from('licences').update({ licence_no: 'HACKED' }).eq('user_id', S.id).select(); ok(!r.data?.length, 'nobody can change someone else\'s licence');
   r = await mk().from('licences').select('*'); ok(!r.data?.length, 'signed out reads no licences');
@@ -88,8 +90,20 @@ try {
   await one(S.c.from('licences').update({ licence_no: 'WRL-999' }).eq('user_id', S.id));
   r = await B.c.from('transfers').select('seller_licence').eq('code', c6); ok(r.data?.[0]?.seller_licence?.licence_no === 'WRL-111', 'the record keeps the licence as it was at the handover');
   const a6 = (await one(S.c.from('animals').insert({ name: 'ER106', species: 'Carpet', sex: 'Male' }).select()))[0];
-  const c7 = (await S.c.rpc('create_transfer', { p_animal: a6.id })).data; await B.c.rpc('accept_transfer', { p_code: c7 });
-  r = await S.c.from('transfers').select('seller_licence,buyer_licence').eq('code', c7); ok(r.data?.[0] && !r.data[0].seller_licence && !r.data[0].buyer_licence, 'nothing shared when not ticked');
+  // Required, whatever an older app sends: no link without the seller's details, no accepting without the buyer's.
+  const n1 = (await one(N.c.from('animals').insert({ name: 'N1', species: 'Carpet', sex: 'Male' }).select()))[0];
+  r = await N.c.rpc('create_transfer', { p_animal: n1.id }); ok(r.error?.message?.includes('licence_required'), 'no link without your name, licence and address');
+  await one(N.c.from('licences').insert({ full_name: 'Nora', licence_no: 'WRL-N' })); r = await N.c.rpc('create_transfer', { p_animal: n1.id });
+  ok(r.error?.message?.includes('licence_required'), 'an address is required too');
+  const c7 = (await S.c.rpc('create_transfer', { p_animal: a6.id, p_share_licence: false })).data;
+  r = await N.c.rpc('accept_transfer', { p_code: c7 }); ok(r.error?.message?.includes('licence_required'), 'buyer cannot accept without their details');
+  r = await S.c.from('animals').select('status').eq('id', a6.id); ok(r.data?.[0]?.status !== 'Sold', 'refused accept changes nothing');
+  r = await B.c.rpc('accept_transfer', { p_code: c7, p_share_licence: false }); ok(!r.error, 'accepts even when an old app says not to share');
+  r = await S.c.from('transfers').select('seller_licence,buyer_licence').eq('code', c7); ok(r.data?.[0]?.seller_licence?.licence_no === 'WRL-999' && r.data[0].buyer_licence?.licence_no === 'WRL-222', 'both licences swapped anyway');
+  const a7 = (await one(S.c.from('animals').insert({ name: 'ER107', species: 'Carpet', sex: 'Male' }).select()))[0];
+  const c8 = (await S.c.rpc('create_transfer', { p_animal: a7.id })).data; await one(S.c.from('licences').update({ address: '' }).eq('user_id', S.id));
+  r = await B.c.rpc('accept_transfer', { p_code: c8 }); ok(r.error?.message?.includes('seller_licence_missing'), 'seller who removed their address after making the link: buyer is told');
+  await one(S.c.from('licences').update({ address: '1 Python St, Sippy Downs QLD 4556' }).eq('user_id', S.id));
   await one(S.c.from('animals').delete().eq('id', a5.id));
   r = await B.c.from('transfers').select('animal_name,seller_licence').eq('code', c6); ok(r.data?.[0]?.animal_name === 'ER105' && r.data[0].seller_licence, 'record kept after the seller deletes the animal');
 
@@ -100,6 +114,6 @@ try {
 } catch (e) { ok(false, 'unexpected: ' + e.message); }
 await S.c.rpc('delete_my_account');
 { const r2 = await B.c.from('transfers').select('animal_name,seller_licence').eq('animal_name', 'ER105'); ok(r2.data?.length === 1 && !!r2.data[0].seller_licence, 'buyer keeps the record after the seller deletes their account'); }
-for (const u of [B, X, F]) await u.c.rpc('delete_my_account');
+for (const u of [B, X, F, N]) await u.c.rpc('delete_my_account');
 console.log(fails ? `${fails} FAILED` : 'ALL PASSED');
 process.exit(fails ? 1 : 0);

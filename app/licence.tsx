@@ -16,7 +16,8 @@ export default function LicenceScreen() {
     try { await saveLicence(clean); r.back(); } catch (e: any) { notify('Could not save', e.message); setBusy(false); }
   };
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-    <Text style={s.mu}>Save your wildlife licence once. When you hand an animal over (or accept one), you can tick a box to swap licence details with the other person, so neither of you has to find and send them. They're never shared unless you tick it.</Text>
+    <Text style={s.mu}>Save your wildlife licence once. Every handover swaps your full name, licence number and address with the other person's (and state, class, expiry and phone if you add them), so neither of you has to find and send them. They're only shared with the person in that handover.</Text>
+    <Text style={[s.mu, { marginTop: 6 }]}>Full name, licence number and address are needed to hand an animal over or accept one.</Text>
     <Input label="Full name (as on the licence)" value={l.full_name ?? ''} onChangeText={set('full_name')} autoComplete="name" textContentType="name" />
     <Input label="Licence number" value={l.licence_no ?? ''} onChangeText={set('licence_no')} autoCapitalize="characters" autoCorrect={false} />
     <Label t="State or territory" /><Chips opts={REGIONS} v={l.region ?? ''} on={v => set('region')(l.region === v ? null : v)} />

@@ -37,8 +37,8 @@ export async function allTransfers(): Promise<Transfer[]> {
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as Transfer[];
 }
-export async function createTransfer(animalId: string, fromName: string, includeNotes: boolean, shareLicence: boolean) {
-  const r = await supabase.rpc('create_transfer', { p_animal: animalId, p_from_name: fromName, p_include_notes: includeNotes, p_share_licence: shareLicence });
+export async function createTransfer(animalId: string, fromName: string, includeNotes: boolean) {
+  const r = await supabase.rpc('create_transfer', { p_animal: animalId, p_from_name: fromName, p_include_notes: includeNotes });
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as string;
 }
@@ -48,8 +48,8 @@ export async function previewTransfer(code: string): Promise<Preview | null> {
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as Preview | null;
 }
-export async function acceptTransfer(code: string, shareLicence: boolean): Promise<string> {
-  const r = await supabase.rpc('accept_transfer', { p_code: code, p_share_licence: shareLicence });
+export async function acceptTransfer(code: string): Promise<string> {
+  const r = await supabase.rpc('accept_transfer', { p_code: code });
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as string;
 }
@@ -60,6 +60,8 @@ export function friendly(m: string) {
   if (/transfer_own_animal/.test(m)) return 'This is your own animal. Send the link to the buyer.';
   if (/free_limit_reached/.test(m)) return `Free accounts can have up to ${getState().plan.freeAnimals} animals (Sold ones don't count). Go Pro, or mark an animal Sold, to add this one.`;
   if (/not_signed_in/.test(m)) return 'Sign in first.';
+  if (/seller_licence_missing/.test(m)) return 'The seller\'s licence details are incomplete. Ask them to finish them (Account > Wildlife licence), then try again.';
+  if (/licence_required/.test(m)) return 'Add your full name, wildlife licence number and address first (Account > Wildlife licence). They\'re swapped with the other person in every handover.';
   if (/fetch|network/i.test(m)) return 'No connection. Handovers need the internet; try again when you\'re online.';
   return m;
 }
@@ -89,6 +91,9 @@ export async function saveLicence(l: Licence) {
   if (r.error) throw new Error(friendly(r.error.message));
 }
 export const hasLicence = (l?: Licence | null) => !!(l && (l.licence_no?.trim() || l.full_name?.trim()));
+/** What every handover needs from both people (the server checks the same). */
+export const licenceComplete = (l?: Licence | null) => !!(l?.full_name?.trim() && l.licence_no?.trim() && l.address?.trim());
+export const SWAP_TEXT = 'Your full name, wildlife licence number and address go to the other person, and theirs come to you, so you both have them for your records.';
 /** Licence details as lines of text, for showing and for sharing a record. */
 export const licenceLines = (l: Licence) => [l.full_name, [l.licence_no && `Licence ${l.licence_no}`, l.region, l.licence_class].filter(Boolean).join(' · '),
   l.expires && `Expires ${fmt(l.expires)}`, l.address, l.phone].filter(Boolean) as string[];
