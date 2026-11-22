@@ -36,7 +36,11 @@ export function Handover({ animalId, name, onAccepted }: { animalId: string; nam
     } catch (e: any) { notify('Could not make the link', e.message); }
     setBusy(false);
   };
-  const share = async (code: string) => { if (await shareLink(name, code) === 'copied') notify('Link copied', 'Paste it into a message to the buyer.'); };
+  const share = async (code: string) => {
+    const r2 = await shareLink(name, code);
+    if (r2 === 'copied') notify('Link copied', 'Paste it into a message to the buyer.');
+    else if (r2 === 'failed') notify('Couldn\'t share the link', 'Copy the link shown on the card instead, or tell the buyer the code.');
+  };
   const cancel = (code: string) => confirm('Cancel this link?', 'The buyer won\'t be able to use it. You can make a new one later.', 'Cancel link',
     async () => { try { await cancelTransfer(code); await load(); } catch (e: any) { notify('Could not cancel', e.message); } });
 
@@ -54,6 +58,7 @@ export function Handover({ animalId, name, onAccepted }: { animalId: string; nam
           : <Text style={s.mu}>No buyer licence details on this handover (made before they were required).</Text>}</>
       : live ? <>
         <Text style={s.mu}>Waiting for the buyer. Send them this link{live.from_name ? ` (signed "${live.from_name}")` : ''}. It works once and expires {fmt(live.expires_at.slice(0, 10))}. When they accept, you swap names, licence numbers and addresses.</Text>
+        <Text style={[s.mu, { marginTop: 4 }]}>Send it only to your buyer (by text or private message, not a public post): whoever opens it first can accept it.</Text>
         <Text selectable style={{ color: C.ink, fontWeight: '700', fontSize: 20, marginTop: 8, letterSpacing: 1 }} accessibilityLabel={`Handover code ${showCode(live.code)}`}>{showCode(live.code)}</Text>
         <Text selectable style={[s.mu, { marginTop: 2 }]}>{claimLink(live.code)}</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>

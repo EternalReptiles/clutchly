@@ -75,7 +75,7 @@ const SP = process.argv[2];
   });
   await step('seller: sales and purchases record', async () => {
     await S.pg.goto('http://localhost:8099/records', { waitUntil: 'networkidle' }); await S.T('HO1 · Carpet', { exact: true }).waitFor({ timeout: 10000 });
-    await S.T(/· Sold$/).waitFor(); await S.T('Bea Buyer', { exact: true }).waitFor(); await S.T(/^Your licence WRL-S1 was shared/).waitFor();
+    await S.T(/· Sold$/).waitFor(); await S.T('Bea Buyer', { exact: true }).waitFor(); await S.T('They received your details (licence WRL-S1).').waitFor();
     await S.pg.screenshot({ path: `${SP}/ho-d-records.png`, fullPage: true });
   });
   await step('the link can\'t be used again', async () => {

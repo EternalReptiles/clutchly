@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
@@ -27,7 +27,13 @@ export default function Root() {
   }, []);
   useEffect(() => { if (session !== undefined) SplashScreen.hideAsync().catch(() => {}); }, [session]);
   // Opened a label's link while signed out: sign-in takes over the page, so remember the animal for afterwards.
-  useEffect(() => { if (session === null && OPENED_ANIMAL) AsyncStorage.setItem(PENDING_ANIMAL_KEY, OPENED_ANIMAL).catch(() => {}); }, [session]);
+  // Only when the page opened signed out (not after signing out later, or the next person would be sent there).
+  const firstSession = useRef<Session | null | undefined>(undefined);
+  useEffect(() => {
+    if (session === undefined || firstSession.current !== undefined) return;
+    firstSession.current = session;
+    if (session === null && OPENED_ANIMAL) AsyncStorage.setItem(PENDING_ANIMAL_KEY, OPENED_ANIMAL).catch(() => {});
+  }, [session]);
   // Expo push tokens can change; keep this phone's registration current (never prompts).
   const uid = session?.user.id;
   useEffect(() => { if (uid) refreshPushToken(); }, [uid]);

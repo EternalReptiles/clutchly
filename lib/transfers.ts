@@ -66,16 +66,17 @@ export function friendly(m: string) {
   return m;
 }
 
-/** Share sheet on phones; the browser's share, or copy to the clipboard, on the web. Returns 'copied' when it copied. */
-export async function shareLink(name: string, code: string): Promise<'shared' | 'copied' | 'failed'> {
+/** Share sheet on phones; the browser's share, or copy to the clipboard, on the web. 'cancelled' when the person
+ * closed the share sheet; 'failed' when neither worked (the link is on screen to copy by hand). */
+export async function shareLink(name: string, code: string): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
   const link = claimLink(code);
   const message = `Here are the records for ${name}: feeding, sheds, weights and genes. Open this link to add them to your free ${brand.name} account: ${link}`;
-  try {
-    if (Platform.OS !== 'web') { await Share.share({ message }); return 'shared'; }
-    const nav = globalThis.navigator as any;
-    if (nav?.share) { await nav.share({ text: message }); return 'shared'; }
-    await nav.clipboard.writeText(link); return 'copied';
-  } catch { return 'failed'; }
+  if (Platform.OS !== 'web') { try { await Share.share({ message }); return 'shared'; } catch { return 'failed'; } }
+  const nav = globalThis.navigator as any;
+  if (nav?.share) {
+    try { await nav.share({ text: message }); return 'shared'; } catch (e: any) { if (e?.name === 'AbortError') return 'cancelled'; }
+  }
+  try { await nav.clipboard.writeText(link); return 'copied'; } catch { return 'failed'; }
 }
 
 // Wildlife licence (table licences, one row per user; Account > Wildlife licence).
