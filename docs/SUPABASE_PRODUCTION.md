@@ -6,8 +6,7 @@ Moved there from the old Tokyo project `xtjoypcgzfotjzskmggw` ("Reptile Tracking
 their passwords). Custom SMTP is Resend (domain clutchly.com.au, region Japan; sender no-reply@clutchly.com.au, "Clutchly"), and the
 branded templates and subjects from `supabase/email-templates/` are applied, with an email limit of 100 an hour.
 "Confirm email" is on (since 22 Nov 2026), so the automated tests, which sign up throwaway accounts and sign
-straight in, need a separate test project (point `.env` at it). Still to do: Pro plan, minimum password length 8,
-and the RevenueCat webhook URL.
+straight in, need a separate test project (point `.env` at it). Minimum password length is 8. Still to do: Pro plan and the RevenueCat webhook URL.
 Auth URL configuration in use: Site URL `https://clutchly.com.au/app`; redirect URLs
 `https://clutchly.com.au/app/reset-password`, `clutchly://reset-password`, `exp://**` (remove that one at launch).
 
