@@ -38,3 +38,6 @@ footer { margin-top: 40px; padding-top: 16px; padding-bottom: 32px; border-top: 
 .closing { text-align: center; margin-top: 34px; }
 main:has(.hero) { max-width: 980px; }
 @media (max-width: 720px) { .shots { grid-template-columns: repeat(2, 1fr); } .features, .plans { grid-template-columns: 1fr; } .hero h1 { font-size: 27px; } }
+/* Support page: questions from help.json grouped by section. */
+h3.faq-section { font-size: 19px; margin-top: 28px; padding-bottom: 4px; border-bottom: 1px solid #e0ddd3; }
+h4 { font-size: 16px; margin: 18px 0 4px; }

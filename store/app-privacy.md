@@ -17,6 +17,7 @@ advertising, no analytics SDKs and no tracking.
 | Other Data > Other Data Types (wildlife licence number, class, expiry) | Yes | Yes | No | App Functionality (as above) |
 | User Content > Photos or Videos | Yes | Yes | No | App Functionality |
 | User Content > Other User Content (animal records) | Yes | Yes | No | App Functionality |
+| User Content > Customer Support | Yes (only if the user sends a Contact support message) | Yes | No | App Functionality (answering them) |
 | Identifiers > User ID | Yes | Yes | No | App Functionality (account id, also sent to RevenueCat for purchases) |
 | Identifiers > Device ID | Yes (push token, only if notifications are on) | Yes | No | App Functionality |
 | Purchases > Purchase History | Yes | Yes | No | App Functionality (Pro status via RevenueCat) |
@@ -42,6 +43,7 @@ diagnostics, usage data, advertising data, sensitive info.
 | Personal info > User IDs | Yes | No | Required | Account management, App functionality |
 | Photos and videos > Photos | Yes | No | Optional | App functionality |
 | App activity > Other user-generated content | Yes | No | Required | App functionality |
+| Messages > Other in-app messages (Contact support form) | Yes | No | Optional | App functionality (customer support) |
 | Device or other IDs | Yes (push token) | No | Optional | App functionality (notifications) |
 | Financial info > Purchase history | Yes | No | Optional | App functionality (subscription status) |
 

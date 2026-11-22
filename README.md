@@ -214,6 +214,22 @@ address (`https://clutchly.com.au/app/animal/<id>`), so any phone camera opens i
 remembered and opened after signing in. `tests/labels.test.mjs` renders every size and
 decodes its QR code; `tests/labels.e2e.js` checks the print screen.
 
+## Help and support
+- `help.json` holds the help questions (sections, `**bold**` for button names). The app's Help screen
+  (`app/support/index.tsx`, searchable, built in so it works offline) and the website's support page
+  (`scripts/build_site.mjs` fills `{{FAQ}}` in `site/_templates/support.html`) both use it: edit it, then run
+  `node scripts/build_site.mjs`.
+- Contact support (`app/support/contact.tsx`): topic, reply email (filled in when signed in) and message, sent with
+  the app version, platform, plan and animal count. Works signed out (the sign-in screen links to Help).
+- Edge Function `support-message` (JWT verification off): validates, limits each sender (5 an hour per connection,
+  3 in 10 minutes per email), ignores a hidden bot field, saves to `support_messages` (migration 021; no app access,
+  read it in the Supabase Table Editor) and emails it to `SUPPORT_TO` through Resend with Reply-To set to the sender.
+  It never emails the sender. Secrets: `SUPPORT_TO` (set: support@eternalreptiles.com.au) and `RESEND_API_KEY` (a
+  Resend API key with sending access; until it's set, messages are saved but not emailed).
+- The routes are under `/support`, not `/help`: signed out, expo-router opens the first allowed page alphabetically,
+  which must stay `/login`.
+- Test: `tests/help.e2e.js`.
+
 ## Tests
 "Confirm email" is on in the live project. The database tests (`rls`, `plans`, `transfer`, `digest.function`) and
 `tests/handover.e2e.js` work there when given `SUPABASE_SECRET_KEY` (they then create already-confirmed throwaway
@@ -225,7 +241,7 @@ accounts and delete them). The other browser suites sign up through the app, so 
 - `node scripts/sync_function_shared.mjs --check`: the Edge Function's copy of the rules is up to date.
 - `RC_AUTH=... node --env-file=.env tests/transfer.test.mjs`: handovers, including every refusal (wrong code, own animal, used, cancelled, buyer's free limit).
 - `node --env-file=.env tests/rls.test.mjs`: signs up two throwaway accounts and checks that neither can read or change the other's data (needs "Confirm email" off in Supabase while it runs).
-- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js`, `tests/handover.e2e.js`, `tests/incubation.e2e.js` and `tests/labels.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
+- `tests/ui.e2e.js`, `tests/import.e2e.js`, `tests/reset.e2e.js`, `tests/species.e2e.js`, `tests/offline.e2e.js`, `tests/photos.e2e.js`, `tests/history.e2e.js`, `tests/hatchlings.e2e.js`, `tests/onboarding.e2e.js`, `tests/export.e2e.js`, `tests/plans.e2e.js`, `tests/feed.e2e.js`, `tests/handover.e2e.js`, `tests/incubation.e2e.js`, `tests/labels.e2e.js` and `tests/help.e2e.js`: click through the web build with Playwright; see the comment at the top of each file.
 
 ## Store readiness
 - `brand.json` holds the name, identifiers, version, site address, support email and RevenueCat keys; `app.config.ts`
