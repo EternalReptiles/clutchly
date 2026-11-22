@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,8 +11,12 @@ import { applyDateFormat, start, stop } from '../lib/store';
 import { SyncPill } from '../lib/SyncPill';
 import { purchasesLogIn, purchasesLogOut } from '../lib/purchases';
 import { C, serif } from '../lib/ui';
+import { PENDING_ANIMAL_KEY } from '../lib/labels';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Web: the animal a page was opened on (a scanned label's link), so it can be opened after signing in.
+const OPENED_ANIMAL = Platform.OS === 'web' && typeof window !== 'undefined'
+  ? (window.location.pathname.match(/\/animal\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ?? null) : null;
 
 export default function Root() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -22,6 +26,14 @@ export default function Root() {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => { if (session !== undefined) SplashScreen.hideAsync().catch(() => {}); }, [session]);
+  // Opened a label's link while signed out: sign-in takes over the page, so remember the animal for afterwards.
+  // Only when the page opened signed out (not after signing out later, or the next person would be sent there).
+  const firstSession = useRef<Session | null | undefined>(undefined);
+  useEffect(() => {
+    if (session === undefined || firstSession.current !== undefined) return;
+    firstSession.current = session;
+    if (session === null && OPENED_ANIMAL) AsyncStorage.setItem(PENDING_ANIMAL_KEY, OPENED_ANIMAL).catch(() => {});
+  }, [session]);
   // Expo push tokens can change; keep this phone's registration current (never prompts).
   const uid = session?.user.id;
   useEffect(() => { if (uid) refreshPushToken(); }, [uid]);

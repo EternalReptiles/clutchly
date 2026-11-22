@@ -13,6 +13,7 @@ import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notificati
 import { usePlan } from '../../lib/plan';
 import { goPro } from '../../lib/goPro';
 import { PENDING_KEY } from '../../lib/transfers';
+import { PENDING_ANIMAL_KEY } from '../../lib/labels';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Overview() {
@@ -25,6 +26,9 @@ export default function Overview() {
     // Someone opened a handover link before signing in: take them back to it.
     const claim = await AsyncStorage.getItem(PENDING_KEY).catch(() => null);
     if (claim) { await AsyncStorage.removeItem(PENDING_KEY).catch(() => {}); r.push(`/claim/${claim}`); return; }
+    // ...or a label's link: open that animal.
+    const animal = await AsyncStorage.getItem(PENDING_ANIMAL_KEY).catch(() => null);
+    if (animal) { await AsyncStorage.removeItem(PENDING_ANIMAL_KEY).catch(() => {}); r.push(`/animal/${animal}`); return; }
     if (!pushSupported) return;
     const dismissed = await AsyncStorage.getItem(PROMPT_KEY).catch(() => null);
     setAskPush(!dismissed && !(await pushEnabledHere()));

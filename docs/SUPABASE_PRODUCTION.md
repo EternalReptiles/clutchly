@@ -5,8 +5,8 @@ Moved there from the old Tokyo project `xtjoypcgzfotjzskmggw` ("Reptile Tracking
 `docs/MIGRATE_TO_SYDNEY.md`. Steps 1, 2 and 4 below are done, and so are the reviewer and owner accounts (copied with
 their passwords). Custom SMTP is Resend (domain clutchly.com.au, region Japan; sender no-reply@clutchly.com.au, "Clutchly"), and the
 branded templates and subjects from `supabase/email-templates/` are applied, with an email limit of 100 an hour.
-Still to do: Pro plan, "Confirm email" on with minimum password length 8 (left as on the old project
-for now), and the RevenueCat webhook URL.
+"Confirm email" is on (since 22 Nov 2026), so the automated tests, which sign up throwaway accounts and sign
+straight in, need a separate test project (point `.env` at it). Minimum password length is 8. Still to do: Pro plan and the RevenueCat webhook URL.
 Auth URL configuration in use: Site URL `https://clutchly.com.au/app`; redirect URLs
 `https://clutchly.com.au/app/reset-password`, `clutchly://reset-password`, `exp://**` (remove that one at launch).
 
@@ -23,7 +23,7 @@ To test without touching real users, use a separate test project and point `.env
 
 ## 2. Database (SQL Editor, in this order)
 1. `supabase/schema.sql`
-2. Every file in `supabase/migrations/`, in number order (`001` ... `014`). Each is safe to run again.
+2. Every file in `supabase/migrations/`, in number order (`001` ... `019`). Each is safe to run again.
 3. In `004_notification_cron.sql`, change the project URL to the production one **before** running it, and first run:
    `select vault.create_secret('<a long random value>', 'clutchly_cron_secret');`
    (Generate the value with `openssl rand -base64 32`. Use the same value for `CRON_SECRET` in step 4.)

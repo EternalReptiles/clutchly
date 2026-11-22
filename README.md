@@ -200,7 +200,9 @@ of 21 (63.5 × 38.1 mm, Avery L7160) or 14 (99.1 × 38.1 mm, L7163) with "labels
 sheet, and label printers at 62 × 29 mm (Brother DK-11209) or 57 × 32 mm (Dymo 11354), one per page. Phones use the
 system print dialog or Save PDF (`expo-print`); the web prints from a hidden frame. The QR code is the animal's web
 address (`https://clutchly.com.au/app/animal/<id>`), so any phone camera opens it; the app's Scan button (Animals tab,
-phones only, `app/scan.tsx` with `expo-camera`) opens it in the app. `tests/labels.test.mjs` renders every size and
+`app/scan.tsx`) opens it in the app: `expo-camera` on phones, and in the web app the browser's camera with
+`jsqr` (`lib/WebScanner.tsx`, so it works in iPhone Safari too). A label link opened while signed out on the web is
+remembered and opened after signing in. `tests/labels.test.mjs` renders every size and
 decodes its QR code; `tests/labels.e2e.js` checks the print screen.
 
 ## Tests

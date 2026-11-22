@@ -17,6 +17,8 @@ export const LAYOUTS: Layout[] = [
 export const layoutOf = (key: string) => LAYOUTS.find(l => l.key === key) ?? LAYOUTS[0];
 
 const site = brand.siteUrl.replace(/\/+$/, '');
+/** A label's animal opened while signed out on the web, opened by Overview after sign-in. */
+export const PENDING_ANIMAL_KEY = 'clutchly.pendingAnimal';
 export const animalLink = (id: string) => `${site}/app/animal/${id}`;
 /** The animal id from a scanned code: one of our links, or a bare id. Null for anything else. */
 export function animalIdFrom(scanned: string): string | null {
