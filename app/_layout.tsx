@@ -35,7 +35,7 @@ export default function Root() {
   const router = useRouter(); const segments = useSegments();
   const onboarded = !!session?.user.user_metadata?.onboarded;
   useEffect(() => {
-    if (!uid || onboarded || segments[0] === 'welcome' || segments[0] === 'reset-password') return;
+    if (!uid || onboarded || segments[0] === 'welcome' || segments[0] === 'reset-password' || segments[0] === 'claim') return;
     AsyncStorage.getItem(`clutchly.onboarded.${uid}`).then(v => { if (!v) router.replace('/welcome'); }, () => {});
   }, [uid, onboarded, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   const signedIn = !!session;
@@ -65,6 +65,7 @@ export default function Root() {
         <Stack.Screen name="paywall" options={{ title: 'Pro', presentation: 'modal' }} />
         <Stack.Screen name="history/[id]" options={{ title: 'History' }} />
         <Stack.Screen name="feed" options={{ title: 'Feed several' }} />
+        <Stack.Screen name="claim/index" options={{ title: 'Handover code' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -72,6 +73,8 @@ export default function Root() {
       </Stack.Protected>
       {/* Reachable signed in or out: the reset link signs the user in, then they set a new password here. */}
       <Stack.Screen name="reset-password" options={{ title: 'New password' }} />
+      {/* A handover link: shows what's being handed over to anyone with the link; accepting needs an account. */}
+      <Stack.Screen name="claim/[code]" options={{ title: 'Handover' }} />
     </Stack>
   </>);
 }

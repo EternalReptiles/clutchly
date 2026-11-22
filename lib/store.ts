@@ -242,6 +242,8 @@ export function sync(): Promise<void> {
   })().then(offline => { running = null; if (!offline && state.queue.length) kick(); }, () => { running = null; });
   return running;
 }
+/** A sync that starts after now: waits out one already running (which may have missed a change just made on the server). */
+export async function syncFresh() { await sync(); await sync(); }
 let kickTimer: ReturnType<typeof setTimeout> | null = null;
 function kick() { if (kickTimer) return; kickTimer = setTimeout(() => { kickTimer = null; sync(); }, 300); }
 

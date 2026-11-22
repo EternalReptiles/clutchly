@@ -12,6 +12,7 @@ import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
 import { usePlan } from '../../lib/plan';
 import { goPro } from '../../lib/goPro';
+import { PENDING_KEY } from '../../lib/transfers';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Overview() {
@@ -21,6 +22,9 @@ export default function Overview() {
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   // Offer reminders once the user has animals (not on first launch), until they turn them on or say no.
   useFocusEffect(useCallback(() => { (async () => {
+    // Someone opened a handover link before signing in: take them back to it.
+    const claim = await AsyncStorage.getItem(PENDING_KEY).catch(() => null);
+    if (claim) { await AsyncStorage.removeItem(PENDING_KEY).catch(() => {}); r.push(`/claim/${claim}`); return; }
     if (!pushSupported) return;
     const dismissed = await AsyncStorage.getItem(PROMPT_KEY).catch(() => null);
     setAskPush(!dismissed && !(await pushEnabledHere()));

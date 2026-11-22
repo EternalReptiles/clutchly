@@ -16,6 +16,7 @@ import { WeightChart } from '../../lib/WeightChart';
 import { EventEditor } from '../../lib/EventEditor';
 import { eventLabel, newestFirst, refusalStats, shedStats, weightSeries, type Ev } from '../../lib/history';
 import { Btn, Chips, DateField, Input, Label, confirm, notify, s, C } from '../../lib/ui';
+import { Handover } from '../../lib/Handover';
 
 type Form = { name: string; species: string; sex: string; status: string; dob: string | null; feed_every: string; notes: string };
 const blank: Form = { name: '', species: '', sex: 'Female', status: 'Active', dob: null, feed_every: '', notes: '' };
@@ -115,6 +116,7 @@ export default function AnimalScreen() {
     <Input label="Notes" multiline value={a.notes} onChangeText={v => setA({ ...a, notes: v })} />
     {isNew && genesSection}
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><Btn solid t="Save" onPress={save} />{!isNew && <Btn danger t="Delete" onPress={del} />}</View>
+    {isNew && <Text style={[s.mu, { marginTop: 14 }]}>Bought it from a breeder who uses Clutchly? <Text style={{ textDecorationLine: 'underline', color: C.ink }} accessibilityRole="link" onPress={() => r.push('/claim')}>Enter their handover code</Text> to get its records.</Text>}
     {!isNew && (mother || father || offspring.length > 0) && <View style={{ marginTop: 14 }}>
       <Text style={s.h}>Family</Text>
       {(mother || father) && <Text style={{ color: C.ink, marginTop: 4 }}>Parents: {mother ? <Text style={{ textDecorationLine: 'underline' }} onPress={() => r.push(`/animal/${mother.id}`)} accessibilityRole="link">{mother.name}</Text> : '?'}
@@ -126,6 +128,7 @@ export default function AnimalScreen() {
     </View>}
     {!isNew && genesSection}
     {!isNew && <PhotoGallery animalId={id} />}
+    {!isNew && animal && <Handover animalId={id} name={animal.name} onAccepted={() => setA(f => ({ ...f, status: 'Sold' }))} />}
     {feedInfo && <View style={[s.card, { marginTop: 14 }]} accessibilityLabel="Next feed">
       <Text style={s.h}>{feedInfo.paused ? 'Feeding pause' : feedInfo.next <= today() ? (feedInfo.next < today() ? `Feed overdue by ${diffDays(today(), feedInfo.next)} days` : 'Feed due today') : `Next feed ${fmt(feedInfo.next)}`}</Text>
       <Text style={s.mu}>{feedInfo.paused ? 'The feeding pause for this species is on (Season tab).' : `Every ${feedInfo.every} days, from ${feedInfo.from}.`}</Text></View>}
