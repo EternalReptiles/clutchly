@@ -17,7 +17,7 @@ export function nextYearly(md: string, from: string): string {
 export function dueToFeed(animals: Animal[], seasons: Season[], today: string): Animal[] {
   return animals.filter(a => a.status !== 'Sold').filter(a => {
     const s = seasonFor(seasons, a.species);
-    return !isPaused(s, today) && diffDays(nextFeed(a, s), today) <= 0;
+    return !isPaused(s, today) && diffDays(nextFeed(a, s, today), today) <= 0;
   });
 }
 

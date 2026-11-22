@@ -3,8 +3,9 @@
 **Current production project:** `oybgqvhuromskcwcjyft` ("clutchly", Sydney ap-southeast-2), set in `lib/config.ts`.
 Moved there from the old Tokyo project `xtjoypcgzfotjzskmggw` ("Reptile Tracking") on 2026-11-21, as set out in
 `docs/MIGRATE_TO_SYDNEY.md`. Steps 1, 2 and 4 below are done, and so are the reviewer and owner accounts (copied with
-their passwords). Still to do: Pro plan, custom SMTP, then the branded email templates (Supabase refuses custom
-templates on the built-in sender), "Confirm email" on with minimum password length 8 (left as on the old project
+their passwords). Custom SMTP is Resend (domain clutchly.com.au, region Japan; sender no-reply@clutchly.com.au, "Clutchly"), and the
+branded templates and subjects from `supabase/email-templates/` are applied, with an email limit of 100 an hour.
+Still to do: Pro plan, "Confirm email" on with minimum password length 8 (left as on the old project
 for now), and the RevenueCat webhook URL.
 Auth URL configuration in use: Site URL `https://clutchly.com.au/app`; redirect URLs
 `https://clutchly.com.au/app/reset-password`, `clutchly://reset-password`, `exp://**` (remove that one at launch).

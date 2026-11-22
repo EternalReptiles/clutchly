@@ -12,6 +12,7 @@ import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
 import { usePlan } from '../../lib/plan';
 import { goPro } from '../../lib/goPro';
+import { PENDING_KEY } from '../../lib/transfers';
 
 const PROMPT_KEY = 'clutchly.pushPromptDismissed';
 export default function Overview() {
@@ -21,6 +22,9 @@ export default function Overview() {
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   // Offer reminders once the user has animals (not on first launch), until they turn them on or say no.
   useFocusEffect(useCallback(() => { (async () => {
+    // Someone opened a handover link before signing in: take them back to it.
+    const claim = await AsyncStorage.getItem(PENDING_KEY).catch(() => null);
+    if (claim) { await AsyncStorage.removeItem(PENDING_KEY).catch(() => {}); r.push(`/claim/${claim}`); return; }
     if (!pushSupported) return;
     const dismissed = await AsyncStorage.getItem(PROMPT_KEY).catch(() => null);
     setAskPush(!dismissed && !(await pushEnabledHere()));
@@ -50,7 +54,8 @@ export default function Overview() {
         <Stat n={o.week.lays} l={o.week.lays === 1 ? 'lay due' : 'lays due'} /><Stat n={o.week.hatches} l={o.week.hatches === 1 ? 'hatch due' : 'hatches due'} />
       </View>
 
-      <Section t="Due now" />
+      <View style={[s.row, { marginTop: 16, marginBottom: 4 }]}><Text style={[s.h, { flex: 1 }]} accessibilityRole="header">Due now</Text>
+        <Btn t={o.dueNow.length > 1 ? `Feed all ${o.dueNow.length}` : 'Feed several'} onPress={() => r.push(o.dueNow.length ? '/feed?pre=due' : '/feed')} /></View>
       {o.dueNow.length ? o.dueNow.map(({ a, due }) => <Card key={a.id} onPress={() => r.push(`/animal/${a.id}`)}><View style={s.row}>
         <View style={{ flex: 1 }}><Text style={s.h}>{a.name}</Text>
           <Text style={s.mu}>{a.species} · {a.sex} · {due < t ? `${diffDays(t, due)}d overdue` : 'due today'}</Text></View>

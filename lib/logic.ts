@@ -54,7 +54,8 @@ export const fmtMD = (md?: string | null) => md ? new Date(`2000-${md}T12:00:00`
 
 export const interval = (a: Animal, s: Season) =>
   a.feed_every || (a.sex === 'Male' ? s.male_every || suggested(a.species).male_every : s.female_every || suggested(a.species).female_every);
-export const nextFeed = (a: Animal, s: Season) => (a.last_feed ? addDays(a.last_feed, interval(a, s)) : today());
+// Never fed: due on `t` (today by default; pass the user's own date when working it out elsewhere, e.g. the server).
+export const nextFeed = (a: Animal, s: Season, t = today()) => (a.last_feed ? addDays(a.last_feed, interval(a, s)) : t);
 export function isPaused(s: Season | undefined, d: string) {
   if (!s?.pause_from || !s?.pause_to) return false;
   const m = d.slice(5);
@@ -63,7 +64,7 @@ export function isPaused(s: Season | undefined, d: string) {
 
 export type Pairing = { id?: string; female_id?: string; male_id?: string; intro?: string | null; removed?: string | null;
   ovulation?: string | null; prelay_shed?: string | null; laid?: string | null; hatched?: string | null;
-  clutch?: number | null; fertile?: number | null; locks: string[]; notes?: string | null };
+  clutch?: number | null; fertile?: number | null; locks: string[]; notes?: string | null; incubator?: string | null; target_temp?: number | null };
 // Estimated dates for a pairing, from fixed reference figures for the female's species (see lib/species.ts; the
 // middle of each typical range). `s` is the female's species settings (only its species is used here).
 //   prelay: expected pre-lay shed (pythons), from ovulation: ovulation-to-lay minus pre-lay-shed-to-lay days

@@ -59,6 +59,7 @@ export default function ImportScreen() {
 
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Stack.Screen options={{ title: 'Bulk add' }} />
+    <Text style={[s.mu, { marginBottom: 8 }]}>Animals from a breeder who uses Clutchly come with their records: <Text style={{ textDecorationLine: 'underline', color: C.ink }} accessibilityRole="link" onPress={() => r.push('/claim')}>enter their handover code</Text>.</Text>
     <Text style={{ color: C.ink }}>One animal per line: <Text style={{ fontWeight: '600' }}>name, species, sex</Text>, then optionally hatch date and last feed date.</Text>
     <Text style={[s.mu, { marginTop: 4 }]}>Sex is F or M. Dates as {fmtHint} or YYYY-MM-DD (change the order on the Season tab). A header row is optional; with one, columns can be in any order. From a spreadsheet, copy the cells and paste them here, or save as CSV.</Text>
 

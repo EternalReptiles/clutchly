@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { LogoMark } from '../lib/Brand';
 import { ScrollView, Text, View } from 'react-native';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { DATE_FORMATS, DateFormat, fmt, today } from '../lib/logic';
 import { Btn, C, Card, Chips, Input, confirm, notify, s } from '../lib/ui';
@@ -66,6 +66,10 @@ export default function Account() {
       <Text style={{ color: C.ink, marginTop: 4 }}>{plan.isPro ? `${APP_NAME} Pro${plan.expiresAt ? ` · ${plan.productId?.includes('lifetime') ? 'active until' : 'renews or ends'} ${fmt(plan.expiresAt.slice(0, 10))}` : ' · no end date'}` : `Free · ${plan.count} of ${plan.freeAnimals} owned animals`}</Text>
       <View style={{ marginTop: 8 }}><Btn solid={!plan.isPro} t={plan.isPro ? 'Manage Pro' : 'Go Pro'} onPress={() => goPro()} /></View></Card>
     <NotificationSettings />
+    <Card><Text style={s.h}>Wildlife licence</Text>
+      <Text style={[s.mu, { marginTop: 4 }]}>Save it once: handovers swap your full name, licence number and address with the other person's.</Text>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}><Btn t="Wildlife licence" onPress={() => router.push('/licence')} />
+        <Btn t="Sales and purchases" onPress={() => router.push('/records')} /></View></Card>
     <Card><Text style={s.h}>Change password</Text>
       <Input label="New password" value={pw} onChangeText={setPw} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
       <Input label="Confirm new password" value={pw2} onChangeText={setPw2} secureTextEntry textContentType="newPassword" autoComplete="new-password" onSubmitEditing={changePassword} />

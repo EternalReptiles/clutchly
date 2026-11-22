@@ -11,15 +11,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { setDateFormat } from './logic';
 
-export type Table = 'animals' | 'events' | 'pairings' | 'season_settings' | 'animal_photos' | 'user_genes' | 'animal_genes';
-export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings', 'animal_photos', 'user_genes', 'animal_genes'];
+export type Table = 'animals' | 'events' | 'pairings' | 'season_settings' | 'animal_photos' | 'user_genes' | 'animal_genes' | 'incubation_logs';
+export const TABLES: Table[] = ['animals', 'events', 'pairings', 'season_settings', 'animal_photos', 'user_genes', 'animal_genes', 'incubation_logs'];
 export type Row = Record<string, any>;
 type Op = 'insert' | 'update' | 'upsert' | 'delete';
 type Mutation = { mid: string; table: Table; op: Op; key: string; row?: Row };
 export type SyncStatus = 'idle' | 'syncing' | 'offline';
 export type State = {
   uid: string | null; ready: boolean;
-  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[]; user_genes: Row[]; animal_genes: Row[];
+  animals: Row[]; events: Row[]; pairings: Row[]; season_settings: Row[]; animal_photos: Row[]; user_genes: Row[]; animal_genes: Row[]; incubation_logs: Row[];
   queue: Mutation[]; lastSync: string | null; lastDeleteId: number;
   status: SyncStatus; error: string | null; dateFormat: string;
   plan: Plan;
@@ -30,7 +30,7 @@ export const DEFAULT_PLAN: Plan = { active: false, expiresAt: null, productId: n
 
 const keyCol = (t: Table) => (t === 'season_settings' ? 'species' : 'id');
 const keyOf = (t: Table, r: Row) => String(r[keyCol(t)]);
-const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], user_genes: [], animal_genes: [], queue: [],
+const empty = (): State => ({ uid: null, ready: false, animals: [], events: [], pairings: [], season_settings: [], animal_photos: [], user_genes: [], animal_genes: [], incubation_logs: [], queue: [],
   lastSync: null, lastDeleteId: 0, status: 'idle', error: null, dateFormat: 'auto', plan: DEFAULT_PLAN });
 
 let state: State = empty();
@@ -77,11 +77,14 @@ async function persistNow() {
   dirty.clear();
   try { await AsyncStorage.multiSet(writes); if (stale.length) await AsyncStorage.multiRemove(stale); } catch { /* storage full: keep going in memory */ }
 }
+const fullLoad = new Set<Table>();
 async function loadCache(uid: string): Promise<Partial<State>> {
   try {
     const p = prefix(uid); const meta = JSON.parse((await AsyncStorage.getItem(`${p}.meta`)) || 'null');
     if (!meta) return {};
     const out: Partial<State> = { lastSync: meta.lastSync ?? null, lastDeleteId: meta.lastDeleteId ?? 0, queue: meta.queue ?? [], plan: meta.plan ?? DEFAULT_PLAN };
+    // A table added in an app update isn't in this cache yet: load all of it on the next sync, not just recent changes.
+    for (const t of TABLES) if (meta.chunks?.[t] === undefined) fullLoad.add(t);
     for (const t of TABLES) {
       const keys = Array.from({ length: meta.chunks?.[t] ?? 0 }, (_, i) => `${p}.${t}.${i}`);
       const vals = keys.length ? await AsyncStorage.multiGet(keys) : [];
@@ -212,7 +215,10 @@ async function pull() {
   }
   for (const d of del.data) lastDeleteId = Math.max(lastDeleteId, d.id);
   let max: string | null = state.lastSync;
-  for (const t of TABLES) { const m = await pullTable(t, since); if (m && (!max || m > max)) max = m; }
+  for (const t of TABLES) {
+    const whole = fullLoad.has(t); const m = await pullTable(t, whole ? null : since); if (whole) fullLoad.delete(t);
+    if (m && (!max || m > max)) max = m;
+  }
   set({ lastSync: max ?? new Date(0).toISOString(), lastDeleteId });
   // Plan status (small; refreshed every sync). Failure keeps the last known plan.
   const [sub, lim] = await Promise.all([supabase.from('subscriptions').select('active,expires_at,product_id').maybeSingle(),
@@ -242,6 +248,8 @@ export function sync(): Promise<void> {
   })().then(offline => { running = null; if (!offline && state.queue.length) kick(); }, () => { running = null; });
   return running;
 }
+/** A sync that starts after now: waits out one already running (which may have missed a change just made on the server). */
+export async function syncFresh() { await sync(); await sync(); }
 let kickTimer: ReturnType<typeof setTimeout> | null = null;
 function kick() { if (kickTimer) return; kickTimer = setTimeout(() => { kickTimer = null; sync(); }, 300); }
 

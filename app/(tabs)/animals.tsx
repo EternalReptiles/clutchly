@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { morphName } from '../../lib/genetics';
 import { useGeneLib } from '../../lib/useGenes';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Platform, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fmt } from '../../lib/logic';
 import { useCollection } from '../../lib/derived';
@@ -23,7 +23,10 @@ export default function Animals() {
   const morphs = useMemo(() => { const by: Record<string, any[]> = {}; for (const g of animal_genes) (by[g.animal_id] ??= []).push(g);
     return Object.fromEntries(Object.entries(by).map(([k, v]) => [k, morphName(genes, v)])); }, [animal_genes, genes]);
   return (<View style={s.page}><View style={s.row}><View style={{ flex: 1 }}><Input placeholder="Search" value={q} onChangeText={setQ} /></View>
-    <View style={{ marginTop: 8, flexDirection: 'row', gap: 6 }}><Btn t="Bulk add" onPress={() => r.push('/import')} /><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
+    <View style={{ marginTop: 8 }}><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
+    <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><Btn t="Feed" onPress={() => r.push('/feed')} />
+      {Platform.OS !== 'web' && <Btn t="Scan" onPress={() => r.push('/scan')} />}<Btn t="Labels" onPress={() => r.push('/labels')} />
+      <Btn t="Bulk add" onPress={() => r.push('/import')} /></View>
     <FlatList data={l} keyExtractor={a => a.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
       ListEmptyComponent={!ready || rows.length ? <Text style={[s.mu, { marginTop: 12 }]}>{!ready ? 'Loading your collection…' : 'No matches.'}</Text>
