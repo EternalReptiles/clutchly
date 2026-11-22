@@ -11,6 +11,7 @@ import { useStore } from '../../lib/store';
 import { coverOf, useSignedUrls } from '../../lib/photos';
 import { Thumb } from '../../lib/PhotoGallery';
 import { AnimalAvatar, EmptyState } from '../../lib/Brand';
+import { webCameraAvailable } from '../../lib/WebScanner';
 export default function Animals() {
   const { ready, animals: rows } = useCollection(); const [q, setQ] = useState(''); const r = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -25,7 +26,7 @@ export default function Animals() {
   return (<View style={s.page}><View style={s.row}><View style={{ flex: 1 }}><Input placeholder="Search" value={q} onChangeText={setQ} /></View>
     <View style={{ marginTop: 8 }}><Btn solid t="+ Add" onPress={() => r.push('/animal/new')} /></View></View>
     <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}><Btn t="Feed" onPress={() => r.push('/feed')} />
-      {Platform.OS !== 'web' && <Btn t="Scan" onPress={() => r.push('/scan')} />}<Btn t="Labels" onPress={() => r.push('/labels')} />
+      {(Platform.OS !== 'web' || webCameraAvailable()) && <Btn t="Scan" onPress={() => r.push('/scan')} />}<Btn t="Labels" onPress={() => r.push('/labels')} />
       <Btn t="Bulk add" onPress={() => r.push('/import')} /></View>
     <FlatList data={l} keyExtractor={a => a.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
