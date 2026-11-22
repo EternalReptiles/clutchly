@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { signUp } from './signup.mjs';
 // Backend + row-level-security test. Creates throwaway accounts (needs "Confirm email" off), then deletes them.
 // Run: RC_AUTH='Bearer ...' node --env-file=.env tests/rls.test.mjs   (in a proxied environment add NODE_USE_ENV_PROXY=1)
 const U = process.env.EXPO_PUBLIC_SUPABASE_URL, K = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -9,8 +10,8 @@ const ts = Date.now(), pw = 'Test-pass-' + ts;
 const A = mk(), B = mk();
 const anonClient = mk;
 const ea = `clutchly.test.a.${ts}@gmail.com`, eb = `clutchly.test.b.${ts}@gmail.com`;
-let r = await A.auth.signUp({ email: ea, password: pw }); ok(!r.error && r.data.session, 'A sign up ' + (r.error?.message || ''));
-r = await B.auth.signUp({ email: eb, password: pw }); ok(!r.error && r.data.session, 'B sign up ' + (r.error?.message || ''));
+let r = await signUp(A, { email: ea, password: pw }); ok(!r.error && r.data.session, 'A sign up ' + (r.error?.message || ''));
+r = await signUp(B, { email: eb, password: pw }); ok(!r.error && r.data.session, 'B sign up ' + (r.error?.message || ''));
 await A.auth.signOut({ scope: 'local' });
 r = await A.auth.signInWithPassword({ email: ea, password: pw }); ok(!r.error, 'A sign in ' + (r.error?.message || ''));
 r = await A.auth.signInWithPassword({ email: ea, password: 'wrong' }); ok(!!r.error, 'wrong password rejected');
@@ -104,7 +105,7 @@ x = await B.rpc('delete_my_account'); ok(!x.error, 'B delete account ' + (x.erro
 x = await A.from('animals').select('id'); ok(x.data?.length === 3, 'A data survives B deletion (2 animals + 1 hatchling)');
 x = await A.rpc('delete_my_account'); ok(!x.error, 'A delete account ' + (x.error?.message || ''));
 x = await mk().auth.signInWithPassword({ email: ea, password: pw }); ok(!!x.error, 'A cannot sign in after deletion');
-const A2 = mk(); await A2.auth.signUp({ email: ea, password: pw }); x = await A2.from('animals').select('*'); ok(x.data?.length === 0, 'A data was deleted with account');
+const A2 = mk(); await signUp(A2, { email: ea, password: pw }); x = await A2.from('animals').select('*'); ok(x.data?.length === 0, 'A data was deleted with account');
 await A2.rpc('delete_my_account');
 console.log(fails ? `${fails} FAILED` : 'ALL PASSED');
 process.exit(fails ? 1 : 0);

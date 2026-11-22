@@ -1,6 +1,7 @@
 // Free vs Pro, enforced by the database, with Pro status written only by the revenuecat-webhook function.
 // Run: RC_AUTH='Bearer ...' CRON_SECRET=... node --env-file=.env tests/plans.test.mjs   ("Confirm email" off)
 import { createClient } from '@supabase/supabase-js';
+import { signUp } from './signup.mjs';
 const URL_ = process.env.EXPO_PUBLIC_SUPABASE_URL, KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY, RC = process.env.RC_AUTH, CRON = process.env.CRON_SECRET;
 if (!URL_ || !KEY || !RC || !CRON) { console.error('Need .env, RC_AUTH and CRON_SECRET'); process.exit(1); }
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
@@ -11,7 +12,7 @@ const ev = (type, uid, x = {}) => ({ type, id: crypto.randomUUID(), app_user_id:
   event_timestamp_ms: Date.now(), expiration_at_ms: Date.now() + 365 * 864e5, ...x });
 const addN = async (c, n, prefix) => { const out = []; for (let i = 0; i < n; i++) out.push(await c.from('animals').insert({ name: `${prefix}${i}`, sex: 'Female' }).select('id').single()); return out; };
 const FREE = mk(), PRO = mk();
-const f = await FREE.auth.signUp({ email: `clutchly.free.${ts}@gmail.com`, password: 'Plan-pass-123' }), p = await PRO.auth.signUp({ email: `clutchly.pro.${ts}@gmail.com`, password: 'Plan-pass-123' });
+const f = await signUp(FREE, { email: `clutchly.free.${ts}@gmail.com`, password: 'Plan-pass-123' }), p = await signUp(PRO, { email: `clutchly.pro.${ts}@gmail.com`, password: 'Plan-pass-123' });
 const fid = f.data.user.id, pid = p.data.user.id;
 try {
   // Webhook

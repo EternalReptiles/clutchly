@@ -1,6 +1,6 @@
-// Handing an animal over to its buyer (migration 015_transfers.sql). The seller makes a one-time link; the buyer
-// opens it, signs in and accepts, and gets their own copy of the animal and its history. These need a connection:
-// the copy is made on the server.
+// Handing an animal over to its buyer (migrations 015-020). The seller makes a one-time link; the buyer opens it,
+// signs in and asks for the animal; the seller approves, and the buyer gets their own copy of the animal, its history,
+// genes and photos, and the two swap licence details. These need a connection: the copy is made on the server.
 import { Platform, Share } from 'react-native';
 import brand from '../brand.json';
 import { supabase } from './supabase';
@@ -10,11 +10,13 @@ import { fmt } from './logic';
 export type Licence = { full_name?: string | null; licence_no?: string | null; region?: string | null; licence_class?: string | null;
   expires?: string | null; address?: string | null; phone?: string | null };
 export type Transfer = { code: string; animal_id: string | null; new_animal_id: string | null; seller_id: string | null; accepted_by: string | null;
+  requested_by: string | null; requested_at: string | null;
   from_name: string | null; include_notes: boolean; share_seller_licence: boolean; animal_name: string | null; species: string | null;
   created_at: string; expires_at: string; accepted_at: string | null; seller_licence: Licence | null; buyer_licence: Licence | null };
 export type Preview = { code: string; from_name: string | null; expires_at: string; accepted: boolean; mine: boolean;
   name: string; species: string; sex: string; dob: string | null; feeds: number; sheds: number; weights: number;
-  genes: { name: string; state: string; het_pct: number | null }[]; seller_licence: boolean };
+  genes: { name: string; state: string; het_pct: number | null }[]; seller_licence: boolean;
+  requested: boolean; requested_by_me: boolean; new_animal_id: string | null; photos: number };
 
 export const PENDING_KEY = 'clutchly.pendingClaim';
 export const FROM_KEY = 'clutchly.handoverFrom';
@@ -48,13 +50,35 @@ export async function previewTransfer(code: string): Promise<Preview | null> {
   if (r.error) throw new Error(friendly(r.error.message));
   return r.data as Preview | null;
 }
-export async function acceptTransfer(code: string): Promise<string> {
+/** Buyer: ask for the animal (the seller then approves or declines). */
+export async function requestTransfer(code: string) {
   const r = await supabase.rpc('accept_transfer', { p_code: code });
   if (r.error) throw new Error(friendly(r.error.message));
-  return r.data as string;
+}
+export async function withdrawRequest(code: string) { const r = await supabase.rpc('withdraw_request', { p_code: code }); if (r.error) throw new Error(friendly(r.error.message)); }
+export async function declineTransfer(code: string) { const r = await supabase.rpc('decline_transfer', { p_code: code }); if (r.error) throw new Error(friendly(r.error.message, 'seller')); }
+/** Seller: approve. The Edge Function makes the copy and copies the photos. */
+export async function approveTransfer(code: string): Promise<{ new_animal_id: string; photos: number; photos_failed: number }> {
+  const r = await supabase.functions.invoke('handover-approve', { body: { code } });
+  if (r.error) {
+    let m = r.error.message;
+    try { m = (await (r.error as any).context?.json())?.error ?? m; } catch { /* keep the generic message */ }
+    throw new Error(friendly(m, 'seller'));
+  }
+  return r.data;
+}
+/** Seller: handovers waiting for their approval (for Overview). Empty when offline. */
+export async function awaitingApproval(): Promise<Transfer[]> {
+  const { data: s } = await supabase.auth.getSession(); const uid = s.session?.user.id; if (!uid) return [];
+  const r = await supabase.from('transfers').select('*').eq('seller_id', uid).not('requested_by', 'is', null).is('accepted_at', null).gt('expires_at', new Date().toISOString());
+  return r.error ? [] : r.data as Transfer[];
 }
 
-export function friendly(m: string) {
+export function friendly(m: string, who: 'buyer' | 'seller' = 'buyer') {
+  if (/transfer_requested/.test(m)) return 'Someone else has already asked for this animal. If that wasn\'t you, contact the seller.';
+  if (/transfer_no_request/.test(m)) return 'Nobody has asked for this animal yet.';
+  if (/buyer_licence_missing/.test(m)) return 'The buyer\'s licence details are incomplete. Ask them to finish them (Account > Wildlife licence), then approve again.';
+  if (who === 'seller' && /free_limit_reached/.test(m)) return 'The buyer\'s free plan is full. Ask them to go Pro or mark an animal Sold, then approve again.';
   if (/transfer_not_found/.test(m)) return 'This link has expired or was cancelled. Ask the seller for a new one.';
   if (/transfer_used/.test(m)) return 'This animal has already been added to a collection.';
   if (/transfer_own_animal/.test(m)) return 'This is your own animal. Send the link to the buyer.';
@@ -95,6 +119,7 @@ export const hasLicence = (l?: Licence | null) => !!(l && (l.licence_no?.trim() 
 /** What every handover needs from both people (the server checks the same). */
 export const licenceComplete = (l?: Licence | null) => !!(l?.full_name?.trim() && l.licence_no?.trim() && l.address?.trim());
 export const SWAP_TEXT = 'Your full name, wildlife licence number and address go to the other person, and theirs come to you, so you both have them for your records.';
+export const BUYER_SWAP_TEXT = 'Your full name, wildlife licence number and address go to the seller with your request; theirs come to you when they approve.';
 /** Licence details as lines of text, for showing and for sharing a record. */
 export const licenceLines = (l: Licence) => [l.full_name, [l.licence_no && `Licence ${l.licence_no}`, l.region, l.licence_class].filter(Boolean).join(' · '),
   l.expires && `Expires ${fmt(l.expires)}`, l.address, l.phone].filter(Boolean) as string[];
