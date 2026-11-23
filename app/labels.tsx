@@ -14,19 +14,25 @@ import { useCollection } from '../lib/derived';
 import { useStore } from '../lib/store';
 import { Btn, C, Check, Chips, Input, notify, s } from '../lib/ui';
 import { Loading } from '../lib/Brand';
-import brand from '../brand.json';
 import { LAYOUTS, animalLink, labelLines, labelsHtml, layoutOf, qrSvg, type LabelAnimal } from '../lib/labels';
+import { labelsPdf } from '../lib/labelsPdf';
 
 const LAYOUT_KEY = 'clutchly.labelLayout'; const ALL = 'All species';
 const pt = (mm: number) => Math.round(mm * 72 / 25.4);
 
-/** Added to an iPhone's home screen, the web app can't print (iOS ignores print there). */
+/** Added to an iPhone's home screen, the web app can't print (iOS ignores print there), so it shares a PDF instead. */
 const inHomeScreenApp = () => typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true);
-/** The site's print page (site/labels.html) with these labels in the link after the #, which isn't sent to the server. */
-function printPageUrl(animals: LabelAnimal[], layout: string, skip: number) {
-  const d = { k: layout, s: skip, a: animals.map(a => [a.id, a.name, a.species, a.sex, a.dob ? fmt(a.dob) : '', a.morph ?? '']) };
-  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  return `${brand.siteUrl.replace(/\/+$/, '')}/labels.html#${b64}`;
+const PDF_NAME = 'Clutchly labels.pdf';
+/** Web: the share sheet with the PDF (it has Print); false if this browser can't share files. */
+async function sharePdf(blob: Blob) {
+  const file = new File([blob], PDF_NAME, { type: 'application/pdf' }); const nav = navigator as any;
+  if (!nav.canShare?.({ files: [file] })) return false;
+  try { await nav.share({ files: [file] }); } catch (e: any) { if (e?.name !== 'AbortError') throw e; }
+  return true;
+}
+function downloadPdf(blob: Blob) {
+  const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = PDF_NAME;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60_000);
 }
 /** Web: print the labels from a hidden frame, so the app page itself isn't printed. */
 function printWeb(html: string) {
@@ -57,9 +63,13 @@ export default function Labels() {
     if (!chosen.length) return notify('Tick the animals to print');
     const html = labelsHtml(chosen, layout, fmt, sheet ? parseInt(skip, 10) || 0 : 0);
     if (Platform.OS === 'web') {
-      if (!inHomeScreenApp()) return printWeb(html);
-      // Opens in Safari, which can print (the page opens the print dialog and has a Print button).
-      return void window.open(printPageUrl(chosen, layout, sheet ? parseInt(skip, 10) || 0 : 0), '_blank');
+      const home = inHomeScreenApp();
+      if (!pdf && !home) return printWeb(html);
+      try {
+        const blob = labelsPdf(chosen, layout, fmt, sheet ? parseInt(skip, 10) || 0 : 0);
+        if (!(home && await sharePdf(blob))) downloadPdf(blob);
+      } catch (e: any) { notify('Could not make the PDF', String(e?.message ?? e)); }
+      return;
     }
     setBusy(true);
     try {
@@ -99,6 +109,6 @@ export default function Labels() {
     <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, paddingBottom: 24, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.bd, flexDirection: 'row', gap: 8 }}>
       <View style={{ flex: 1 }}><Btn solid disabled={busy || !chosen.length} onPress={() => go(false)}
         t={chosen.length ? `Print ${chosen.length} label${chosen.length === 1 ? '' : 's'}${sheet ? ` (${sheets} sheet${sheets === 1 ? '' : 's'})` : ''}` : 'Tick animals to print'} /></View>
-      {Platform.OS !== 'web' && <Btn disabled={busy || !chosen.length} t="Save PDF" onPress={() => go(true)} />}
+      <Btn disabled={busy || !chosen.length} t="Save PDF" onPress={() => go(true)} />
     </View></View>);
 }

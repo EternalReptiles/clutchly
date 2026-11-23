@@ -65,24 +65,24 @@ const SP = process.argv[2];
     if (await pg.getByRole('radio', { name: /^Label printer, 62 × 29 mm/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('size not remembered');
     await home(); await tab('Animals');
   });
-  await step('home-screen web app: Print opens the site\'s print page, which draws the labels and prints', async () => {
-    // Pretend to be the iPhone home-screen app (iOS ignores print there).
-    await pg.evaluate(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.includes('standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q); });
+  const pdfInfo = buf => { const t = buf.toString('latin1');
+    return { pdf: t.startsWith('%PDF-'), pages: +(t.match(/\/Type \/Pages[^>]*\/Count (\d+)/) || t.match(/\/Count (\d+)/) || [])[1], box: (t.match(/\/MediaBox \[([^\]]+)\]/) || [])[1] }; };
+  await step('Save PDF downloads the labels as a PDF, one page per label on a label printer', async () => {
     await B('Labels').click(); await B('Carpet').click(); await B('Tick all shown').click();
-    await pg.evaluate(() => { window.open = u => { window.__opened = u; return null; }; });
-    await B('Print 2 labels').click(); await pg.waitForFunction(() => window.__opened);
-    const url = await pg.evaluate(() => window.__opened);
-    if (!/^https:\/\/clutchly\.com\.au\/labels\.html#[A-Za-z0-9_-]+$/.test(url)) throw new Error('opened ' + url);
-    // The page as Safari would show it (served from the website; here from the site folder).
-    const page = await pg.context().newPage(); await page.addInitScript(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
-    await page.goto('file://' + require('path').resolve(__dirname, '../site/labels.html') + url.slice(url.indexOf('#')));
-    await page.locator('.l').first().waitFor({ timeout: 5000 });
-    const names = await page.locator('.n').allTextContents(); if (names.join() !== 'LB1,LB2') throw new Error('names ' + names);
-    if (await page.locator('.q svg').count() !== 2) throw new Error('QR codes missing');
-    if (await page.getByText('Preparing your labels').count()) throw new Error('loading message left on the page');
-    await page.getByRole('button', { name: 'Print' }).waitFor(); await page.waitForTimeout(900);
-    if (await page.evaluate(() => window.__printed) < 1) throw new Error('print dialog not opened');
-    await page.screenshot({ path: `${SP}/lb-c-print-page.png` }); await page.close();
+    const [dl] = await Promise.all([pg.waitForEvent('download'), B('Save PDF').click()]);
+    if (dl.suggestedFilename() !== 'Clutchly labels.pdf') throw new Error('file ' + dl.suggestedFilename());
+    const buf = require('fs').readFileSync(await dl.path()); require('fs').writeFileSync(`${SP}/lb-labels.pdf`, buf);
+    const i = pdfInfo(buf); if (!i.pdf || i.pages !== 2 || !/^0 0 175\.7\d* 82\.2\d*$/.test((i.box || '').trim())) throw new Error(JSON.stringify(i));
+  });
+  await step('home-screen web app: Print shares a PDF (the share sheet has Print)', async () => {
+    // Pretend to be the iPhone home-screen app (iOS ignores print there) with a share sheet.
+    await pg.evaluate(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.includes('standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q);
+      navigator.canShare = d => !!d.files; navigator.share = async d => { const f = d.files[0]; window.__shared = { name: f.name, type: f.type, bytes: [...new Uint8Array(await f.arrayBuffer())] }; }; });
+    await B('Print 2 labels').click(); await pg.waitForFunction(() => window.__shared, null, { timeout: 5000 });
+    const sh = await pg.evaluate(() => window.__shared);
+    if (sh.name !== 'Clutchly labels.pdf' || sh.type !== 'application/pdf') throw new Error(JSON.stringify({ name: sh.name, type: sh.type }));
+    const i = pdfInfo(Buffer.from(sh.bytes)); if (!i.pdf || i.pages !== 2) throw new Error(JSON.stringify(i));
+    if (logs.some(l => /PAGEERROR|Could not make/.test(l))) throw new Error(logs.join(' / '));
     await pg.reload({ waitUntil: 'networkidle' }); await home(); await tab('Animals');   // back to a normal browser
   });
   await step('Print label on an animal ticks just that animal', async () => {

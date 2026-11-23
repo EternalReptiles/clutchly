@@ -35,7 +35,7 @@ const SP = process.argv[2];
   await step('paste lines -> preview shows ready rows and problems', async () => {
     await T('Bulk add', { exact: true }).click(); await L('Paste here').waitFor();
     await L('Paste here').fill(['ER001, Carpet, F', 'ER002, Carpet, M, 1/12/2023', 'ER003, Bredli, F, 03/04/2024, 14/11/2026',
-      'ER004, Diamond, Male', 'ER005, Boa, F', 'ER006, Antaresia, X', 'ER004, Carpet, F'].join('\n'));
+      'ER004, Diamond, Male', 'ER005, Boa, F', 'ER006, Pygmy python, X', 'ER004, Carpet, F'].join('\n'));
     // Each ID is used once: one already in the collection, or repeated in the list, is a problem row.
     await T('3 ready to import · 4 with problems (skipped)').waitFor({ timeout: 5000 });
     await T('Line 1: "ER001" already exists in your collection').waitFor();

@@ -15,8 +15,9 @@ and lay to hatch. The Season tab suggests the middle of each range; each user ca
 ## Species templates and onboarding
 `species_templates` (migration 008) holds shared starting values per species: feed intervals, feeding pause, pairing
 start, and days from pre-lay shed / ovulation to lay and from lay to hatch. Every signed-in user can read it; nobody can
-change it from the app (edit it with a new migration or in the Supabase dashboard). Seeded for Carpet, Bredli, Diamond
-and Antaresia. Dates are for the southern hemisphere; northern-hemisphere users get them shifted by six months
+change it from the app (edit it with a new migration or in the Supabase dashboard). Seeded for Carpet, Bredli and
+Diamond; Jungle and Coastal copy Carpet, and Children's, Spotted, Stimson's and Pygmy pythons copy the old Antaresia
+values, which was taken off the species list (migration 025). Dates are for the southern hemisphere; northern-hemisphere users get them shifted by six months
 (`lib/templates.ts`, tested in `tests/templates.test.js`).
 
 New users see a one-time Welcome screen (`app/welcome.tsx`): hemisphere (guessed from the phone's timezone) and the
@@ -167,9 +168,9 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
   already exists"), Bulk add skips it, and the unique index `animals_unique_name` (migration 024) backs this up for
   offline adds that sync later. A handover copy whose ID the buyer already uses gets " (2)" etc. Pairing and calculator
   choices (`lib/AnimalChooser.tsx`) show species, genes and hatch date.
-- Printing labels from the iPhone home-screen web app: iOS ignores print there, so `app/labels.tsx` opens the website's
-  `labels.html` in Safari with the labels in the link after `#` (never sent to the server). It draws them with
-  `site/js/labels.js`, built from `lib/labels.ts` by `scripts/build_site.mjs`, and opens the print screen.
+- Printing labels from the iPhone home-screen web app: iOS ignores print there (and in pages it opens), so Print makes
+  the labels as a PDF (`lib/labelsPdf.web.ts`, jsPDF, same sizes as the printed page via `labelMetrics`) and opens
+  the share sheet, which has Print. Save PDF on the web downloads the same file.
 
 ## Feed several
 `app/feed.tsx`: one date and food for many animals at once; each is marked Fed or Refused, or left out. Opened from

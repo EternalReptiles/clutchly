@@ -27,9 +27,8 @@ export function animalIdFrom(scanned: string): string | null {
 }
 /** The QR code as an SVG (scales to its box; black on white with the standard quiet zone). */
 export function qrSvg(text: string): string {
-  const q = qrcode(0, 'M'); q.addData(text); q.make();
-  const n = q.getModuleCount(), m = 4, size = n + 2 * m; let d = '';
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+  const { size, dark } = qrModules(text); let d = '';
+  for (const [r, c] of dark) d += `M${c} ${r}h1v1h-1z`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
 }
 
@@ -46,12 +45,25 @@ export function paginate<T>(items: T[], layout: Layout, skip = 0): (T | null)[][
   return pages;
 }
 
-/** A printable HTML document: exact page and label sizes, so it prints at 100% scale on the chosen sheet or roll. */
-export function labelsHtml(animals: LabelAnimal[], layoutKey: string, fmtDate: (d: string) => string, skip = 0): string {
-  const L = layoutOf(layoutKey); const pad = 2; const qr = Math.min(L.label.h - 2 * pad, L.label.w * 0.4);
+/** Sizes inside a label (mm, font sizes in pt), shared by the printed page and the PDF (lib/labelsPdf.web.ts). */
+export function labelMetrics(L: Layout) {
+  const pad = 2, qr = Math.min(L.label.h - 2 * pad, L.label.w * 0.4);
   // Text gets what the QR code leaves; long names step down a size and wrap to two lines rather than being cut off.
   const textMm = L.label.w - qr - 2 * pad - 2, base = Math.min(L.label.h < 33 ? 11 : 12, textMm / 2.4), small = L.label.h < 33 ? 7 : 8;
   const nameSize = (n: string) => Math.max(8, Math.round(Math.min(base, (textMm * 2.83 * 1.75) / Math.max(1, n.length)) * 2) / 2);
+  return { pad, qr, textMm, small, nameSize };
+}
+/** The QR code's squares (row, column), and its size in squares including the white border round it. */
+export function qrModules(text: string) {
+  const q = qrcode(0, 'M'); q.addData(text); q.make();
+  const n = q.getModuleCount(), m = 4, dark: [number, number][] = [];
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) dark.push([r + m, c + m]);
+  return { size: n + 2 * m, dark };
+}
+
+/** A printable HTML document: exact page and label sizes, so it prints at 100% scale on the chosen sheet or roll. */
+export function labelsHtml(animals: LabelAnimal[], layoutKey: string, fmtDate: (d: string) => string, skip = 0): string {
+  const L = layoutOf(layoutKey); const { pad, qr, small, nameSize } = labelMetrics(L);
   const label = (a: LabelAnimal | null) => !a ? '<div class="l"></div>' :
     `<div class="l"><div class="q">${qrSvg(animalLink(a.id))}</div><div class="t"><div class="n" style="font-size:${nameSize(a.name)}pt">${esc(a.name)}</div>${
       labelLines(a, fmtDate).map((x, i) => `<div class="s${i === 0 && a.morph ? ' m' : ''}">${esc(x)}</div>`).join('')}</div></div>`;
