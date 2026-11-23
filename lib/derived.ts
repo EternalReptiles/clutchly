@@ -25,3 +25,11 @@ export function useCollection() {
   const animals = useMemo(() => withStatus(s.animals, s.events).sort(byName), [s.animals, s.events]);
   return { ready: s.ready, animals, events: s.events as Ev[], pairings: s.pairings as Pairing[], seasons: s.season_settings as Season[] };
 }
+
+/** "15 animals" and "8 female · 6 male · 1 unknown": the animals you own (Sold ones aren't counted). */
+export function collectionSummary(animals: { sex: string; status: string }[]) {
+  const owned = animals.filter(a => a.status !== 'Sold');
+  const by = (sx: string) => owned.filter(a => a.sex === sx).length;
+  const parts = [by('Female') && `${by('Female')} female`, by('Male') && `${by('Male')} male`, by('Unknown') && `${by('Unknown')} unknown`];
+  return { total: `${owned.length} animal${owned.length === 1 ? '' : 's'}`, detail: parts.filter(Boolean).join(' · ') };
+}

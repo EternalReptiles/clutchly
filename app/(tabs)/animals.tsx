@@ -12,11 +12,15 @@ import { coverOf, useSignedUrls } from '../../lib/photos';
 import { Thumb } from '../../lib/PhotoGallery';
 import { AnimalAvatar, EmptyState } from '../../lib/Brand';
 import { webCameraAvailable } from '../../lib/WebScanner';
+import { usePlan } from '../../lib/plan';
+import { collectionSummary } from '../../lib/derived';
+
 export default function Animals() {
   const { ready, animals: rows } = useCollection(); const [q, setQ] = useState(''); const r = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => { setRefreshing(true); await sync(); setRefreshing(false); };
   const l = rows.filter(a => a.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const plan = usePlan(); const sum = collectionSummary(rows);
   const { animal_photos } = useStore(); // eslint-disable-line
   const covers = useMemo(() => Object.fromEntries(rows.flatMap(a => { const c = coverOf(animal_photos, a.id); return c ? [[a.id, c.path]] : []; })), [rows, animal_photos]);
   const urls = useSignedUrls(Object.values(covers) as string[]);
@@ -29,6 +33,10 @@ export default function Animals() {
       {(Platform.OS !== 'web' || webCameraAvailable()) && <Btn t="Scan" onPress={() => r.push('/scan')} />}<Btn t="Labels" onPress={() => r.push('/labels')} />
       <Btn t="Bulk add" onPress={() => r.push('/import')} /></View>
     <FlatList data={l} keyExtractor={a => a.id}
+      ListHeaderComponent={ready && rows.length ? <View style={{ marginTop: 12, marginBottom: 2 }} accessibilityLabel={`${sum.total}. ${sum.detail}`}>
+        <Text style={s.mu}><Text style={{ color: C.ink, fontWeight: '700' }}>{sum.total}</Text>{sum.detail ? ` · ${sum.detail}` : ''}
+          {!plan.isPro ? ` · ${plan.count} of ${plan.freeAnimals} on the free plan` : ''}</Text>
+        {q.trim() ? <Text style={s.mu}>Showing {l.length} of {rows.length}</Text> : null}</View> : undefined}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.ink} />}
       ListEmptyComponent={!ready || rows.length ? <Text style={[s.mu, { marginTop: 12 }]}>{!ready ? 'Loading your collection…' : 'No matches.'}</Text>
         : <EmptyState title="No animals yet" text="No animals yet. Tap + Add, or Bulk add to paste a list or import a CSV." />}
