@@ -19,7 +19,8 @@ const live = (name: string, latin: string, aliases: string[] = []): SpeciesInfo 
 
 // The first four names are kept exactly as before so existing animals keep their species.
 export const SPECIES_INFO: SpeciesInfo[] = [
-  py('Carpet', 'Morelia spilota', [42, 55], [21, 28], [52, 58], ['carpet python', 'coastal carpet', 'jungle carpet', 'murray darling carpet', 'murray-darling carpet', 'morelia', 'morelia spilota']),
+  py('Carpet', 'Morelia spilota', [42, 55], [21, 28], [52, 58], ['carpet python', 'coastal carpet', 'murray darling carpet', 'murray-darling carpet', 'morelia', 'morelia spilota']),
+  py('Jungle', 'Morelia spilota cheynei', [42, 55], [21, 28], [52, 58], ['jungle carpet', 'jungle carpet python', 'jungle python', 'cheynei']),
   py('Diamond', 'Morelia spilota spilota', [42, 55], [21, 28], [52, 58], ['diamond python']),
   py('Bredli', 'Morelia bredli', [50, 65], [25, 35], [55, 65], ["bredl's python", 'bredls python', 'bredl', 'centralian python', 'centralian carpet']),
   py('Antaresia', 'Antaresia', [35, 48], [20, 28], [48, 56], ['spotted python', "children's python", 'childrens python', "stimson's python", 'stimsons python', 'pygmy python',
