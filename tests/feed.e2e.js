@@ -26,6 +26,11 @@ const SP = process.argv[2];
     await B('Skip for now').click(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await add('FD1', 'Carpet'); await add('FD2'); await add('FD3'); await add('FD4', 'Bredli');
   });
+  await step('Animals tab shows the total, by sex, and the free plan count; search shows how many match', async () => {
+    await tab('Animals'); await T('4 animals', { exact: true }).waitFor({ timeout: 5000 }); await T(/· 4 female · 4 of 10 on the free plan$/).waitFor();
+    await pg.getByPlaceholder('Search').and(live).first().fill('FD4'); await T('Showing 1 of 4', { exact: true }).waitFor();
+    await pg.screenshot({ path: `${SP}/fd-0-total.png` }); await pg.getByPlaceholder('Search').and(live).first().fill('');
+  });
   await step('Overview offers to feed all 4 due, all marked fed', async () => {
     await tab('Overview'); await B('Feed all 4').click(); await T('Food (for everyone fed)').waitFor();
     for (const a of ['FD1', 'FD2', 'FD3', 'FD4']) if (!await checked(`${a} fed`)) throw new Error(`${a} not marked fed`);
