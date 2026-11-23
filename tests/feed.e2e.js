@@ -21,7 +21,8 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up and add three carpets and a bredli', async () => {
-    await L('Email').fill(`clutchly.fd.${Date.now()}@gmail.com`); await L('Password').fill('Fd-test-pass-1'); await T('Create account', { exact: true }).click();
+    const email = `clutchly.fd.${Date.now()}@gmail.com`, btn = await require('./e2eAccount.cjs')(email, 'Fd-test-pass-1');
+    await L('Email').fill(email); await L('Password').fill('Fd-test-pass-1'); await B(btn).click();
     await B('Skip for now').click(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await add('FD1', 'Carpet'); await add('FD2'); await add('FD3'); await add('FD4', 'Bredli');
   });
@@ -36,7 +37,7 @@ const SP = process.argv[2];
     await pg.getByRole('checkbox', { name: 'FD2 refused', exact: true }).and(live).first().click();
     await pg.getByRole('checkbox', { name: 'FD3 fed', exact: true }).and(live).first().click();     // tap again: left out
     if (await checked('FD2 fed') || !await checked('FD2 refused') || await checked('FD3 fed')) throw new Error('marks wrong');
-    await B('Save 2 fed, 1 refused').click(); await T('Due now', { exact: true }).waitFor();
+    await B('Save 2 fed, 1 refused').click(); await T('Feeds due now', { exact: true }).waitFor();
     if (!logs.some(l => /^DIALOG: Saved \| 2 fed, 1 refused on /.test(l))) throw new Error('no saved message: ' + logs.join(' / '));
   });
   await step('Overview: only the left-out animal still due; last 7 days counted', async () => {

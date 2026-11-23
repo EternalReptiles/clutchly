@@ -59,11 +59,11 @@ export default function Overview() {
     {empty ? <EmptyState title="Welcome to your collection" text="No animals yet. Add some on the Animals tab.">
       <Btn solid t="Add your first animal" onPress={() => r.push('/animal/new')} /></EmptyState> : <>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
-        <Stat n={o.dueNow.length} l="due now" /><Stat n={o.week.feeds} l="feeds this week" />
+        <Stat n={o.dueNow.length} l={o.dueNow.length === 1 ? "feed due" : "feeds due"} /><Stat n={o.week.feeds} l="feeds this week" />
         <Stat n={o.week.lays} l={o.week.lays === 1 ? 'lay due' : 'lays due'} /><Stat n={o.week.hatches} l={o.week.hatches === 1 ? 'hatch due' : 'hatches due'} />
       </View>
 
-      <View style={[s.row, { marginTop: 16, marginBottom: 4 }]}><Text style={[s.h, { flex: 1 }]} accessibilityRole="header">Due now</Text>
+      <View style={[s.row, { marginTop: 16, marginBottom: 4 }]}><Text style={[s.h, { flex: 1 }]} accessibilityRole="header">Feeds due now</Text>
         <Btn t={o.dueNow.length > 1 ? `Feed all ${o.dueNow.length}` : 'Feed several'} onPress={() => r.push(o.dueNow.length ? '/feed?pre=due' : '/feed')} /></View>
       {o.dueNow.length ? o.dueNow.map(({ a, due }) => <Card key={a.id} onPress={() => r.push(`/animal/${a.id}`)}><View style={s.row}>
         <View style={{ flex: 1 }}><Text style={s.h}>{a.name}</Text>
