@@ -7,7 +7,7 @@ import { EventEditor } from '../../lib/EventEditor';
 import { useStore } from '../../lib/store';
 import { C, Chips, DateField, s } from '../../lib/ui';
 
-const TYPES: [string, Kind[]][] = [['All', ['feed', 'shed', 'weight']], ['Feeds', ['feed']], ['Sheds', ['shed']], ['Weights', ['weight']]];
+const TYPES: [string, Kind[]][] = [['All', ['feed', 'shed', 'in_shed', 'weight']], ['Feeds', ['feed']], ['Sheds', ['shed', 'in_shed']], ['Weights', ['weight']]];
 
 /** Full history of one animal, filtered by type and date range; tap an entry to edit or delete it. */
 export default function History() {

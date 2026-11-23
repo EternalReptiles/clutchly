@@ -11,6 +11,8 @@ const SP = process.argv[2];
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).first(); const L = t => pg.getByLabel(t, { exact: true }).and(live).first();
   const B = t => pg.getByRole('button', { name: t, exact: true }).and(live).first();
+  // An animal row in a chooser (pairing, calculator): its label starts with the ID.
+  const R = n => pg.getByRole('radio', { name: new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ',') }).and(live).first();
   const tab = n => pg.getByRole('tab', { name: n }).click(); const back = () => pg.getByLabel(/back$/i).and(live).first().click();
   let fails = 0, n = 0;
   const step = async (name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await pg.screenshot({ path: `${SP}/hl-${++n}-FAIL.png`, fullPage: true }); } };
@@ -23,10 +25,10 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up, add a female and a male, pair them', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
+    const __e = email, __p = pw; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await addAnimal('DM-F1', 'Female'); await addAnimal('DM-M1', 'Male');
-    await tab('Pairings'); await T('+ New pairing').click(); await B('DM-F1').click(); await B('DM-M1').click(); await B('Create').click();
+    await tab('Pairings'); await T('+ New pairing').click(); await R('DM-F1').click(); await R('DM-M1').click(); await B('Create').click();
     await T('DM-F1 × DM-M1').waitFor({ timeout: 8000 });
   });
   await step('no Create button until there is a hatch date', async () => {
@@ -68,7 +70,7 @@ const SP = process.argv[2];
     await B('Create 2').click(); await T('Hatchlings (7)').waitFor({ timeout: 5000 });
   });
   await step('Unknown-sex hatchlings are not offered as pairing partners', async () => {
-    await back(); await T('+ New pairing').click(); await B('DM-F1').waitFor();
+    await back(); await T('+ New pairing').click(); await R('DM-F1').waitFor();
     if (await B('ER-2026-001').count()) throw new Error('hatchling offered'); await back();
   });
   await step('delete the mother: hatchlings stay, their mother link is cleared', async () => {

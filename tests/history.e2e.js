@@ -17,7 +17,7 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up and add an animal', async () => {
-    await L('Email').fill(`clutchly.hi.${Date.now()}@gmail.com`); await L('Password').fill('Hi-test-pass-1'); await T('Create account', { exact: true }).click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
+    const __e = `clutchly.hi.${Date.now()}@gmail.com`, __p = 'Hi-test-pass-1'; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('GR1');
     await L('Species').click(); await L('Search species').fill('carpet'); await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();

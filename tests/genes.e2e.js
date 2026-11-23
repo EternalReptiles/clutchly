@@ -9,6 +9,8 @@ const SP = process.argv[2];
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).first(); const L = t => pg.getByLabel(t, { exact: true }).and(live).first();
   const B = t => pg.getByRole('button', { name: t, exact: true }).and(live).first();
+  // An animal row in a chooser (pairing, calculator): its label starts with the ID.
+  const R = n => pg.getByRole('radio', { name: new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ',') }).and(live).first();
   const tab = n => pg.getByRole('tab', { name: n }).click(); const back = () => pg.getByLabel(/back$/i).and(live).first().click();
   let fails = 0, n = 0;
   const step = async (name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await pg.screenshot({ path: `${SP}/gn-${++n}-FAIL.png`, fullPage: true }); } };
@@ -71,7 +73,7 @@ const SP = process.argv[2];
     await T('Jaguar het Albino', { exact: true }).waitFor();
   });
   await step('pairing shows the calculator: odds, possible hets, warnings, line-bred note', async () => {
-    await tab('Pairings'); await T('+ New pairing').click(); await B('JF').click(); await B('JM').click();
+    await tab('Pairings'); await T('+ New pairing').click(); await R('JF').click(); await R('JM').click();
     await T('Morph calculator', { exact: true }).waitFor();
     // jaguar (ID, one parent) 50/50 · albino het x het 25/50/25 · zebra (ID, one parent) 50/50
     await row('Jaguar Zebra Albino: 1/16, 6.3%'); await row('Jaguar Zebra het Albino: 1/8, 12.5%'); await row('Normal het Albino: 1/8, 12.5%');
@@ -81,7 +83,7 @@ const SP = process.argv[2];
     await B('Create').click(); await T('JF × JM').waitFor({ timeout: 8000 });
   });
   await step('standalone calculator for any two animals', async () => {
-    await B('Morph calculator').click(); await B('JF').click(); await B('JM').click();
+    await B('Morph calculator').click(); await R('JF').click(); await R('JM').click();
     await row('Jaguar Zebra Albino: 1/16, 6.3%');
   });
   await step('what-if parents: Jaguar x Jaguar is flagged, 1 in 4 eggs not viable', async () => {
@@ -109,7 +111,7 @@ const SP = process.argv[2];
     await T('OP', { exact: true }).click(); await B('Edit genes').click(); await L('Search genes').waitFor({ timeout: 8000 });
     await L('Search genes').fill('alb'); if (await pg.getByText(/^Jaguar ·/).and(live).count()) throw new Error('search did not filter');
     await setGene('Albino', 'Visual'); await L('Search genes').fill(''); await B('Done').click(); await T('Albino', { exact: true }).waitFor({ timeout: 5000 }); await back();
-    await tab('Pairings'); await B('Morph calculator').click(); await B('OP').click(); await B('JM').click();
+    await tab('Pairings'); await B('Morph calculator').click(); await R('OP').click(); await R('JM').click();
     await row('Zebra Albino: 1/4, 25%'); await row('Zebra het Albino: 1/4, 25%');
     if (await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).count()) throw new Error('species chips still shown');
     await pg.screenshot({ path: `${SP}/gn-e-olive.png`, fullPage: true }); await back();

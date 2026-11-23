@@ -1,6 +1,6 @@
 // The Overview tab: what's due now, the next 7 days day by day, things that need a look, and the last 7 days.
 // Pure (unit-tested in tests/overview.test.js); works from the local store, so it works offline.
-import { addDays, diffDays, estimates, isPaused, nextFeed, seasonFor, type Animal, type Pairing, type Season } from './logic';
+import { addDays, diffDays, estimates, feedHold, isPaused, nextFeed, seasonFor, type Animal, type FeedHold, type Pairing, type Season } from './logic';
 
 export type Ev = { animal_id: string; kind: string; on_date: string; ok: boolean | null; created_at?: string };
 export type DayItem =
@@ -9,6 +9,7 @@ export type DayItem =
   | { kind: 'season'; text: string };
 export type Overview = {
   dueNow: { a: Animal; due: string }[];
+  held: { a: Animal; hold: FeedHold }[];   // not due because they're in shed or the male is still in
   days: { date: string; items: DayItem[] }[];
   attention: { text: string; animalId?: string; pairingId?: string }[];
   later: { text: string; date: string }[];
@@ -19,7 +20,10 @@ export type Overview = {
 export function overview(animals: Animal[], events: Ev[], pairings: Pairing[], seasons: Season[], t: string): Overview {
   const active = animals.filter(a => a.status !== 'Sold');
   const byId = new Map(animals.map(a => [a.id, a]));
-  const feedOn = (a: Animal, d: string) => { const sc = seasonFor(seasons, a.species); return !isPaused(sc, d) ? nextFeed(a, sc, t) : null; };
+  const names = new Map(animals.map(a => [a.id, a.name]));
+  const feedOn = (a: Animal, d: string) => { const sc = seasonFor(seasons, a.species); return !isPaused(sc, d) && !feedHold(a, pairings, d) ? nextFeed(a, sc, t) : null; };
+  const held = active.flatMap(a => { const h = feedHold(a, pairings, t, names); return h && !isPaused(seasonFor(seasons, a.species), t) ? [{ a, hold: h }] : []; })
+    .sort((x, y) => x.a.name.localeCompare(y.a.name, undefined, { numeric: true }));
 
   const dueNow = active.map(a => ({ a, due: feedOn(a, t) })).filter((x): x is { a: Animal; due: string } => !!x.due && x.due <= t)
     .sort((x, y) => x.due.localeCompare(y.due) || x.a.name.localeCompare(y.a.name, undefined, { numeric: true }));
@@ -56,7 +60,8 @@ export function overview(animals: Animal[], events: Ev[], pairings: Pairing[], s
   for (const e of events) if (e.kind === 'feed') (feedsBy.get(e.animal_id) ?? feedsBy.set(e.animal_id, []).get(e.animal_id)!).push(e);
   for (const a of active) {
     const f = (feedsBy.get(a.id) ?? []).sort((x, y) => y.on_date.localeCompare(x.on_date) || (y.created_at ?? '').localeCompare(x.created_at ?? ''));
-    let n = 0; while (n < f.length && f[n].ok === false) n++;
+    const offered = f.filter(e => e.ok !== null); // Not offered entries don't break or extend a streak
+    let n = 0; while (n < offered.length && offered[n].ok === false) n++;
     if (n >= 3) attention.push({ text: `${a.name} has refused ${n} feeds in a row`, animalId: a.id });
   }
   // Estimated dates that have passed with nothing recorded (up to 30 days back).
@@ -79,11 +84,11 @@ export function overview(animals: Animal[], events: Ev[], pairings: Pairing[], s
   const since = addDays(t, -6);
   const recent = events.filter(e => e.on_date >= since && e.on_date <= t && byId.has(e.animal_id));
   return {
-    dueNow, days, attention, later: later.sort((a, b) => a.date.localeCompare(b.date)),
+    dueNow, held, days, attention, later: later.sort((a, b) => a.date.localeCompare(b.date)),
     week: { feeds: dueNow.length + days.reduce((s, d) => s + d.items.reduce((n, it) => n + (it.kind === 'feed' ? it.animals.length : 0), 0), 0),
       lays: days.reduce((s, d) => s + d.items.filter(i => i.kind === 'lay').length, 0),
       hatches: days.reduce((s, d) => s + d.items.filter(i => i.kind === 'hatch').length, 0) },
-    last7: { fed: recent.filter(e => e.kind === 'feed' && e.ok !== false).length, refused: recent.filter(e => e.kind === 'feed' && e.ok === false).length,
+    last7: { fed: recent.filter(e => e.kind === 'feed' && e.ok === true).length, refused: recent.filter(e => e.kind === 'feed' && e.ok === false).length,
       sheds: recent.filter(e => e.kind === 'shed').length, weights: recent.filter(e => e.kind === 'weight').length },
   };
 }

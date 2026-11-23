@@ -1,45 +1,145 @@
 {
   "_about": "Help questions, shown in the app (Account > Help) and on the website's support page (scripts/build_site.mjs). {{APP_NAME}} and {{SUPPORT_EMAIL}} are filled in from brand.json. In answers, **bold** marks button and screen names; a blank line starts a new paragraph.",
   "sections": [
-    { "title": "Getting started", "items": [
-      { "q": "How do I add my animals?", "a": "On the **Animals** tab tap **+ Add** for one animal, or **Bulk add** to paste a list or import a CSV file (name, species, sex, and optionally hatch date and last feed date)." },
-      { "q": "How are feeds worked out?", "a": "Each animal is due a feed a set number of days after its last one: your routine for that species on the **Season** tab, or the animal's own number if you set one on its page. Without a routine, females are fed every 7 days and males every 21. Feeding pauses on the Season tab stop feeds being due." },
-      { "q": "What's on the Overview tab?", "a": "What's due now, the next 7 days (feeds, expected lays and hatches, season dates), animals that need a look (refusals, dates that passed with nothing recorded) and the last 7 days." }
-    ]},
-    { "title": "Feeding, sheds and weights", "items": [
-      { "q": "How do I log a feed, shed or weight?", "a": "Open the animal, pick the date, then tap **Fed**, **Refused**, **Shed** or **Weight** (enter grams first). Tap an entry in **Recent** or **Full history** to change or delete it." },
-      { "q": "Can I feed a whole rack at once?", "a": "Yes. On **Overview** tap **Feed all** to open everything that's due already marked Fed, or tap **Feed** on the Animals tab. Set the date and food once, change any animal to **Refused**, tap again to leave one out, then **Save**." }
-    ]},
-    { "title": "Breeding and incubation", "items": [
-      { "q": "How do I track a pairing?", "a": "On the **Pairings** tab tap **+ New pairing**, pick the female and male, then log locks and dates (ovulation, pre-lay shed, eggs laid, hatched) as they happen. The pairing shows the next expected date, worked out from typical figures for the species." },
-      { "q": "How do I log incubation?", "a": "Once a pairing has an eggs-laid date, its page shows **Incubation**: set the incubator and target temperature, then add readings (temperature, humidity, good eggs and a note). Readings more than 1 °C from the target show in red." },
-      { "q": "How do I add the hatchlings?", "a": "When the pairing has a hatch date, tap **Create hatchlings**, enter the clutch size and how many to add, and choose an ID pattern. They're added as animals linked to both parents." },
-      { "q": "How does the morph calculator work?", "a": "Record each animal's genes on its page (**Edit genes**). The calculator on every pairing (and **Pairings > Morph calculator**) shows the odds for each baby. It assumes genes are inherited independently; real clutches vary." }
-    ]},
-    { "title": "Labels and scanning", "items": [
-      { "q": "How do I print QR labels?", "a": "On the Animals tab tap **Labels** (or **Print label** on an animal), tick the animals and choose a size: A4 sticker sheets of 21 (63.5 × 38.1 mm, e.g. Avery L7160) or 14 (99.1 × 38.1 mm, e.g. L7163), or a label printer. Print at 100% (Actual size), not Fit to page. On a part-used sheet, enter how many labels are already gone." },
-      { "q": "How do I scan a label?", "a": "Tap **Scan** on the Animals tab and point the camera at the label: the animal opens. Your phone's Camera app also works: it opens the animal in the web app." }
-    ]},
-    { "title": "Selling and buying animals", "items": [
-      { "q": "How do I send an animal's records to its buyer?", "a": "On the animal's page tap **Make a handover link** and send the link to your buyer by text or private message. They open it and ask for the animal; you get a card on **Overview** and on the animal's page with their name, wildlife licence and address. Tap **Approve** and they get their own copy with its history, genes and photos, your licence details go to them, and your animal is marked Sold. Tap **Decline** if it isn't your buyer." },
-      { "q": "I've been sent a handover link. What do I do?", "a": "Open it, sign in (or create a free account), add your wildlife licence details if asked, and tap **Ask to add to my collection**. When the seller approves, the animal appears in your Animals. You can also type the code on the new-animal screen or Bulk add." },
-      { "q": "Why do I need to add my wildlife licence?", "a": "Buyers and sellers need each other's full name, licence number and address for their records. Save them once in **Account > Wildlife licence**, and every handover swaps them, so nobody has to find and send them. Every handover is listed in **Account > Sales and purchases**." }
-    ]},
-    { "title": "Photos and notifications", "items": [
-      { "q": "How do I add photos?", "a": "On an animal's page, add photos from your library or camera, and choose the cover photo shown on the Animals list. Photos are part of Pro and need a connection to upload." },
-      { "q": "How do morning notifications work?", "a": "With Pro, turn them on in **Account**: one notification at the hour you choose, with what's due to feed and a heads-up before lays and pairing season. They come to phones with the app installed (not the web app)." }
-    ]},
-    { "title": "Your account and data", "items": [
-      { "q": "Does it work without signal?", "a": "Yes. Changes are saved on your phone and sync when you're back online. Adding photos, handovers and the Help contact form need a connection." },
-      { "q": "I forgot my password.", "a": "On the sign-in screen tap **Forgot password?** and follow the link we email you." },
-      { "q": "I didn't get the confirmation email.", "a": "Check your junk or spam folder for an email from {{APP_NAME}} (no-reply@clutchly.com.au). If it isn't there after a few minutes, contact us below with the email address you signed up with." },
-      { "q": "How do I get a copy of my data?", "a": "**Account > Download my data** saves a file with all your animals, history, pairings, routine, licence details, handovers and photo list. It works on the free and Pro plans." },
-      { "q": "How do I delete my account?", "a": "In the app, tap the round account button at the top right, then **Delete account**. This permanently deletes your account, animals, records and photos (completed handovers stay in the other person's records). If you can't sign in, email {{SUPPORT_EMAIL}} from the email address on your account and we'll delete it within 30 days. Deleting your account does not cancel a subscription: cancel that in your App Store or Google Play settings." }
-    ]},
-    { "title": "Free and Pro", "items": [
-      { "q": "What's the difference between free and Pro?", "a": "Free: up to 10 animals (animals marked Sold don't count) with every record-keeping feature and data export. Pro: unlimited animals, photos and morning notifications." },
-      { "q": "How do I restore my Pro purchase on a new phone?", "a": "Sign in with the same account, open the Pro screen and tap **Restore purchases**." },
-      { "q": "How do I cancel Pro?", "a": "iPhone: Settings > your name > Subscriptions. Android: Google Play > your profile > Payments & subscriptions > Subscriptions. Your data is never deleted when Pro ends." }
-    ]}
+    {
+      "title": "Getting started",
+      "items": [
+        {
+          "q": "How do I add my animals?",
+          "a": "On the **Animals** tab tap **+ Add** for one animal, or **Bulk add** to paste a list or import a CSV file (name, species, sex, and optionally hatch date and last feed date)."
+        },
+        {
+          "q": "How are feeds worked out?",
+          "a": "Each animal is due a feed a set number of days after its last one: your routine for that species on the **Season** tab, or the animal's own number if you set one on its page. Without a routine, females are fed every 7 days and males every 21. Feeding pauses on the Season tab stop feeds being due. No feeds are due while an animal is **In shed** (until you log the shed), or while a pairing has no **Male removed** date (for the female and the male)."
+        },
+        {
+          "q": "What's on the Overview tab?",
+          "a": "What's due now, the next 7 days (feeds, expected lays and hatches, season dates), animals that need a look (refusals, dates that passed with nothing recorded) and the last 7 days."
+        },
+        {
+          "q": "Can two animals have the same ID?",
+          "a": "Yes. Where it matters, such as choosing animals for a pairing, the species, genes and hatch year tell them apart. **Bulk add** notes when an ID is already in your collection, in case you pasted the same list twice."
+        }
+      ]
+    },
+    {
+      "title": "Feeding, sheds and weights",
+      "items": [
+        {
+          "q": "How do I log a feed, shed or weight?",
+          "a": "Open the animal, pick the date, then tap **Fed**, **Refused**, **Not offered** (you skipped it on purpose: the schedule moves on, but it isn't counted as a feed or a refusal), **In shed** (feeds pause until the shed), **Shed** or **Weight** (enter grams first). Tap an entry in **Recent** or **Full history** to change or delete it."
+        },
+        {
+          "q": "Can I feed a whole rack at once?",
+          "a": "Yes. On **Overview** tap **Feed all** to open everything that's due already marked Fed, or tap **Feed** on the Animals tab. Set the date and food once, change any animal to **Refused**, tap again to leave one out, then **Save**."
+        }
+      ]
+    },
+    {
+      "title": "Breeding and incubation",
+      "items": [
+        {
+          "q": "How do I track a pairing?",
+          "a": "On the **Pairings** tab tap **+ New pairing**, pick the female and male, then log locks and dates (ovulation, pre-lay shed, eggs laid, hatched) as they happen. The pairing shows the next expected date, worked out from typical figures for the species. Each choice shows the animal's species and genes. While a pairing has no **Male removed** date, feeds pause for both animals."
+        },
+        {
+          "q": "How do I log incubation?",
+          "a": "Once a pairing has an eggs-laid date, its page shows **Incubation**: set the incubator and target temperature, then add readings (temperature, humidity, good eggs and a note). Readings more than 1 °C from the target show in red."
+        },
+        {
+          "q": "How do I add the hatchlings?",
+          "a": "When the pairing has a hatch date, tap **Create hatchlings**, enter the clutch size and how many to add, and choose an ID pattern. They're added as animals linked to both parents."
+        },
+        {
+          "q": "How does the morph calculator work?",
+          "a": "Record each animal's genes on its page (**Edit genes**). The calculator on every pairing (and **Pairings > Morph calculator**) shows the odds for each baby. It assumes genes are inherited independently; real clutches vary."
+        }
+      ]
+    },
+    {
+      "title": "Labels and scanning",
+      "items": [
+        {
+          "q": "How do I print QR labels?",
+          "a": "On the Animals tab tap **Labels** (or **Print label** on an animal), tick the animals and choose a size: A4 sticker sheets of 21 (63.5 × 38.1 mm, e.g. Avery L7160) or 14 (99.1 × 38.1 mm, e.g. L7163), or a label printer. Print at 100% (Actual size), not Fit to page. On a part-used sheet, enter how many labels are already gone."
+        },
+        {
+          "q": "How do I scan a label?",
+          "a": "Tap **Scan** on the Animals tab and point the camera at the label: the animal opens. Your phone's Camera app also works: it opens the animal in the web app."
+        }
+      ]
+    },
+    {
+      "title": "Selling and buying animals",
+      "items": [
+        {
+          "q": "How do I send an animal's records to its buyer?",
+          "a": "On the animal's page tap **Make a handover link** and send the link to your buyer by text or private message. They open it and ask for the animal; you get a card on **Overview** and on the animal's page with their name, wildlife licence and address. Tap **Approve** and they get their own copy with its history, genes and photos, your licence details go to them, and your animal is marked Sold. Tap **Decline** if it isn't your buyer."
+        },
+        {
+          "q": "I've been sent a handover link. What do I do?",
+          "a": "Open it, sign in (or create a free account), add your wildlife licence details if asked, and tap **Ask to add to my collection**. When the seller approves, the animal appears in your Animals. You can also type the code on the new-animal screen or Bulk add."
+        },
+        {
+          "q": "Why do I need to add my wildlife licence?",
+          "a": "Buyers and sellers need each other's full name, licence number and address for their records. Save them once in **Account > Wildlife licence**, and every handover swaps them, so nobody has to find and send them. Every handover is listed in **Account > Sales and purchases**."
+        }
+      ]
+    },
+    {
+      "title": "Photos and notifications",
+      "items": [
+        {
+          "q": "How do I add photos?",
+          "a": "On an animal's page, add photos from your library or camera, and choose the cover photo shown on the Animals list. Photos are part of Pro and need a connection to upload."
+        },
+        {
+          "q": "How do morning notifications work?",
+          "a": "With Pro, turn them on in **Account**: one notification at the hour you choose, with what's due to feed and a heads-up before lays and pairing season. They come to phones with the app installed (not the web app)."
+        }
+      ]
+    },
+    {
+      "title": "Your account and data",
+      "items": [
+        {
+          "q": "Does it work without signal?",
+          "a": "Yes. Changes are saved on your phone and sync when you're back online. Adding photos, handovers and the Help contact form need a connection."
+        },
+        {
+          "q": "I forgot my password.",
+          "a": "On the sign-in screen tap **Forgot password?** and follow the link we email you."
+        },
+        {
+          "q": "I didn't get the confirmation email.",
+          "a": "Check your junk or spam folder for an email from {{APP_NAME}} (no-reply@clutchly.com.au). If it isn't there after a few minutes, contact us below with the email address you signed up with."
+        },
+        {
+          "q": "How do I get a copy of my data?",
+          "a": "**Account > Download my data** saves a file with all your animals, history, pairings, routine, licence details, handovers and photo list. It works on the free and Pro plans."
+        },
+        {
+          "q": "How do I delete my account?",
+          "a": "In the app, tap the round account button at the top right, then **Delete account**. This permanently deletes your account, animals, records and photos (completed handovers stay in the other person's records). If you can't sign in, email {{SUPPORT_EMAIL}} from the email address on your account and we'll delete it within 30 days. Deleting your account does not cancel a subscription: cancel that in your App Store or Google Play settings."
+        }
+      ]
+    },
+    {
+      "title": "Free and Pro",
+      "items": [
+        {
+          "q": "What's the difference between free and Pro?",
+          "a": "Free: up to 10 animals (animals marked Sold don't count) with every record-keeping feature and data export. Pro: unlimited animals, photos and morning notifications."
+        },
+        {
+          "q": "How do I restore my Pro purchase on a new phone?",
+          "a": "Sign in with the same account, open the Pro screen and tap **Restore purchases**."
+        },
+        {
+          "q": "How do I cancel Pro?",
+          "a": "iPhone: Settings > your name > Subscriptions. Android: Google Play > your profile > Payments & subscriptions > Subscriptions. Your data is never deleted when Pro ends."
+        }
+      ]
+    }
   ]
 }

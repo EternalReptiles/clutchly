@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { useStore } from './store';
-import type { AnimalGene, Combo, Gene, Lib } from './genetics';
+import { morphName, type AnimalGene, type Combo, type Gene, type Lib } from './genetics';
 
 // The shared gene library and combination names, kept on the phone for offline use.
 const CACHE_KEY = 'clutchly.geneLibrary.v2';
@@ -35,4 +35,11 @@ export const useGenes = () => useGeneLib().genes;
 export function useAnimalGenes(animalId?: string | null): AnimalGene[] {
   const st = useStore();
   return useMemo(() => animalId ? st.animal_genes.filter(g => g.animal_id === animalId) as unknown as AnimalGene[] : [], [st.animal_genes, animalId]);
+}
+/** Every animal's morph name ("Jaguar het Albino"), keyed by animal id; animals with no genes are left out. */
+export function useMorphs(): Record<string, string> {
+  const st = useStore(); const lib = useGeneLib();
+  return useMemo(() => { const by: Record<string, AnimalGene[]> = {};
+    for (const g of st.animal_genes) (by[g.animal_id] ??= []).push(g as unknown as AnimalGene);
+    return Object.fromEntries(Object.entries(by).map(([k, v]) => [k, morphName(lib, v)]).filter(([, m]) => m)); }, [st.animal_genes, lib]);
 }

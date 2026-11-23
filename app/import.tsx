@@ -83,8 +83,9 @@ export default function ImportScreen() {
       {rows.slice(0, 500).map(x => <View key={x.line} style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.bd }}>
         {x.error
           ? <><Text style={{ color: C.bad }}>Line {x.line}: {x.error}</Text><Text style={s.mu} numberOfLines={1}>{x.raw}</Text></>
-          : <Text style={{ color: C.ink }}><Text style={{ fontWeight: '600' }}>{x.name}</Text> · {x.species} · {x.sex}
-              {x.dob ? ` · hatched ${fmt(x.dob)}` : ''}{x.last_feed ? ` · fed ${fmt(x.last_feed)}` : ''}</Text>}
+          : <><Text style={{ color: C.ink }}><Text style={{ fontWeight: '600' }}>{x.name}</Text> · {x.species} · {x.sex}
+              {x.dob ? ` · hatched ${fmt(x.dob)}` : ''}{x.last_feed ? ` · fed ${fmt(x.last_feed)}` : ''}</Text>
+            {x.note ? <Text style={s.mu}>Line {x.line}: {x.note}</Text> : null}</>}
       </View>)}
       {rows.length > 500 && <Text style={s.mu}>…and {rows.length - 500} more</Text>}
       <View style={{ marginTop: 12 }}><Btn solid disabled={busy || !good.length || rows.length > MAX_ROWS}

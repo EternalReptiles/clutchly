@@ -8,6 +8,7 @@ export type Row = {
   line: number; raw: string;
   name: string; species: string; sex: string; dob: string | null; last_feed: string | null;
   error?: string;
+  note?: string;   // worth a look but imported anyway (e.g. an ID already used)
 };
 
 // One CSV line -> fields. Handles quotes ("Smith, J") and doubled quotes inside them.
@@ -65,7 +66,8 @@ const HEADERS: Record<string, keyof Row> = {
 };
 const POSITIONAL: (keyof Row)[] = ['name', 'species', 'sex', 'dob', 'last_feed'];
 
-/** existingNames: names already in the user's collection (case-insensitive duplicates are rejected). */
+/** existingNames: names already in the user's collection. An ID can be used more than once; a repeat is imported with a
+ * note (pasting the same list twice by mistake should still be noticed). */
 export function parseImport(text: string, dayFirst: boolean, existingNames: string[]): Row[] {
   const lines = text.replace(/^﻿/, '').split(/\r\n|\n|\r/);
   const firstReal = lines.find(l => l.trim()) ?? '';
@@ -90,8 +92,8 @@ export function parseImport(text: string, dayFirst: boolean, existingNames: stri
     const name = (v.name ?? '').trim();
     if (!name) errs.push('Name missing');
     else if (name.length > 60) errs.push('Name longer than 60 characters');
-    else if (existing.has(name.toLowerCase())) errs.push(`"${name}" is already in your collection`);
-    else if (inFile.has(name.toLowerCase())) errs.push(`Duplicate of line ${inFile.get(name.toLowerCase())}`);
+    const note = !name ? undefined : existing.has(name.toLowerCase()) ? `"${name}" is already in your collection (imported as another animal)`
+      : inFile.has(name.toLowerCase()) ? `Same ID as line ${inFile.get(name.toLowerCase())} (imported as another animal)` : undefined;
     const species = parseSpecies(v.species ?? '');
     if (!species) errs.push(v.species?.trim() ? `Unknown species "${v.species.trim()}". Use a name from the species list (or Other)` : 'Species missing');
     const sex = parseSex(v.sex ?? '');
@@ -104,7 +106,7 @@ export function parseImport(text: string, dayFirst: boolean, existingNames: stri
     if (name && !inFile.has(name.toLowerCase())) inFile.set(name.toLowerCase(), i + 1);
     rows.push({ line: i + 1, raw, name, species: species ?? '', sex: sex ?? '',
       dob: dob && !dob.startsWith('!') ? dob : null, last_feed: lf && !lf.startsWith('!') ? lf : null,
-      error: errs.length ? errs.join('; ') : undefined });
+      error: errs.length ? errs.join('; ') : undefined, note });
   }
   return rows;
 }

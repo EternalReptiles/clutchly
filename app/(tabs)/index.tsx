@@ -70,6 +70,8 @@ export default function Overview() {
           <Text style={s.mu}>{a.species} · {a.sex} · {due < t ? `${diffDays(t, due)}d overdue` : 'due today'}</Text></View>
         <Btn solid t="Fed" onPress={() => log(a.id, true)} /><Btn t="Refused" onPress={() => log(a.id, false)} /></View></Card>)
         : <Text style={s.mu}>Nothing due today.</Text>}
+      {o.held.length > 0 && <Text style={[s.mu, { marginTop: 4 }]} accessibilityLabel="Feeds paused">Paused: {o.held.map(({ a, hold }) =>
+        `${a.name} (${hold.kind === 'shed' ? 'in shed' : `in with ${hold.with ?? 'its mate'}`})`).join(', ')}</Text>}
 
       {o.attention.length > 0 && <><Section t="Needs a look" />
         <Card>{o.attention.map((x, i) => <Pressable key={i} onPress={() => go(x)} accessibilityRole="button" style={{ paddingVertical: 4 }}>

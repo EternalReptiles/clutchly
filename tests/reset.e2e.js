@@ -8,7 +8,7 @@ const SP = process.argv[2];
 (async () => {
   const sb = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL, process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const email = `clutchly.reset.${Date.now()}@gmail.com`, oldPw = 'Old-pass-123', newPw = 'New-pass-456';
-  const su = await sb.auth.signUp({ email, password: oldPw }); if (su.error) throw su.error;
+  const su = await (await import('./signup.mjs')).signUp(sb, { email, password: oldPw }); if (su.error) throw su.error;
   const { access_token, refresh_token } = su.data.session;
 
   const b = await chromium.launch();

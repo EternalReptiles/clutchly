@@ -66,6 +66,36 @@ const SP = process.argv[2];
     await T('+ Add').waitFor(); await tab('Overview'); await T('Nothing due today.', { exact: true }).waitFor();
     await T('3 fed · 1 refused · 0 sheds · 0 weights', { exact: true }).waitFor();
   });
+  const back2 = () => pg.getByLabel(/back$|^Home$/i).filter({ visible: true }).first().click(); // Back, or Home after a reload
+  const R = n => pg.getByRole('radio', { name: new RegExp('^' + n + ',') }).and(live).first();
+  await step('In shed pauses feeds until a shed is logged', async () => {
+    await tab('Animals'); await T('FD1', { exact: true }).click(); await B('In shed').click(); await T('In shed: feeds paused', { exact: true }).waitFor();
+    if (await B('In shed').count()) throw new Error('In shed offered while already in shed');
+    await back2(); await tab('Overview'); await T(/^Paused: .*FD1 \(in shed\)/).waitFor();
+    await tab('Animals'); await T('FD1', { exact: true }).click(); await B('Shed').click(); await T(/^Next feed /).waitFor();
+    await T(/· Shed$/).waitFor(); await T(/· In shed$/).waitFor(); await back2();
+  });
+  await step('"Not in shed after all" takes it back', async () => {
+    await T('FD4', { exact: true }).click(); await B('In shed').click(); await T('In shed: feeds paused', { exact: true }).waitFor();
+    await B('Not in shed after all').click(); await T(/^Next feed /).waitFor(); await back2();
+  });
+  await step('Not offered is logged, and is neither fed nor refused', async () => {
+    await T('FD2', { exact: true }).click(); await B('Not offered').click(); await T(/· Not offered$/).waitFor(); await back2();
+    await tab('Overview'); await T('3 fed · 1 refused · 1 shed · 0 weights', { exact: true }).waitFor();
+  });
+  await step('pairing picker shows species; the male in with the female pauses both', async () => {
+    await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('FD5'); await B('Male').click(); await T('Save', { exact: true }).click(); await T('FD5', { exact: true }).waitFor();
+    await tab('Overview'); await T('FD5', { exact: true }).waitFor();                  // never fed: due today
+    await tab('Pairings'); await T('+ New pairing').click(); await R('FD1').waitFor();
+    if (!(await R('FD4').getAttribute('aria-label')).includes('Bredli')) throw new Error('species not shown');
+    await R('FD1').click(); await R('FD5').click(); await pg.screenshot({ path: `${SP}/fd-c-pairing-picker.png` });
+    await B('Create').click(); await T('FD1 × FD5').waitFor({ timeout: 8000 });
+    await tab('Overview'); await T(/^Paused: .*FD1 \(in with FD5\).*FD5 \(in with FD1\)/).waitFor();
+    if (await pg.getByRole('button', { name: 'Feeds due now', exact: true }).count() || await T('Nothing due today.', { exact: true }).count() === 0) throw new Error('FD5 should not be due while paired');
+    await tab('Pairings'); await T('FD1 × FD5').click(); await L('Male removed').fill(new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10));
+    await B('Save').click(); await back2(); await tab('Overview'); await pg.getByRole('button', { name: 'Feed several' }).and(live).first().waitFor({ timeout: 8000 });
+    if (await T(/^Paused: /).count()) throw new Error('still paused after the male was removed');
+  });
   await step('cleanup: delete account', async () => {
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
     await T('Delete account', { exact: true }).click(); await T('Create account').waitFor({ timeout: 10000 });

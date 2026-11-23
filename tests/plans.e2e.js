@@ -20,7 +20,7 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up (free plan)', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click(); await B('Skip for now').click({ timeout: 15000 });
+    const __e = email, __p = pw; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click(); await B('Skip for now').click({ timeout: 15000 });
     await api.auth.signInWithPassword({ email, password: pw });
   });
   await step('bulk add 12: the first 10 are imported, 2 stay in the box marked over the limit', async () => {

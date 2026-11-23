@@ -33,7 +33,7 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up and add animals', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click();
+    const __e = email, __p = pw; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click();
     await B('Skip for now').click(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await add('LB1', 'Carpet'); await add('LB2'); await add('LB3', 'Bredli');
   });

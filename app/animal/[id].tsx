@@ -5,7 +5,8 @@ import { GeneEditor } from '../../lib/GeneEditor';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { insert, insertMany, remove, update, useStore } from '../../lib/store';
-import { SEXES, addDays, diffDays, fmt, interval, isPaused, seasonFor, today } from '../../lib/logic';
+import { SEXES, addDays, diffDays, feedHold, fmt, interval, isPaused, seasonFor, today } from '../../lib/logic';
+import { withStatus } from '../../lib/derived';
 import { SpeciesPicker } from '../../lib/SpeciesPicker';
 import { PhotoGallery } from '../../lib/PhotoGallery';
 import { AnimalAvatar } from '../../lib/Brand';
@@ -51,8 +52,12 @@ export default function AnimalScreen() {
     const from = animal.feed_every ? 'this animal\'s own interval' : (animal.sex === 'Male' ? sc.male_every : sc.female_every) ? `your ${animal.species} routine` : 'the default';
     const last = allEv.find(e => e.kind === 'feed')?.on_date;
     const next = last ? addDays(last, every) : today();
-    return { every, from, next, paused: isPaused(sc, today()) };
-  }, [isNew, animal, st.season_settings, allEv]);
+    // In shed, or the male still in with the female: no feeds due until that ends.
+    const names = new Map(st.animals.map(x => [x.id as string, x.name as string]));
+    const hold = feedHold(withStatus([animal], allEv)[0], st.pairings as any, today(), names);
+    const blueEv = hold?.kind === 'shed' ? allEv.find(e => e.kind === 'in_shed') : undefined;
+    return { every, from, next, paused: isPaused(sc, today()), hold, blueEv };
+  }, [isNew, animal, st.season_settings, st.pairings, st.animals, allEv]);
   const weights = useMemo(() => weightSeries(allEv), [allEv]);
   const sheds = useMemo(() => shedStats(allEv), [allEv]);
   const refusals = useMemo(() => refusalStats(allEv, today()), [allEv]);
@@ -130,8 +135,14 @@ export default function AnimalScreen() {
     {!isNew && <PhotoGallery animalId={id} />}
     {!isNew && animal && <Handover animalId={id} name={animal.name} onAccepted={() => setA(f => ({ ...f, status: 'Sold' }))} />}
     {feedInfo && <View style={[s.card, { marginTop: 14 }]} accessibilityLabel="Next feed">
-      <Text style={s.h}>{feedInfo.paused ? 'Feeding pause' : feedInfo.next <= today() ? (feedInfo.next < today() ? `Feed overdue by ${diffDays(today(), feedInfo.next)} days` : 'Feed due today') : `Next feed ${fmt(feedInfo.next)}`}</Text>
-      <Text style={s.mu}>{feedInfo.paused ? 'The feeding pause for this species is on (Season tab).' : `Every ${feedInfo.every} days, from ${feedInfo.from}.`}</Text></View>}
+      <Text style={s.h}>{feedInfo.paused ? 'Feeding pause' : feedInfo.hold ? (feedInfo.hold.kind === 'shed' ? 'In shed: feeds paused' : 'Paired: feeds paused')
+        : feedInfo.next <= today() ? (feedInfo.next < today() ? `Feed overdue by ${diffDays(today(), feedInfo.next)} days` : 'Feed due today') : `Next feed ${fmt(feedInfo.next)}`}</Text>
+      <Text style={s.mu}>{feedInfo.paused ? 'The feeding pause for this species is on (Season tab).'
+        : feedInfo.hold?.kind === 'shed' ? `In shed since ${fmt(feedInfo.hold.since)}. Feeds are due again once you log the shed (every ${feedInfo.every} days).`
+        : feedInfo.hold ? `In with ${feedInfo.hold.with ?? 'its mate'} since ${fmt(feedInfo.hold.since)}. Feeds are due again once the pairing has a Male removed date.`
+        : `Every ${feedInfo.every} days, from ${feedInfo.from}.`}</Text>
+      {feedInfo.hold?.kind === 'pairing' && feedInfo.hold.pairingId && <View style={{ marginTop: 8 }}><Btn t="Open the pairing" onPress={() => { const h = feedInfo.hold; if (h?.kind === 'pairing') r.push(`/pairing/${h.pairingId}`); }} /></View>}
+      {feedInfo.blueEv && <View style={{ marginTop: 8 }}><Btn t="Not in shed after all" onPress={() => remove('events', feedInfo.blueEv!.id)} /></View>}</View>}
     {!isNew && <><Text style={[s.h, { marginTop: 22 }]}>Log</Text>
       <DateField label="Date" value={day} onChange={v => setDay(v || today())} />
       <Input label="Food" value={food} onChangeText={setFood} placeholder="e.g. medium rat" />
@@ -139,6 +150,8 @@ export default function AnimalScreen() {
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         <Btn solid t="Fed" onPress={() => log('feed', { ok: true, food: food.trim() || null })} />
         <Btn t="Refused" onPress={() => log('feed', { ok: false, food: food.trim() || null })} />
+        <Btn t="Not offered" onPress={() => log('feed', { ok: null })} />
+        {feedInfo?.hold?.kind !== 'shed' && <Btn t="In shed" onPress={() => log('in_shed')} />}
         <Btn t="Shed" onPress={() => log('shed')} /><Btn t="Weight" onPress={logWeight} /></View>
       <Text style={[s.h, { marginTop: 22 }]}>Growth</Text>
       <WeightChart points={weights} />
