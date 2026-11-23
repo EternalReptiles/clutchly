@@ -33,8 +33,9 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up', async () => {
-    await L('Email').fill(`clutchly.sp.${Date.now()}@gmail.com`); await L('Password').fill('Sp-test-pass-1');
-    await T('Create account', { exact: true }).click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 }); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
+    const email = `clutchly.sp.${Date.now()}@gmail.com`, btn = await require('./e2eAccount.cjs')(email, 'Sp-test-pass-1');
+    await L('Email').fill(email); await L('Password').fill('Sp-test-pass-1');
+    await pg.getByRole('button', { name: btn, exact: true }).and(live).first().click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 }); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
   });
   await step('picker: nickname search, Latin names shown', async () => {
     await tab('Animals'); await T('+ Add').click(); await L('Species').click();
@@ -72,6 +73,9 @@ const SP = process.argv[2];
   await step('Season: only kept species, fields per type, typical ranges', async () => {
     await tab('Season'); await T('Tiliqua', { exact: true }).waitFor({ timeout: 8000 });
     if (await count('Carpet', { exact: true })) throw new Error('Carpet shown but not kept');
+    // Several species start closed (one line each); Open all shows their settings.
+    if (await pg.getByLabel(/^Lay to hatch:/).and(live).count()) throw new Error('species should start closed');
+    await pg.getByRole('button', { name: 'Open all', exact: true }).and(live).first().click();
     await L('Mating to birth: 105 days').waitFor(); await L('Mating / ovulation to lay: 28 days').waitFor(); await L('Lay to hatch: 65 days').waitFor();
     if (await pg.getByLabel(/^Lay to hatch:/).and(live).count() !== 1) throw new Error('hatch time should only show for the dragon');
     if (await pg.getByLabel(/^Pre-lay shed to lay:/).and(live).count() !== 0) throw new Error('no pythons kept');
