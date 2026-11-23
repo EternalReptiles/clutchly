@@ -59,7 +59,7 @@ export default function Overview() {
     {empty ? <EmptyState title="Welcome to your collection" text="No animals yet. Add some on the Animals tab.">
       <Btn solid t="Add your first animal" onPress={() => r.push('/animal/new')} /></EmptyState> : <>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
-        <Stat n={o.dueNow.length} l="due now" /><Stat n={o.week.feeds} l="feeds this week" />
+        <Stat n={o.dueNow.length} l={o.dueNow.length === 1 ? "feed due" : "feeds due"} /><Stat n={o.week.feeds} l="feeds this week" />
         <Stat n={o.week.lays} l={o.week.lays === 1 ? 'lay due' : 'lays due'} /><Stat n={o.week.hatches} l={o.week.hatches === 1 ? 'hatch due' : 'hatches due'} />
       </View>
 
