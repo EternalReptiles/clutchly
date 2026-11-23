@@ -15,6 +15,7 @@ const SP = process.argv[2];
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).first();
   const L = t => pg.getByLabel(t, { exact: true }).and(live).first();
+  const B = t => pg.getByRole('button', { name: t, exact: true }).and(live).filter({ visible: true }).first();
   const tab = n => pg.getByRole('tab', { name: n }).click();
   const gone = async (loc, ms = 8000) => { await pg.waitForTimeout(500); await loc.waitFor({ state: 'detached', timeout: ms }); };
   const until = async (fn, want, msg) => { for (let i = 0; i < 16; i++) { if (await fn() === want) return; await pg.waitForTimeout(500); } throw new Error(msg + ' (got ' + await fn() + ')'); };
@@ -30,7 +31,8 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
+    const btn = await require('./e2eAccount.cjs')(email, pw);
+    await L('Email').fill(email); await L('Password').fill(pw); await pg.getByRole('button', { name: btn, exact: true }).and(live).first().click(); await pg.getByRole('button', { name: 'Skip for now', exact: true }).click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 }); await shot('today-empty');
   });
   await step('new account: routine prompt on Today and Season, all blank', async () => {
@@ -93,14 +95,18 @@ const SP = process.argv[2];
     if (await L('Feed females every (days)').getAttribute('placeholder') !== '7 (suggested)') throw new Error('feed placeholder');
     await L('Pre-lay shed to lay: 25 days').waitFor(); await L('Ovulation to lay: 49 days').waitFor(); await L('Lay to hatch: 55 days').waitFor();
     await shot('season-carpet');
-    await L('Pairing starts').fill('2000-06-15'); await pg.waitForTimeout(1500);
+    const pairBtn = () => pg.getByRole('button', { name: 'Pairing starts', exact: true }).and(live).first();
+    if (await pairBtn().textContent() !== 'Not set') throw new Error('pairing start should be empty');
+    await pairBtn().click(); await B('Jun').click(); await B('15').click(); await B('Done').click();
+    if (await pairBtn().textContent() !== '15 June') throw new Error('shown as ' + await pairBtn().textContent());
+    await pg.waitForTimeout(1500);
     await L('Feed females every (days)').fill('10'); await L('Feed females every (days)').blur(); await pg.waitForTimeout(1500);
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Season'); await pg.waitForTimeout(1500);
-    await until(() => L('Pairing starts').inputValue(), '2000-06-15', 'pair start not saved');
+    await until(() => pairBtn().textContent(), '15 June', 'pair start not saved (or shows a year)');
     await until(() => L('Feed females every (days)').inputValue(), '10', 'interval not saved');
     if (await pg.getByText('Set up your routine').and(live).count()) throw new Error('prompt still shown after saving');
     await T('Clear', { exact: true }).click(); await pg.waitForTimeout(2000);
-    await until(() => L('Pairing starts').inputValue(), '', 'clear failed');
+    await until(() => pairBtn().textContent(), 'Not set', 'clear failed');
     await T('Set up your routine').waitFor();
   });
   await step('account button: email shown; date format US and back to Australian', async () => {
