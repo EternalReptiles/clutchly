@@ -1,13 +1,15 @@
 // Pure helpers for an animal's history: stats, chart data, filtering. No React Native imports (unit-tested).
 import { addDays, diffDays } from './logic';
 
-export type Kind = 'feed' | 'shed' | 'weight';
+export type Kind = 'feed' | 'shed' | 'weight' | 'in_shed';
 export type Ev = { id: string; animal_id: string; kind: Kind; on_date: string; ok: boolean | null; food: string | null;
   grams: number | null; note?: string | null; created_at?: string };
 
 export const newestFirst = (a: Ev, b: Ev) => b.on_date.localeCompare(a.on_date) || String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''));
-export const eventLabel = (e: Ev) => e.kind === 'feed' ? (e.ok ? 'Fed' : 'Refused') + (e.food ? ` (${e.food})` : '')
-  : e.kind === 'weight' ? `${e.grams} g` : 'Shed';
+// A feed entry is Fed (ok true), Refused (ok false) or Not offered (ok null: skipped on purpose; moves the schedule on
+// but isn't counted as a feed or a refusal).
+export const eventLabel = (e: Ev) => e.kind === 'feed' ? (e.ok === null ? 'Not offered' : e.ok ? 'Fed' : 'Refused') + (e.food ? ` (${e.food})` : '')
+  : e.kind === 'weight' ? `${e.grams} g` : e.kind === 'in_shed' ? 'In shed' : 'Shed';
 
 /** Average days between consecutive sheds (null with fewer than two sheds). */
 export function shedStats(events: Ev[]): { count: number; avgDays: number | null } {
@@ -19,7 +21,7 @@ export function shedStats(events: Ev[]): { count: number; avgDays: number | null
 /** Feeds offered and refused in the last `days` days, up to and including `today`. */
 export function refusalStats(events: Ev[], today: string, days = 90): { offered: number; refused: number; rate: number | null } {
   const from = addDays(today, -(days - 1));
-  const feeds = events.filter(e => e.kind === 'feed' && e.on_date >= from && e.on_date <= today);
+  const feeds = events.filter(e => e.kind === 'feed' && e.ok !== null && e.on_date >= from && e.on_date <= today);   // Not offered isn't an offer
   const refused = feeds.filter(e => e.ok === false).length;
   return { offered: feeds.length, refused, rate: feeds.length ? refused / feeds.length : null };
 }

@@ -13,6 +13,8 @@ const brand = require('../brand.json');
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).first(); const L = t => pg.getByLabel(t, { exact: true }).and(live).first();
   const B = t => pg.getByRole('button', { name: t, exact: true }).and(live).first();
+  // An animal row in a chooser (pairing, calculator): its label starts with the ID.
+  const R = n => pg.getByRole('radio', { name: new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ',') }).and(live).first();
   const tab = n => pg.getByRole('tab', { name: n }).click();
   let fails = 0, n = 0;
   const step = async (name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await pg.screenshot({ path: `${SP}/ex-${++n}-FAIL.png`, fullPage: true }); } };
@@ -23,12 +25,14 @@ const brand = require('../brand.json');
   };
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
-  await step('login screen links to privacy, terms and support', async () => {
+  await step('login screen links to privacy and terms (website) and Help (in the app)', async () => {
     await T('By creating an account you agree to the terms of use and privacy policy.').waitFor();
-    await opens('Privacy policy', 'privacy.html'); await opens('Terms of use', 'terms.html'); await opens('Support', 'support.html');
+    await opens('Privacy policy', 'privacy.html'); await opens('Terms of use', 'terms.html');
+    await T('Help', { exact: true }).click(); await T('Getting started', { exact: true }).waitFor({ timeout: 8000 });
+    await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' }); await T('By creating an account you agree to the terms of use and privacy policy.').waitFor();
   });
   await step('sign up and add records', async () => {
-    await L('Email').fill(`clutchly.ex.${Date.now()}@gmail.com`); await L('Password').fill('Ex-test-pass-1'); await B('Create account').click();
+    const __e = `clutchly.ex.${Date.now()}@gmail.com`, __p = 'Ex-test-pass-1'; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click();
     await B('Skip for now').click({ timeout: 15000 });
     for (const [nm, sex] of [['EX-F', 'Female'], ['EX-M', 'Male']]) {
       await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill(nm); await B(sex).click();
@@ -37,7 +41,7 @@ const brand = require('../brand.json');
     }
     await T('EX-F', { exact: true }).click(); await L('Weight (g)').fill('512'); await B('Weight').click(); await T(/512 g$/).waitFor(); await B('Fed').click();
     await pg.getByLabel(/back$/i).and(live).first().click();
-    await tab('Pairings'); await T('+ New pairing').click(); await B('EX-F').click(); await B('EX-M').click(); await B('Create').click(); await T('EX-F × EX-M').waitFor({ timeout: 8000 });
+    await tab('Pairings'); await T('+ New pairing').click(); await R('EX-F').click(); await R('EX-M').click(); await B('Create').click(); await T('EX-F × EX-M').waitFor({ timeout: 8000 });
   });
   let data;
   await step('Account: Download my data saves a JSON file with every record', async () => {

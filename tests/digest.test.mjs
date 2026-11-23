@@ -41,4 +41,11 @@ ok(nextYearly('02-29', '2027-01-01') === '2027-02-28' && nextYearly('06-01', '20
 const ln = localNow(new Date('2026-11-20T21:30:00Z'), 'Australia/Sydney');
 ok(ln?.date === '2026-11-21' && ln?.hour === 8, 'local date/hour in Sydney (UTC+11 in summer)');
 ok(localNow(new Date(), 'Not/AZone') === null, 'bad timezone rejected');
+// Holds: in shed (until a shed is logged), and the male still in with the female.
+const hb = [A('H1', 'Female', 'Carpet', '2026-11-01', { in_shed: '2026-11-18' }), A('H2', 'Female', 'Carpet', '2026-11-01'), A('H3', 'Male', 'Carpet', '2026-10-01'),
+  A('H4', 'Female', 'Carpet', '2026-11-01'), A('H5', 'Female', 'Carpet', '2026-11-01', { in_shed: '2026-11-25' })];
+const hp = [{ female_id: 'H2', male_id: 'H3', intro: '2026-11-10', removed: null, locks: [] }, { female_id: 'H4', male_id: 'H3', intro: '2026-10-01', removed: '2026-10-20', locks: [] }];
+ok(dueToFeed(hb, [], today, hp).map(a => a.id).join() === 'H4,H5', 'in shed, and the paired female and male, are not due; removed male and a future In shed date are');
+ok(dueToFeed(hb, [], today).map(a => a.id).sort().join() === 'H2,H3,H4,H5', 'without pairings only the shed hold applies');
+ok(buildDigest(today, all, hb, [], hp)[0]?.body === '2 animals due to feed today: H4, H5', 'the notification leaves held animals out');
 process.exit(fails ? 1 : 0);

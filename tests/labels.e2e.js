@@ -20,10 +20,14 @@ const SP = process.argv[2];
     await T('Save', { exact: true }).click(); await T(name, { exact: true }).waitFor(); };
   // A fake camera (the browser's getUserMedia) that films a QR code, for the web Scan button.
   const qrDataUrl = text => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(8, 32); };
+  // The film can change mid-scan (window.__qr), so one camera can be shown one label, then another.
   const fakeCamera = src => pg.evaluate(src => {
+    window.__qr = src;
+    if (window.__fakeCam) return; window.__fakeCam = true;
     navigator.mediaDevices.getUserMedia = async () => {
-      const c = document.createElement('canvas'); c.width = 640; c.height = 480; const x = c.getContext('2d'); const img = new Image(); img.src = src;
-      setInterval(() => { x.fillStyle = '#ddd'; x.fillRect(0, 0, 640, 480); if (img.complete) x.drawImage(img, 170, 90, 300, 300); }, 50);
+      const c = document.createElement('canvas'); c.width = 640; c.height = 480; const x = c.getContext('2d'); let img = null, shown = null;
+      setInterval(() => { if (shown !== window.__qr) { shown = window.__qr; img = new Image(); img.src = shown; }
+        x.fillStyle = '#ddd'; x.fillRect(0, 0, 640, 480); if (img?.complete) x.drawImage(img, 170, 90, 300, 300); }, 50);
       return c.captureStream(15);
     };
   }, src);
@@ -33,7 +37,7 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up and add animals', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await T('Create account', { exact: true }).click();
+    const __e = email, __p = pw; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click();
     await B('Skip for now').click(); await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await add('LB1', 'Carpet'); await add('LB2'); await add('LB3', 'Bredli');
   });
@@ -61,6 +65,26 @@ const SP = process.argv[2];
     if (await pg.getByRole('radio', { name: /^Label printer, 62 × 29 mm/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('size not remembered');
     await home(); await tab('Animals');
   });
+  await step('home-screen web app: Print opens the site\'s print page, which draws the labels and prints', async () => {
+    // Pretend to be the iPhone home-screen app (iOS ignores print there).
+    await pg.evaluate(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.includes('standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q); });
+    await B('Labels').click(); await B('Carpet').click(); await B('Tick all shown').click();
+    await pg.evaluate(() => { window.open = u => { window.__opened = u; return null; }; });
+    await B('Print 2 labels').click(); await pg.waitForFunction(() => window.__opened);
+    const url = await pg.evaluate(() => window.__opened);
+    if (!/^https:\/\/clutchly\.com\.au\/labels\.html#[A-Za-z0-9_-]+$/.test(url)) throw new Error('opened ' + url);
+    // The page as Safari would show it (served from the website; here from the site folder).
+    const page = await pg.context().newPage(); await page.addInitScript(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+    await page.goto('file://' + require('path').resolve(__dirname, '../site/labels.html') + url.slice(url.indexOf('#')));
+    await page.locator('.l').first().waitFor({ timeout: 5000 });
+    const names = await page.locator('.n').allTextContents(); if (names.join() !== 'LB1,LB2') throw new Error('names ' + names);
+    if (await page.locator('.q svg').count() !== 2) throw new Error('QR codes missing');
+    if (await page.getByText('Preparing your labels').count()) throw new Error('loading message left on the page');
+    await page.getByRole('button', { name: 'Print' }).waitFor(); await page.waitForTimeout(900);
+    if (await page.evaluate(() => window.__printed) < 1) throw new Error('print dialog not opened');
+    await page.screenshot({ path: `${SP}/lb-c-print-page.png` }); await page.close();
+    await pg.reload({ waitUntil: 'networkidle' }); await home(); await tab('Animals');   // back to a normal browser
+  });
   await step('Print label on an animal ticks just that animal', async () => {
     await T('LB3', { exact: true }).click(); await B('Print label').click(); await T('Animals (1 ticked)').waitFor();
     if (await pg.getByRole('checkbox', { name: /^LB3 · / }).first().getAttribute('aria-checked') !== 'true') throw new Error('LB3 not ticked');
@@ -76,6 +100,18 @@ const SP = process.argv[2];
     await B('Scan').click(); await B('Print label').waitFor({ timeout: 15000 });
     if (!pg.url().includes(`/animal/${lb1}`)) throw new Error('opened ' + pg.url());
     if (await L('Name / ID').inputValue() !== 'LB1') throw new Error('wrong animal');
+  });
+  await step('new pairing: scan both labels to choose the female and the male', async () => {
+    await toAnimals(); await T('+ Add').click(); await L('Name / ID').fill('LBM'); await B('Male').click(); await T('Save', { exact: true }).click();
+    await T('LBM', { exact: true }).click(); await pg.waitForURL(/animal\/[0-9a-f-]{36}/); const lbm = pg.url().match(/animal\/([0-9a-f-]{36})/)[1]; await toAnimals();
+    await tab('Pairings'); await T('+ New pairing').click(); await fakeCamera(qrDataUrl(`https://clutchly.com.au/app/animal/${lb1}`));
+    await B('Scan labels').click(); await T('Female: LB1 ✓. Now scan the male.').waitFor({ timeout: 15000 });
+    await fakeCamera(qrDataUrl(`https://clutchly.com.au/app/animal/${lbm}`));
+    // Choosing the male closes the camera (both are chosen).
+    await pg.locator('[aria-checked="true"][aria-label^="LBM,"]').first().waitFor({ timeout: 15000 });
+    await pg.locator('video').first().waitFor({ state: 'detached', timeout: 5000 });
+    for (const n of ['LB1', 'LBM']) if (await pg.getByRole('radio', { name: new RegExp('^' + n + ',') }).and(live).first().getAttribute('aria-checked') !== 'true') throw new Error(n + ' not chosen');
+    await toAnimals();
   });
   await step('label link opened signed out: sign in, then straight to the animal', async () => {
     const p2 = await (await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-AU' })).newPage();

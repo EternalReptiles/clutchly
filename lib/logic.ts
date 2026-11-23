@@ -3,7 +3,8 @@ export { SPECIES } from './species';
 export const SEXES = ['Female', 'Male', 'Unknown']; // Unknown: unsexed (e.g. hatchlings); fed on the female interval
 export type Animal = { id: string; name: string; species: string; sex: string; status: string; dob?: string | null;
   mother_id?: string | null; father_id?: string | null; pairing_id?: string | null; created_at?: string;
-  feed_every?: number | null; notes?: string | null; last_feed?: string | null; last_shed?: string | null; last_weight?: number | null };
+  feed_every?: number | null; notes?: string | null; last_feed?: string | null; last_shed?: string | null; last_weight?: number | null;
+  in_shed?: string | null };   // the day it was marked In shed, while no shed has been logged since
 
 // Per-species, per-user settings (the user's routine). New accounts start with none: no feeding pause, no pairing dates.
 export type Season = {
@@ -61,6 +62,17 @@ export function isPaused(s: Season | undefined, d: string) {
   const m = d.slice(5);
   return s.pause_from <= s.pause_to ? m >= s.pause_from && m <= s.pause_to : m >= s.pause_from || m <= s.pause_to;
 }
+
+/** Why an animal isn't due a feed even if its interval has passed: it's in shed (until a shed is logged), or the male
+ * is still in with the female (a pairing with an Introduced date but no Male removed date, and no eggs yet). */
+export type FeedHold = { kind: 'shed'; since: string } | { kind: 'pairing'; since: string; pairingId?: string; with?: string };
+export function feedHold(a: Animal, pairings: Pairing[], d: string, names?: Map<string, string>): FeedHold | null {
+  if (a.in_shed && a.in_shed <= d) return { kind: 'shed', since: a.in_shed };
+  const p = pairings.find(x => (x.female_id === a.id || x.male_id === a.id) && x.intro && x.intro <= d && !x.removed && !x.laid && !x.hatched);
+  if (p) { const other = p.female_id === a.id ? p.male_id : p.female_id; return { kind: 'pairing', since: p.intro!, pairingId: p.id, with: other ? names?.get(other) : undefined }; }
+  return null;
+}
+export const holdText = (h: FeedHold) => h.kind === 'shed' ? `In shed since ${fmt(h.since)}` : `In with ${h.with ?? 'its mate'} since ${fmt(h.since)}`;
 
 export type Pairing = { id?: string; female_id?: string; male_id?: string; intro?: string | null; removed?: string | null;
   ovulation?: string | null; prelay_shed?: string | null; laid?: string | null; hatched?: string | null;

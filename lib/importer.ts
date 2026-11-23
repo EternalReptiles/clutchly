@@ -65,7 +65,8 @@ const HEADERS: Record<string, keyof Row> = {
 };
 const POSITIONAL: (keyof Row)[] = ['name', 'species', 'sex', 'dob', 'last_feed'];
 
-/** existingNames: names already in the user's collection (case-insensitive duplicates are rejected). */
+/** existingNames: names already in the user's collection. Each ID can be used once (ignoring capitals), so a repeat
+ * (already in the collection, or earlier in the same list) is a problem row. */
 export function parseImport(text: string, dayFirst: boolean, existingNames: string[]): Row[] {
   const lines = text.replace(/^﻿/, '').split(/\r\n|\n|\r/);
   const firstReal = lines.find(l => l.trim()) ?? '';
@@ -90,8 +91,8 @@ export function parseImport(text: string, dayFirst: boolean, existingNames: stri
     const name = (v.name ?? '').trim();
     if (!name) errs.push('Name missing');
     else if (name.length > 60) errs.push('Name longer than 60 characters');
-    else if (existing.has(name.toLowerCase())) errs.push(`"${name}" is already in your collection`);
-    else if (inFile.has(name.toLowerCase())) errs.push(`Duplicate of line ${inFile.get(name.toLowerCase())}`);
+    else if (existing.has(name.toLowerCase())) errs.push(`"${name}" already exists in your collection`);
+    else if (inFile.has(name.toLowerCase())) errs.push(`Same ID as line ${inFile.get(name.toLowerCase())}`);
     const species = parseSpecies(v.species ?? '');
     if (!species) errs.push(v.species?.trim() ? `Unknown species "${v.species.trim()}". Use a name from the species list (or Other)` : 'Species missing');
     const sex = parseSex(v.sex ?? '');

@@ -14,11 +14,20 @@ import { useCollection } from '../lib/derived';
 import { useStore } from '../lib/store';
 import { Btn, C, Check, Chips, Input, notify, s } from '../lib/ui';
 import { Loading } from '../lib/Brand';
+import brand from '../brand.json';
 import { LAYOUTS, animalLink, labelLines, labelsHtml, layoutOf, qrSvg, type LabelAnimal } from '../lib/labels';
 
 const LAYOUT_KEY = 'clutchly.labelLayout'; const ALL = 'All species';
 const pt = (mm: number) => Math.round(mm * 72 / 25.4);
 
+/** Added to an iPhone's home screen, the web app can't print (iOS ignores print there). */
+const inHomeScreenApp = () => typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true);
+/** The site's print page (site/labels.html) with these labels in the link after the #, which isn't sent to the server. */
+function printPageUrl(animals: LabelAnimal[], layout: string, skip: number) {
+  const d = { k: layout, s: skip, a: animals.map(a => [a.id, a.name, a.species, a.sex, a.dob ? fmt(a.dob) : '', a.morph ?? '']) };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${brand.siteUrl.replace(/\/+$/, '')}/labels.html#${b64}`;
+}
 /** Web: print the labels from a hidden frame, so the app page itself isn't printed. */
 function printWeb(html: string) {
   const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
@@ -47,7 +56,11 @@ export default function Labels() {
   const go = async (pdf: boolean) => {
     if (!chosen.length) return notify('Tick the animals to print');
     const html = labelsHtml(chosen, layout, fmt, sheet ? parseInt(skip, 10) || 0 : 0);
-    if (Platform.OS === 'web') return printWeb(html);
+    if (Platform.OS === 'web') {
+      if (!inHomeScreenApp()) return printWeb(html);
+      // Opens in Safari, which can print (the page opens the print dialog and has a Print button).
+      return void window.open(printPageUrl(chosen, layout, sheet ? parseInt(skip, 10) || 0 : 0), '_blank');
+    }
     setBusy(true);
     try {
       const size = { width: pt(L.page.w), height: pt(L.page.h) };

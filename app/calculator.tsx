@@ -5,7 +5,8 @@ import { useCollection } from '../lib/derived';
 import { GenePicker } from '../lib/GeneEditor';
 import { morphName, type AnimalGene, type Gene, type GeneState, type Lib } from '../lib/genetics';
 import { MorphCalculator } from '../lib/MorphCalculator';
-import { useAnimalGenes, useGeneLib } from '../lib/useGenes';
+import { useAnimalGenes, useGeneLib, useMorphs } from '../lib/useGenes';
+import { AnimalChooser } from '../lib/AnimalChooser';
 import { Btn, Card, Chips, Input, s } from '../lib/ui';
 
 const MINE = 'One of mine', MADE = 'Make one up';
@@ -24,7 +25,7 @@ export default function Calculator() {
 }
 
 type Parent = ReturnType<typeof useParent>;
-function useParent(lib: Lib, animals: { id: string; name: string; species: string; sex?: string | null; status?: string | null }[], sex: 'Female' | 'Male') {
+function useParent(lib: Lib, animals: { id: string; name: string; species: string; sex?: string | null; status?: string | null; dob?: string | null }[], sex: 'Female' | 'Male') {
   const choices = animals.filter(a => a.sex === sex && a.status !== 'Sold');
   const [mode, setMode] = useState<string | null>(null); const [id, setId] = useState<string | null>(null);
   const [made, setMade] = useState<Map<string, AnimalGene>>(new Map());
@@ -40,22 +41,18 @@ function useParent(lib: Lib, animals: { id: string; name: string; species: strin
 }
 
 function ParentCard({ title, p }: { title: string; p: Parent }) {
-  const [open, setOpen] = useState(true); const [q, setQ] = useState('');
-  const many = p.choices.length > 12;
-  const shown = p.choices.filter(a => !q.trim() || `${a.name} ${a.species}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, many ? 24 : undefined);
-  if (p.animal && !shown.includes(p.animal as never)) shown.unshift(p.animal as never);
+  const [open, setOpen] = useState(true); const morphs = useMorphs();
   return (<Card>
     <Text style={s.h}>{title}</Text>
     <Chips opts={[MINE, MADE]} v={p.mode} on={p.setMode} />
     {p.mode === MINE ? (p.choices.length
-      ? <View>{many && <Input label={`Search ${p.sex.toLowerCase()}s`} value={q} onChangeText={setQ} />}
-        <Chips opts={shown.map(a => a.name)} v={p.animal?.name ?? ''} on={n => p.setId(p.choices.find(a => a.name === n)?.id ?? null)} /></View>
+      ? <AnimalChooser label={p.sex} animals={p.choices} value={p.animal?.id} morphs={morphs} onChange={p.setId} />
       : <Text style={s.mu}>No {p.sex.toLowerCase()}s yet. Make one up instead.</Text>)
       : <View>
         <View style={[s.row, { marginTop: 6 }]}><Text style={{ flex: 1, fontWeight: '600' }} accessibilityLabel={`${title} genes`}>{p.morph}</Text>
           <Btn t={open ? 'Hide genes' : 'Choose genes'} onPress={() => setOpen(!open)} />
           {p.made.size > 0 && <Btn t="Clear" onPress={p.clear} />}</View>
-        {open && <GenePicker genes={p.lib.genes} value={p.made} onSet={p.set} />}
+        {open && <GenePicker genes={p.lib.genes} value={p.made} onSet={p.set} combos={p.lib.combos} />}
       </View>}
   </Card>);
 }

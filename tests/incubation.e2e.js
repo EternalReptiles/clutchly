@@ -9,6 +9,8 @@ const SP = process.argv[2];
   const live = pg.locator(':not([inert] *)');
   const T = (t, o) => pg.getByText(t, o).and(live).filter({ visible: true }).first(); const L = t => pg.getByLabel(t, { exact: true }).and(live).filter({ visible: true }).first();
   const B = t => pg.getByRole('button', { name: t, exact: true }).and(live).filter({ visible: true }).first();
+  // An animal row in a chooser (pairing, calculator): its label starts with the ID.
+  const R = n => pg.getByRole('radio', { name: new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ',') }).and(live).first();
   const tab = n => pg.getByRole('tab', { name: n }).click(); const back = () => pg.getByLabel(/back$/i).and(live).filter({ visible: true }).first().click();
   let fails = 0, n = 0;
   const step = async (name, fn) => { try { await fn(); console.log('PASS ' + name); } catch (e) { fails++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); await pg.screenshot({ path: `${SP}/ic-${++n}-FAIL.png`, fullPage: true }).catch(() => {}); } };
@@ -24,10 +26,10 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up, pair two carpets', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click(); await B('Skip for now').click({ timeout: 15000 });
+    const __e = email, __p = pw; await L('Email').fill(__e); await L('Password').fill(__p); await pg.getByRole('button', { name: await require('./e2eAccount.cjs')(__e, __p), exact: true }).first().click(); await B('Skip for now').click({ timeout: 15000 });
     await T('No animals yet. Add some on the Animals tab.').waitFor({ timeout: 10000 });
     await addAnimal('IC-F', 'Female'); await addAnimal('IC-M', 'Male');
-    await tab('Pairings'); await T('+ New pairing').click(); await B('IC-F').click(); await B('IC-M').click(); await B('Create').click();
+    await tab('Pairings'); await T('+ New pairing').click(); await R('IC-F').click(); await R('IC-M').click(); await B('Create').click();
     await T('IC-F × IC-M').waitFor({ timeout: 8000 });
   });
   await step('no incubation log until eggs are laid', async () => {

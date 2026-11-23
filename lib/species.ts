@@ -19,11 +19,17 @@ const live = (name: string, latin: string, aliases: string[] = []): SpeciesInfo 
 
 // The first four names are kept exactly as before so existing animals keep their species.
 export const SPECIES_INFO: SpeciesInfo[] = [
-  py('Carpet', 'Morelia spilota', [42, 55], [21, 28], [52, 58], ['carpet python', 'coastal carpet', 'jungle carpet', 'murray darling carpet', 'murray-darling carpet', 'morelia', 'morelia spilota']),
+  py('Carpet', 'Morelia spilota', [42, 55], [21, 28], [52, 58], ['carpet python', 'murray darling carpet', 'murray-darling carpet', 'morelia', 'morelia spilota']),
+  py('Coastal', 'Morelia spilota mcdowelli', [42, 55], [21, 28], [52, 58], ['coastal carpet', 'coastal carpet python', 'coastal python', 'mcdowelli']),
+  py('Jungle', 'Morelia spilota cheynei', [42, 55], [21, 28], [52, 58], ['jungle carpet', 'jungle carpet python', 'jungle python', 'cheynei']),
   py('Diamond', 'Morelia spilota spilota', [42, 55], [21, 28], [52, 58], ['diamond python']),
   py('Bredli', 'Morelia bredli', [50, 65], [25, 35], [55, 65], ["bredl's python", 'bredls python', 'bredl', 'centralian python', 'centralian carpet']),
-  py('Antaresia', 'Antaresia', [35, 48], [20, 28], [48, 56], ['spotted python', "children's python", 'childrens python', "stimson's python", 'stimsons python', 'pygmy python',
-    'antaresia childreni', 'antaresia stimsoni', 'antaresia maculosa', 'antaresia perthensis', 'childreni', 'stimsoni', 'maculosa', 'perthensis']),
+  // Antaresia stays for animals saved before the four species below were listed (and when the species isn't known).
+  py('Antaresia', 'Antaresia', [35, 48], [20, 28], [48, 56], ['antaresia python']),
+  py("Children's python", 'Antaresia childreni', [35, 48], [20, 28], [48, 56], ["children's", 'childrens python', 'childrens', 'antaresia childreni', 'childreni']),
+  py('Spotted python', 'Antaresia maculosa', [35, 48], [20, 28], [48, 56], ['spotted', 'eastern small-blotched python', 'antaresia maculosa', 'maculosa']),
+  py("Stimson's python", 'Antaresia stimsoni', [35, 48], [20, 28], [48, 56], ["stimson's", 'stimsons python', 'stimsons', 'large-blotched python', 'antaresia stimsoni', 'stimsoni']),
+  py('Pygmy python', 'Antaresia perthensis', [35, 48], [20, 28], [48, 56], ['pygmy', 'anthill python', 'antaresia perthensis', 'perthensis']),
   py('Green tree python', 'Morelia viridis', [35, 45], [14, 22], [48, 54], ['gtp', 'chondro', 'green python']),
   py('Rough-scaled python', 'Morelia carinata', [45, 60], [25, 45], [55, 65], ['rough scaled python', 'carinata']),
   py('Woma', 'Aspidites ramsayi', [45, 60], [25, 35], [55, 65], ['woma python', 'ramsayi']),

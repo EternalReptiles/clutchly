@@ -36,4 +36,16 @@ ok(ns({ laid: '2026-10-18', hatched: '2026-12-10' }) === null, 'hatched: done');
 ok(JSON.stringify(L.nextStage({ locks: [], ovulation: '2026-09-01' }, { species: 'Bearded dragon' })) === '{"key":"laid","date":"2026-09-26"}' || L.nextStage({ locks: [], ovulation: '2026-09-01' }, { species: 'Bearded dragon' })?.key === 'laid', 'non-python: straight to lay');
 const op = O.overview(animals, [], [{ id: 'p9', female_id: 'F1', male_id: 'M1', ovulation: d(-21), locks: [] }], seasons, t);
 ok(op.days.some(x => x.date === d(3) && x.items.some(i => i.kind === 'prelay')), 'Overview shows the expected pre-lay shed', op.days.map(x => x.items.map(i => i.kind)));
+// Holds: in shed, or the male still in. They're left out of what's due and listed as paused.
+const hA = [A('S1', 'Female', d(-9), { in_shed: d(-2) }), A('P1', 'Female', d(-9)), A('P2', 'Male', d(-30)), A('N1', 'Female', d(-9))];
+const ho = O.overview(hA, [], [{ id: 'pp', female_id: 'P1', male_id: 'P2', intro: d(-5), locks: [] }], [], t);
+ok(ho.dueNow.map(x => x.a.id).join() === 'N1', 'only the animal with no hold is due', ho.dueNow.map(x => x.a.id));
+ok(ho.held.map(x => `${x.a.id}:${x.hold.kind}`).join() === 'P1:pairing,P2:pairing,S1:shed', 'held animals listed with why', ho.held.map(x => `${x.a.id}:${x.hold.kind}`));
+ok(ho.held.find(x => x.a.id === 'P1').hold.with === 'P2', 'pairing hold names the mate');
+ok(!ho.days.some(x => x.items.some(i => i.kind === 'feed' && i.animals.some(a => a.id !== 'N1'))), 'held animals are not in the week ahead either');
+const nf = [{ animal_id: 'N1', kind: 'feed', on_date: d(-3), ok: false }, { animal_id: 'N1', kind: 'feed', on_date: d(-2), ok: null }, { animal_id: 'N1', kind: 'feed', on_date: d(-1), ok: false },
+  { animal_id: 'N1', kind: 'feed', on_date: d(-4), ok: false }];
+const no = O.overview([A('N1', 'Female', d(-1))], nf, [], [], t);
+ok(no.attention.some(x => x.text === 'N1 has refused 3 feeds in a row'), 'Not offered does not break a refusal streak', no.attention);
+ok(no.last7.fed === 0 && no.last7.refused === 3, 'Not offered is neither fed nor refused', no.last7);
 process.exit(fails ? 1 : 0);

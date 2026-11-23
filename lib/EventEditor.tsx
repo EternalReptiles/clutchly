@@ -8,9 +8,9 @@ import { Btn, C, Chips, DateField, Input, confirm, notify, s } from './ui';
 
 /** Edit or delete one history entry. Opens when `ev` is set. */
 export function EventEditor({ ev, onClose }: { ev: Ev | null; onClose: () => void }) {
-  const [d, setD] = useState(''); const [ok, setOk] = useState(true); const [food, setFood] = useState('');
+  const [d, setD] = useState(''); const [ok, setOk] = useState<boolean | null>(true); const [food, setFood] = useState('');
   const [g, setG] = useState(''); const [note, setNote] = useState('');
-  useEffect(() => { if (ev) { setD(ev.on_date); setOk(ev.ok !== false); setFood(ev.food ?? ''); setG(ev.grams != null ? String(ev.grams) : ''); setNote(ev.note ?? ''); } }, [ev]);
+  useEffect(() => { if (ev) { setD(ev.on_date); setOk(ev.ok); setFood(ev.food ?? ''); setG(ev.grams != null ? String(ev.grams) : ''); setNote(ev.note ?? ''); } }, [ev]);
   if (!ev) return null;
   const save = () => {
     const patch: Record<string, any> = { on_date: d, note: note.trim() || null };
@@ -19,14 +19,15 @@ export function EventEditor({ ev, onClose }: { ev: Ev | null; onClose: () => voi
     update('events', ev.id, patch); onClose();
   };
   const del = () => confirm('Delete entry?', `${fmt(ev.on_date)} · ${eventLabel(ev)}`, 'Delete', () => { remove('events', ev.id); onClose(); });
-  const title = ev.kind === 'feed' ? 'Feed' : ev.kind === 'weight' ? 'Weight' : 'Shed';
+  const title = ev.kind === 'feed' ? 'Feed' : ev.kind === 'weight' ? 'Weight' : ev.kind === 'in_shed' ? 'In shed' : 'Shed';
+  const RESULTS: [boolean | null, string][] = [[true, 'Fed'], [false, 'Refused'], [null, 'Not offered']];
   return (<Modal visible animationType={Platform.OS === 'web' ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={s.h}>Edit {title.toLowerCase()}</Text>
         <DateField label="Date" value={d} onChange={v => v && setD(v)} />
         {ev.kind === 'feed' && <><Text style={[s.mu, { marginTop: 10 }]}>Result</Text>
-          <Chips opts={['Fed', 'Refused']} v={ok ? 'Fed' : 'Refused'} on={v => setOk(v === 'Fed')} />
+          <Chips opts={RESULTS.map(x => x[1])} v={RESULTS.find(x => x[0] === ok)?.[1] ?? 'Fed'} on={v => setOk(RESULTS.find(x => x[1] === v)![0])} />
           <Input label="Food" value={food} onChangeText={setFood} placeholder="e.g. medium rat" /></>}
         {ev.kind === 'weight' && <Input label="Weight (g)" keyboardType="decimal-pad" value={g} onChangeText={setG} />}
         <Input label="Note" value={note} onChangeText={setNote} multiline />

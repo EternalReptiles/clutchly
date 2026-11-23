@@ -155,6 +155,22 @@ In Supabase, **Authentication > URL Configuration > Redirect URLs**, add:
 Without these, the link in the email opens the Site URL instead of the app.
 Supabase's built-in email sender only delivers to your own team's addresses and a few emails an hour; set up your own SMTP (see below) before other people use the app.
 
+## Feed entries and holds
+- A feed is **Fed** (`ok` true), **Refused** (false) or **Not offered** (null: skipped on purpose; moves the schedule on
+  but isn't counted as a feed, a refusal, or part of a refusal streak).
+- **In shed** is an entry (`kind = 'in_shed'`, migration 023); the animal counts as in shed until a Shed is logged after
+  it. "Not in shed after all" on the animal page deletes it.
+- `feedHold` (`lib/logic.ts`, also used by the daily digest): no feeds are due while in shed, or while a pairing has an
+  Introduced date but no Male removed date (and no eggs yet), for both animals. Overview lists them as "Paused", the
+  animal page says why, Feed several shows it. `animal_status` gains `in_shed` (still `security_invoker`).
+- Animal IDs are unique per account (ignoring case and spaces): the animal page refuses one already in use ("This ID
+  already exists"), Bulk add skips it, and the unique index `animals_unique_name` (migration 024) backs this up for
+  offline adds that sync later. A handover copy whose ID the buyer already uses gets " (2)" etc. Pairing and calculator
+  choices (`lib/AnimalChooser.tsx`) show species, genes and hatch date.
+- Printing labels from the iPhone home-screen web app: iOS ignores print there, so `app/labels.tsx` opens the website's
+  `labels.html` in Safari with the labels in the link after `#` (never sent to the server). It draws them with
+  `site/js/labels.js`, built from `lib/labels.ts` by `scripts/build_site.mjs`, and opens the print screen.
+
 ## Feed several
 `app/feed.tsx`: one date and food for many animals at once; each is marked Fed or Refused, or left out. Opened from
 Overview ("Feed all N", with everything due already marked Fed) or the Animals tab ("Feed", nothing marked), with a

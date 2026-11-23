@@ -91,10 +91,10 @@ const SP = process.argv[2];
   });
   await step('import recognises new species names', async () => {
     await tab('Animals'); await T('Bulk add', { exact: true }).click();
-    await L('Paste here').fill('GT1, GTP, F\nSH1, Tiliqua rugosa, M\nLM1, lace monitor, F\nX1, Boa, F');
-    await T('3 ready to import · 1 with problems (skipped)').waitFor({ timeout: 5000 });
-    await T(/GT1 · Green tree python · Female/).waitFor(); await T(/SH1 · Shingleback · Male/).waitFor();
-    await T('Line 4: Unknown species "Boa". Use a name from the species list (or Other)').waitFor(); await shot('import-species');
+    await L('Paste here').fill('GT1, GTP, F\nSH1, Tiliqua rugosa, M\nLM1, lace monitor, F\nJC1, jungle carpet, M\nX1, Boa, F');
+    await T('4 ready to import · 1 with problems (skipped)').waitFor({ timeout: 5000 });
+    await T(/GT1 · Green tree python · Female/).waitFor(); await T(/SH1 · Shingleback · Male/).waitFor(); await T(/JC1 · Jungle · Male/).waitFor();
+    await T('Line 5: Unknown species "Boa". Use a name from the species list (or Other)').waitFor(); await shot('import-species');
     await back();
   });
   await step('cleanup: delete account', async () => {

@@ -1,5 +1,5 @@
 // Pure rules for the morning notification. No Deno or network code here, so it can be tested anywhere.
-import { addDays, diffDays, estimates, isPaused, nextFeed, seasonFor, type Animal, type Pairing, type Season } from './shared/logic.ts';
+import { addDays, diffDays, estimates, feedHold, isPaused, nextFeed, seasonFor, type Animal, type Pairing, type Season } from './shared/logic.ts';
 import { speciesInfo } from './shared/species.ts';
 
 export type Settings = { feed_due: boolean; lay_soon: boolean; pairing_soon: boolean };
@@ -13,11 +13,12 @@ export function nextYearly(md: string, from: string): string {
   return at(y) >= from ? at(y) : at(y + 1);
 }
 
-/** Animals due (or overdue) to feed on `today`, skipping Sold animals and species in their feeding pause. */
-export function dueToFeed(animals: Animal[], seasons: Season[], today: string): Animal[] {
+/** Animals due (or overdue) to feed on `today`, skipping Sold animals, species in their feeding pause, and animals in
+ * shed or with the male still in (lib/logic.ts feedHold). */
+export function dueToFeed(animals: Animal[], seasons: Season[], today: string, pairings: Pairing[] = []): Animal[] {
   return animals.filter(a => a.status !== 'Sold').filter(a => {
     const s = seasonFor(seasons, a.species);
-    return !isPaused(s, today) && diffDays(nextFeed(a, s, today), today) <= 0;
+    return !isPaused(s, today) && !feedHold(a, pairings, today) && diffDays(nextFeed(a, s, today), today) <= 0;
   });
 }
 
@@ -25,7 +26,7 @@ export function dueToFeed(animals: Animal[], seasons: Season[], today: string): 
 export function buildDigest(today: string, settings: Settings, animals: Animal[], seasons: Season[], pairings: Pairing[]): Msg[] {
   const out: Msg[] = [];
   if (settings.feed_due) {
-    const due = dueToFeed(animals, seasons, today);
+    const due = dueToFeed(animals, seasons, today, pairings);
     if (due.length) out.push({ kind: 'feed', title: 'Feeding today',
       body: `${due.length} animal${due.length === 1 ? '' : 's'} due to feed today` + (due.length <= 3 ? `: ${due.map(a => a.name).join(', ')}` : '') });
   }

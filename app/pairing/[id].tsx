@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAnimalGenes, useGeneLib } from '../../lib/useGenes';
+import { useAnimalGenes, useGeneLib, useMorphs } from '../../lib/useGenes';
+import { AnimalChooser } from '../../lib/AnimalChooser';
 import { MorphCalculator } from '../../lib/MorphCalculator';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,6 +11,8 @@ import { Repro, speciesInfo, words } from '../../lib/species';
 import { Btn, C, Chips, DateField, Input, Label, confirm, notify, s } from '../../lib/ui';
 import { HatchlingDialog } from '../../lib/HatchlingDialog';
 import { IncubationLog } from '../../lib/IncubationLog';
+import { PairScanner } from '../../lib/PairScanner';
+import { scanAvailable } from '../../lib/LabelScanner';
 
 type DateKey = 'intro' | 'removed' | 'ovulation' | 'prelay_shed' | 'laid' | 'hatched';
 // Date fields for the female's species: pre-lay shed for pythons only; live-bearers are born, not laid and hatched.
@@ -33,7 +36,7 @@ export default function PairingScreen() {
   // Sold animals are hidden from the pickers, except the ones already in this pairing.
   const pick = (sex: string) => animals.filter(a => a.sex === sex && (a.status !== 'Sold' || a.id === p.female_id || a.id === p.male_id));
   const nm = (i?: string) => animals.find(a => a.id === i)?.name || '';
-  const byName = (n: string, sex: string) => animals.find(a => a.name === n && a.sex === sex)?.id;
+  const morphs = useMorphs();
   const save = (patch: Partial<Pairing> = {}) => {
     const next = { ...p, ...patch }; const body: any = {};
     FIELDS.forEach(k => { body[k] = (next as any)[k] ?? null; }); body.locks = next.locks || [];
@@ -51,7 +54,7 @@ export default function PairingScreen() {
   const nextName = next ? (next.key === 'prelay_shed' ? 'pre-lay shed' : next.key === 'laid' ? w.est.replace('estimated ', '') : 'hatch') : '';
   const estText = next ? ` · ${nextName} expected ${fmt(next.date)}` : '';
   const inDays = (d: string) => { const n = diffDays(d, today()); return n > 1 ? `in ${n} days` : n === 1 ? 'tomorrow' : n === 0 ? 'today' : `${-n} days ago`; };
-  const females = pick('Female'), males = pick('Male');
+  const females = pick('Female'), males = pick('Male'); const [scanning, setScanning] = useState(false);
   // Hatchlings can be created once the pairing has a hatch date (live-bearers: a birth date).
   const hatchDate = isNew ? null : repro === 'live' ? p.laid : p.hatched;
   const young = animals.filter(a => a.pairing_id === id);
@@ -61,8 +64,11 @@ export default function PairingScreen() {
   if (!isNew && !stored && ready) return <View style={s.page}><Stack.Screen options={{ title: 'Not found' }} /><Text style={s.mu}>This pairing has been deleted.</Text></View>;
   if (!loaded) return <View style={s.page}><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} /></View>;
   return (<ScrollView style={s.page} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"><Stack.Screen options={{ title: isNew ? 'New pairing' : 'Pairing' }} />
-    <Text style={s.mu}>Female</Text>{females.length ? <Chips opts={females.map(a => a.name)} v={nm(p.female_id)} on={n => setP({ ...p, female_id: byName(n, 'Female') })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
-    <Label t="Male" />{males.length ? <Chips opts={males.map(a => a.name)} v={nm(p.male_id)} on={n => setP({ ...p, male_id: byName(n, 'Male') })} /> : <Text style={s.mu}>No males yet.</Text>}
+    {isNew && scanAvailable() && <View style={{ marginBottom: 10 }}><Btn t="Scan labels" onPress={() => setScanning(true)} />
+      <PairScanner open={scanning} onClose={() => setScanning(false)} animals={animals} female={p.female_id} male={p.male_id}
+        onPick={(role, id) => setP(cur => ({ ...cur, [role]: id }))} /></View>}
+    <Text style={s.mu}>Female</Text>{females.length ? <AnimalChooser label="Female" animals={females} value={p.female_id} morphs={morphs} onChange={id => setP({ ...p, female_id: id })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
+    <Label t="Male" />{males.length ? <AnimalChooser label="Male" animals={males} value={p.male_id} morphs={morphs} onChange={id => setP({ ...p, male_id: id })} /> : <Text style={s.mu}>No males yet.</Text>}
     {isNew && <DateField label="Introduced" value={p.intro} onChange={v => setP({ ...p, intro: v })} optional />}
     {female && male && <View style={[s.card, { marginTop: 12 }]}><Text style={s.h}>Morph calculator</Text>
       <MorphCalculator lib={geneLib} mother={femaleGenes} father={maleGenes} motherName={female.name} fatherName={male.name} /></View>}
