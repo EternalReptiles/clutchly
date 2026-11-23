@@ -25,21 +25,28 @@ const SP = process.argv[2];
     await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
     await T('Save', { exact: true }).click(); await T('ER001', { exact: true }).waitFor({ timeout: 8000 });
   });
+  await step('an ID that already exists is refused on the animal screen', async () => {
+    await T('+ Add').click(); await L('Name / ID').fill('er001 '); await T('This ID already exists. Choose another.').waitFor();
+    await T('Save', { exact: true }).click(); await pg.waitForTimeout(500);
+    if (!logs.some(l => l.startsWith('DIALOG: This ID already exists'))) throw new Error('save was not refused');
+    await L('Name / ID').fill('ER001b'); if (await T('This ID already exists. Choose another.').count()) throw new Error('warning stayed');
+    await pg.getByLabel(/back$|^Home$/i).first().click();
+  });
   await step('paste lines -> preview shows ready rows and problems', async () => {
     await T('Bulk add', { exact: true }).click(); await L('Paste here').waitFor();
     await L('Paste here').fill(['ER001, Carpet, F', 'ER002, Carpet, M, 1/12/2023', 'ER003, Bredli, F, 03/04/2024, 14/11/2026',
       'ER004, Diamond, Male', 'ER005, Boa, F', 'ER006, Antaresia, X', 'ER004, Carpet, F'].join('\n'));
-    // An ID can be used again (two animals can share one): imported, with a note in case it was a mistake.
-    await T('5 ready to import · 2 with problems (skipped)').waitFor({ timeout: 5000 });
-    await T('Line 1: "ER001" is already in your collection (imported as another animal)').waitFor();
+    // Each ID is used once: one already in the collection, or repeated in the list, is a problem row.
+    await T('3 ready to import · 4 with problems (skipped)').waitFor({ timeout: 5000 });
+    await T('Line 1: "ER001" already exists in your collection').waitFor();
     await T(/ER003 · Bredli · Female · hatched 3 Apr 2024 · fed 14 Nov 2026/).waitFor();
-    await T('Line 7: Same ID as line 4 (imported as another animal)').waitFor(); await shot('preview');
+    await T('Line 7: Same ID as line 4').waitFor(); await shot('preview');
   });
   await step('import -> report, bad rows left in box', async () => {
-    await T('Import 5 animals').click(); await T('Imported 5 animals').waitFor({ timeout: 15000 });
-    await T('2 rows not imported:').waitFor(); await shot('result');
+    await T('Import 3 animals').click(); await T('Imported 3 animals').waitFor({ timeout: 15000 });
+    await T('4 rows not imported:').waitFor(); await shot('result');
     const left = await L('Paste here').inputValue();
-    if (left.split('\n').length !== 2 || !left.startsWith('ER005')) throw new Error('box should hold the 2 failed rows, got: ' + JSON.stringify(left));
+    if (left.split('\n').length !== 4 || !left.startsWith('ER001')) throw new Error('box should hold the 4 failed rows, got: ' + JSON.stringify(left));
   });
   await step('animals list has imported rows with last feed', async () => {
     await T('Done').click(); await T(/Bredli · Female · fed 14 Nov 2026/).waitFor({ timeout: 8000 });
@@ -51,10 +58,10 @@ const SP = process.argv[2];
     await T('Bulk add', { exact: true }).click();
     const [fc] = await Promise.all([pg.waitForEvent('filechooser'), T('Choose CSV file').click()]);
     await fc.setFiles(f);
-    await T('3 ready to import', { exact: true }).waitFor({ timeout: 8000 }); await shot('csv-preview');
-    await T('Import 3 animals').click(); await T('Imported 3 animals').waitFor({ timeout: 15000 });
+    await T('2 ready to import · 1 with problems (skipped)').waitFor({ timeout: 8000 }); await shot('csv-preview');
+    await T('Import 2 animals').click(); await T('Imported 2 animals').waitFor({ timeout: 15000 });
     const left = await L('Paste here').inputValue();
-    if (left !== '') throw new Error('box should be empty after importing everything, got: ' + JSON.stringify(left));
+    if (!left.startsWith('Name,Species') || !left.includes('ER002')) throw new Error('header + failed row expected, got: ' + JSON.stringify(left));
     await T('Done').click(); await T('Tiger, big', { exact: true }).waitFor({ timeout: 8000 });
   });
   await step('cleanup: delete account', async () => {

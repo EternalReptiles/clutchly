@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Prints Clutchly labels. The app opens this page in Safari when it can't print itself (a web app added to an iPhone's
+     home screen). The labels' details travel after the # in the link, which browsers never send to the website. -->
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clutchly labels</title><meta name="robots" content="noindex"></head>
+<body style="font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 16px">
+<p id="msg">Preparing your labels…</p>
+<script src="js/labels.js"></script>
+<script>
+(function () {
+  var d;
+  try { var b = location.hash.slice(1).replace(/-/g, '+').replace(/_/g, '/'); d = JSON.parse(decodeURIComponent(escape(atob(b)))); }
+  catch (e) { document.getElementById('msg').textContent = 'This link has no labels in it. Open Labels in Clutchly and tap Print again.'; return; }
+  // d: { k: layout key, s: labels to skip, a: [[id, name, species, sex, hatched (already formatted), morph], ...] }
+  var animals = d.a.map(function (x) { return { id: x[0], name: x[1], species: x[2], sex: x[3], dob: x[4] || null, morph: x[5] || null }; });
+  var html = ClutchlyLabels.labelsHtml(animals, d.k, function (s) { return s; }, d.s || 0);
+  var bar = '<div class="bar" style="position:fixed;left:0;right:0;top:0;background:#141414;color:#fcfcf8;padding:10px 12px;font:15px -apple-system,Segoe UI,Roboto,sans-serif;display:flex;gap:10px;align-items:center;z-index:9">'
+    + '<span style="flex:1">' + animals.length + ' label' + (animals.length === 1 ? '' : 's') + '. Print at 100% (actual size).</span>'
+    + '<button onclick="window.print()" style="font:600 15px sans-serif;padding:8px 16px;border-radius:8px;border:0;background:#fcfcf8;color:#141414">Print</button></div>'
+    + '<style>@media print { .bar { display: none !important; } } @media screen { body { padding-top: 64px; } }</style>';
+  // Replace this page once it has loaded (writing while it's still loading would add to it instead).
+  window.addEventListener('load', function () {
+    document.open(); document.write(html.replace('</body>', bar + '</body>')); document.close();
+    setTimeout(function () { window.print(); }, 600);
+  });
+})();
+</script>
+</body></html>

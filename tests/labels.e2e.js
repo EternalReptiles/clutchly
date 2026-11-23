@@ -65,6 +65,26 @@ const SP = process.argv[2];
     if (await pg.getByRole('radio', { name: /^Label printer, 62 × 29 mm/ }).first().getAttribute('aria-checked') !== 'true') throw new Error('size not remembered');
     await home(); await tab('Animals');
   });
+  await step('home-screen web app: Print opens the site\'s print page, which draws the labels and prints', async () => {
+    // Pretend to be the iPhone home-screen app (iOS ignores print there).
+    await pg.evaluate(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.includes('standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q); });
+    await B('Labels').click(); await B('Carpet').click(); await B('Tick all shown').click();
+    await pg.evaluate(() => { window.open = u => { window.__opened = u; return null; }; });
+    await B('Print 2 labels').click(); await pg.waitForFunction(() => window.__opened);
+    const url = await pg.evaluate(() => window.__opened);
+    if (!/^https:\/\/clutchly\.com\.au\/labels\.html#[A-Za-z0-9_-]+$/.test(url)) throw new Error('opened ' + url);
+    // The page as Safari would show it (served from the website; here from the site folder).
+    const page = await pg.context().newPage(); await page.addInitScript(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
+    await page.goto('file://' + require('path').resolve(__dirname, '../site/labels.html') + url.slice(url.indexOf('#')));
+    await page.locator('.l').first().waitFor({ timeout: 5000 });
+    const names = await page.locator('.n').allTextContents(); if (names.join() !== 'LB1,LB2') throw new Error('names ' + names);
+    if (await page.locator('.q svg').count() !== 2) throw new Error('QR codes missing');
+    if (await page.getByText('Preparing your labels').count()) throw new Error('loading message left on the page');
+    await page.getByRole('button', { name: 'Print' }).waitFor(); await page.waitForTimeout(900);
+    if (await page.evaluate(() => window.__printed) < 1) throw new Error('print dialog not opened');
+    await page.screenshot({ path: `${SP}/lb-c-print-page.png` }); await page.close();
+    await pg.reload({ waitUntil: 'networkidle' }); await home(); await tab('Animals');   // back to a normal browser
+  });
   await step('Print label on an animal ticks just that animal', async () => {
     await T('LB3', { exact: true }).click(); await B('Print label').click(); await T('Animals (1 ticked)').waitFor();
     if (await pg.getByRole('checkbox', { name: /^LB3 · / }).first().getAttribute('aria-checked') !== 'true') throw new Error('LB3 not ticked');

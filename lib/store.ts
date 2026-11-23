@@ -171,7 +171,9 @@ async function flush(): Promise<boolean> {
     const r = await send(m);
     if (!r.ok && r.retry) return false; // offline: keep the queue
     if (!r.ok) { console.warn('[sync] change rejected', m.table, m.op, r.message);
-      set({ error: /free_limit_reached/.test(r.message) ? `Free accounts can have up to ${state.plan.freeAnimals} animals, so an animal added on another device or offline was not saved. Go Pro for unlimited animals.` : `A change couldn't be saved (${r.message}). It has been undone.` }); } // rejected: drop it
+      set({ error: /free_limit_reached/.test(r.message) ? `Free accounts can have up to ${state.plan.freeAnimals} animals, so an animal added on another device or offline was not saved. Go Pro for unlimited animals.`
+        : /animals_unique_name/.test(r.message) ? 'An animal wasn\'t saved because that ID already exists in your collection (probably added on another device while offline). Add it again with another ID.'
+        : `A change couldn't be saved (${r.message}). It has been undone.` }); } // rejected: drop it
     set({ queue: state.queue.filter(x => x.mid !== m.mid) }); schedulePersist('meta');
     if (!r.ok) set({ lastSync: null }); // reload everything to undo the rejected change locally
   }

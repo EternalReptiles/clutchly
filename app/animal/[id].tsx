@@ -75,10 +75,13 @@ export default function AnimalScreen() {
   const offspring = useMemo(() => st.animals.filter(x => x.mother_id === id || x.father_id === id)
     .sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })), [st.animals, id]);
 
+  // Each ID is used once in a collection (ignoring capitals and spaces at the ends).
+  const idTaken = !!a.name.trim() && st.animals.some(x => x.id !== id && String(x.name).trim().toLowerCase() === a.name.trim().toLowerCase());
   const save = () => {
     const takesPlace = a.status !== 'Sold' && (isNew || animal?.status === 'Sold'); // adding an owned animal, or un-selling one
     if (takesPlace && !plan.isPro && plan.remaining <= 0) return goPro(`Free accounts can have up to ${plan.freeAnimals} owned animals (animals marked Sold don't count), and you have ${plan.count}. Mark an animal as Sold or delete one, or go Pro for unlimited animals.`);
     const name = a.name.trim(); if (!name) return notify('Give the animal a name or ID');
+    if (idTaken) return notify('This ID already exists', `You already have an animal called ${name}. Choose another ID.`);
     if (!a.species) return notify('Choose a species');
     const every = a.feed_every.trim() ? parseInt(a.feed_every, 10) : null;
     if (every !== null && (isNaN(every) || every < 1 || every > 365)) return notify('Feed interval must be 1 to 365 days, or blank');
@@ -113,6 +116,7 @@ export default function AnimalScreen() {
         <Text style={{ color: morph ? C.ink : C.mu }}>{morph || animal.species}</Text>
         {morph ? <Text style={s.mu}>{animal.species} · {animal.sex}</Text> : <Text style={s.mu}>{animal.sex}</Text>}</View></View>}
     <Input label="Name / ID" value={a.name} onChangeText={v => setA({ ...a, name: v })} />
+    {idTaken && <Text style={{ color: C.bad, marginTop: 4 }} accessibilityLiveRegion="polite">This ID already exists. Choose another.</Text>}
     <SpeciesPicker value={a.species} onChange={v => setA({ ...a, species: v })} />
     <Label t="Sex" /><Chips opts={SEXES} v={a.sex} on={v => setA({ ...a, sex: v })} />
     <Label t="Status" /><Chips opts={['Active', 'Breeding', 'Resting', 'Sold']} v={a.status} on={v => setA({ ...a, status: v })} />
