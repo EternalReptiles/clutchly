@@ -230,6 +230,13 @@ decodes its QR code; `tests/labels.e2e.js` checks the print screen.
   which must stay `/login`.
 - Test: `tests/help.e2e.js`.
 
+## Home screen (web app)
+`public/index.html` is the web app's page (Expo uses it instead of its own template). It adds the home-screen icon
+(`site/apple-touch-icon.png`, 180 px), the manifest (`site/site.webmanifest`: name, 192 and 512 px icons, opens `/app/`
+full screen) and the iPhone settings (title, full screen). The website pages link the same files. The icons are made
+from `assets/icon.png`; regenerate them if the icon changes. On an iPhone, a home-screen web app has its own storage,
+so people sign in once more there.
+
 ## Tests
 "Confirm email" is on in the live project. The database tests (`rls`, `plans`, `transfer`, `digest.function`) and
 `tests/handover.e2e.js` work there when given `SUPABASE_SECRET_KEY` (they then create already-confirmed throwaway
