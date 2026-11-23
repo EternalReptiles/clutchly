@@ -40,7 +40,7 @@
       "items": [
         {
           "q": "How do I track a pairing?",
-          "a": "On the **Pairings** tab tap **+ New pairing**, pick the female and male, then log locks and dates (ovulation, pre-lay shed, eggs laid, hatched) as they happen. The pairing shows the next expected date, worked out from typical figures for the species. Each choice shows the animal's species and genes. While a pairing has no **Male removed** date, feeds pause for both animals."
+          "a": "On the **Pairings** tab tap **+ New pairing**, pick the female and male (or tap **Scan labels** and scan both labels, in either order), then log locks and dates (ovulation, pre-lay shed, eggs laid, hatched) as they happen. The pairing shows the next expected date, worked out from typical figures for the species. Each choice shows the animal's species and genes. While a pairing has no **Male removed** date, feeds pause for both animals."
         },
         {
           "q": "How do I log incubation?",

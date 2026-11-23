@@ -20,10 +20,14 @@ const SP = process.argv[2];
     await T('Save', { exact: true }).click(); await T(name, { exact: true }).waitFor(); };
   // A fake camera (the browser's getUserMedia) that films a QR code, for the web Scan button.
   const qrDataUrl = text => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(8, 32); };
+  // The film can change mid-scan (window.__qr), so one camera can be shown one label, then another.
   const fakeCamera = src => pg.evaluate(src => {
+    window.__qr = src;
+    if (window.__fakeCam) return; window.__fakeCam = true;
     navigator.mediaDevices.getUserMedia = async () => {
-      const c = document.createElement('canvas'); c.width = 640; c.height = 480; const x = c.getContext('2d'); const img = new Image(); img.src = src;
-      setInterval(() => { x.fillStyle = '#ddd'; x.fillRect(0, 0, 640, 480); if (img.complete) x.drawImage(img, 170, 90, 300, 300); }, 50);
+      const c = document.createElement('canvas'); c.width = 640; c.height = 480; const x = c.getContext('2d'); let img = null, shown = null;
+      setInterval(() => { if (shown !== window.__qr) { shown = window.__qr; img = new Image(); img.src = shown; }
+        x.fillStyle = '#ddd'; x.fillRect(0, 0, 640, 480); if (img?.complete) x.drawImage(img, 170, 90, 300, 300); }, 50);
       return c.captureStream(15);
     };
   }, src);
@@ -76,6 +80,18 @@ const SP = process.argv[2];
     await B('Scan').click(); await B('Print label').waitFor({ timeout: 15000 });
     if (!pg.url().includes(`/animal/${lb1}`)) throw new Error('opened ' + pg.url());
     if (await L('Name / ID').inputValue() !== 'LB1') throw new Error('wrong animal');
+  });
+  await step('new pairing: scan both labels to choose the female and the male', async () => {
+    await toAnimals(); await T('+ Add').click(); await L('Name / ID').fill('LBM'); await B('Male').click(); await T('Save', { exact: true }).click();
+    await T('LBM', { exact: true }).click(); await pg.waitForURL(/animal\/[0-9a-f-]{36}/); const lbm = pg.url().match(/animal\/([0-9a-f-]{36})/)[1]; await toAnimals();
+    await tab('Pairings'); await T('+ New pairing').click(); await fakeCamera(qrDataUrl(`https://clutchly.com.au/app/animal/${lb1}`));
+    await B('Scan labels').click(); await T('Female: LB1 ✓. Now scan the male.').waitFor({ timeout: 15000 });
+    await fakeCamera(qrDataUrl(`https://clutchly.com.au/app/animal/${lbm}`));
+    // Choosing the male closes the camera (both are chosen).
+    await pg.locator('[aria-checked="true"][aria-label^="LBM,"]').first().waitFor({ timeout: 15000 });
+    await pg.locator('video').first().waitFor({ state: 'detached', timeout: 5000 });
+    for (const n of ['LB1', 'LBM']) if (await pg.getByRole('radio', { name: new RegExp('^' + n + ',') }).and(live).first().getAttribute('aria-checked') !== 'true') throw new Error(n + ' not chosen');
+    await toAnimals();
   });
   await step('label link opened signed out: sign in, then straight to the animal', async () => {
     const p2 = await (await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-AU' })).newPage();
