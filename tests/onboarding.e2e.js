@@ -36,7 +36,7 @@ const SP = process.argv[2];
   });
   await step('apply: Season tab has the northern values; Welcome does not come back', async () => {
     await B('Use these starting values').click(); await pg.getByRole('tab', { name: 'Season' }).waitFor({ timeout: 10000 });
-    await pg.getByRole('tab', { name: 'Season' }).click(); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 });
+    await pg.getByRole('tab', { name: 'Season' }).click(); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 }); await B('Open all').click();
     const pairs = await pg.getByRole('button', { name: 'Pairing starts', exact: true }).and(live).evaluateAll(els => els.map(e => e.textContent));
     if (pairs.join() !== '1 December,1 February') throw new Error('pairing dates ' + pairs);
     if (await L('Feed males every (days)').inputValue() !== '21') throw new Error('male interval');
@@ -44,7 +44,7 @@ const SP = process.argv[2];
     if (await T('Welcome to Clutchly').count()) throw new Error('welcome shown again');
   });
   await step("user's edit stays private: the shared template is unchanged", async () => {
-    await pg.getByRole('tab', { name: 'Season' }).click(); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 });
+    await pg.getByRole('tab', { name: 'Season' }).click(); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 }); await B('Open all').click();
     const f = L('Feed males every (days)'); await f.fill('28'); await f.blur(); await pg.waitForTimeout(1500);
     await api.auth.signInWithPassword({ email, password: pw });
     await until(async () => (await api.from('season_settings').select('male_every').eq('species', 'Carpet').single()).data?.male_every === 28, 15000, 'edit not synced');
