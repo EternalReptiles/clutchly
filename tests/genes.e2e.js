@@ -24,7 +24,8 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('sign up, add a female and a male carpet', async () => {
-    await L('Email').fill(`clutchly.gn.${Date.now()}@gmail.com`); await L('Password').fill('Gn-test-pass-1'); await B('Create account').click();
+    const email = `clutchly.gn.${Date.now()}@gmail.com`, btn = await require('./e2eAccount.cjs')(email, 'Gn-test-pass-1');
+    await L('Email').fill(email); await L('Password').fill('Gn-test-pass-1'); await B(btn).click();
     await B('Skip for now').click({ timeout: 15000 }); await addAnimal('JF', 'Female'); await addAnimal('JM', 'Male');
   });
   await step('genes can be set while adding a new animal (saved with it)', async () => {
@@ -36,6 +37,17 @@ const SP = process.argv[2];
     await pg.waitForTimeout(2500); await pg.reload({ waitUntil: 'networkidle' }); await tab('Animals');
     await T('Snow', { exact: true }).waitFor({ timeout: 10000 });
     await T('NG', { exact: true }).click(); await T('Snow', { exact: true }).waitFor({ timeout: 5000 }); await back();
+  });
+  await step('a combination in one tap: Sunglow sets Caramel and Albino, and names the animal', async () => {
+    await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('SG'); await B('Female').click();
+    await B('Add genes').click(); await L('Search genes').waitFor({ timeout: 8000 }); await T('COMBINATIONS', { exact: true }).waitFor();
+    const sunglow = pg.getByRole('button', { name: 'Sunglow: Caramel and Albino', exact: true }).and(live).first();
+    if (await sunglow.getAttribute('aria-pressed') === 'true') throw new Error('Sunglow marked before it was set');
+    await sunglow.click();
+    if (await sunglow.getAttribute('aria-pressed') !== 'true') throw new Error('Sunglow not marked as set');
+    await pg.screenshot({ path: `${SP}/gn-0-combos.png` }); await B('Done').click();
+    await T('Sunglow', { exact: true }).waitFor({ timeout: 5000 }); await B('Save').click(); await T('SG', { exact: true }).waitFor({ timeout: 8000 });
+    await T('Sunglow', { exact: true }).waitFor();
   });
   await step('female: Jaguar visual, het Albino (descriptions shown)', async () => {
     await T('JF', { exact: true }).click(); await T('No genes recorded.').waitFor(); await B('Edit genes').click();

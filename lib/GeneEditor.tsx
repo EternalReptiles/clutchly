@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
-import { Modal, Platform, ScrollView, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from './ModalSafeArea';
-import { canonical, type AnimalGene, type Gene, type GeneState, type Inheritance } from './genetics';
+import { canonical, type AnimalGene, type Combo, type Gene, type GeneState, type Inheritance } from './genetics';
 import { insert, remove, update, useStore } from './store';
-import { useGenes } from './useGenes';
+import { useGeneLib } from './useGenes';
 import { Btn, C, Chips, Input, notify, s } from './ui';
 
 const KIND: Record<Inheritance, string> = { recessive: 'Recessive', incomplete_dominant: 'Incomplete dominant', dominant: 'Dominant', polygenic: 'Line-bred' };
@@ -21,13 +21,30 @@ export const allGenes = (genes: Map<string, Gene>, exclude: Gene[] = []) => {
 };
 const KINDS: Inheritance[] = ['recessive', 'incomplete_dominant', 'dominant', 'polygenic'];
 
-/** Search box plus the gene rows grouped by type (Recessive, Incomplete dominant, Dominant, Line-bred). */
-export function GenePicker({ genes, value, onSet }: { genes: Map<string, Gene>; value: Map<string, AnimalGene>; onSet: (g: Gene, state: GeneState | 'none', pct?: number) => void }) {
+/** Search box, combinations (e.g. Sunglow) as one-tap shortcuts, then the gene rows grouped by type. */
+export function GenePicker({ genes, value, onSet, combos = [] }: { genes: Map<string, Gene>; value: Map<string, AnimalGene>;
+  onSet: (g: Gene, state: GeneState | 'none', pct?: number) => void; combos?: Combo[] }) {
   const [q, setQ] = useState('');
+  // A combination is a name for genes seen together; tapping it makes the first gene of each part visual
+  // (Sunglow: Caramel + Albino). Where a part has alternatives (Caramel or Hypo), the others can be chosen below.
+  const shown2 = combos.map(c => ({ c, parts: c.groups.map(gr => genes.get(gr[0])).filter((g): g is Gene => !!g) }))
+    .filter(x => x.parts.length === x.c.groups.length && (!q.trim() || `${x.c.name} ${x.parts.map(p => p.name).join(' ')}`.toLowerCase().includes(q.trim().toLowerCase())))
+    .sort((a, b) => a.parts.length - b.parts.length || a.c.name.localeCompare(b.c.name));
+  const isSet = (c: Combo) => c.groups.every(gr => gr.some(k => ['visual', 'super'].includes(value.get(k)?.state ?? '')));
   const list = useMemo(() => allGenes(genes), [genes]);
   const rest = list.filter(g => !q.trim() || g.name.toLowerCase().includes(q.trim().toLowerCase())), shown = rest;
   return (<View>
     <Input label="Search genes" value={q} onChangeText={setQ} />
+    {shown2.length > 0 && <View>
+      <Text style={[s.mu, { marginTop: 14, fontWeight: '700' }]}>COMBINATIONS</Text>
+      <Text style={s.mu}>Tap one to set the genes it's made of. The animal is then named after it.</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+        {shown2.map(({ c, parts }) => { const on = isSet(c);
+          return <Pressable key={c.id} onPress={() => parts.forEach(g => onSet(g, 'visual'))} accessibilityRole="button" accessibilityLabel={`${c.name}: ${parts.map(p => p.name).join(' and ')}`}
+            aria-pressed={on} style={[s.btn, { alignItems: 'flex-start' }, on && { backgroundColor: C.ink, borderColor: C.ink }]}>
+            <Text style={{ color: on ? C.bg : C.ink, fontWeight: '700' }}>{on ? '✓ ' : ''}{c.name}</Text>
+            <Text style={{ color: on ? C.bg : C.mu, fontSize: 12 }}>{parts.map(p => p.name).join(' + ')}</Text></Pressable>; })}
+      </View></View>}
     {KINDS.map(k => { const l = rest.filter(g => g.inheritance === k); return l.length ? <View key={k}>
       <Text style={[s.mu, { marginTop: 14, fontWeight: '700' }]}>{KIND[k].toUpperCase()}</Text><GeneRows list={l} value={value} onSet={onSet} /></View> : null; })}
     {!shown.length && <Text style={[s.mu, { marginTop: 8 }]}>No genes match "{q}".</Text>}
@@ -56,15 +73,17 @@ export function GeneRows({ list, value, onSet }: { list: Gene[]; value: Map<stri
  */
 export function GeneEditor({ open, onClose, animalId, species, draft, onDraft }: { open: boolean; onClose: () => void; animalId?: string; species: string;
   draft?: Map<string, AnimalGene>; onDraft?: (m: Map<string, AnimalGene>) => void }) {
-  const st = useStore(); const genes = useGenes();
+  const st = useStore(); const lib = useGeneLib(); const genes = lib.genes;
   const mine = useMemo(() => new Map(st.animal_genes.filter(g => g.animal_id === animalId).map(g => [g.gene_key as string, g])), [st.animal_genes, animalId]);
   const list = useMemo(() => allGenes(genes), [genes]);
   const value = useMemo(() => { if (draft) return draft; const c = canonical({ genes, combos: [] });
     return new Map([...mine.values()].map(r => [c(r.gene_key as string), r as unknown as AnimalGene])); }, [mine, genes, draft]);
   const [newName, setNewName] = useState(''); const [newKind, setNewKind] = useState<Inheritance>('recessive');
+  // The latest draft, so several changes in one tap (a combination sets two or three genes) build on each other.
+  const latest = useRef(draft); latest.current = draft;
   const set = (g: Gene, state: GeneState | 'none', pct?: number) => {
-    const cur = value.get(g.key) as any;
-    if (draft && onDraft) { const n = new Map(draft);
+    const cur = (latest.current ?? value).get(g.key) as any;
+    if (latest.current && onDraft) { const n = new Map(latest.current); latest.current = n;
       if (state === 'none') n.delete(g.key);
       else n.set(g.key, { gene_key: g.key, state, het_pct: state === 'possible_het' ? (pct ?? cur?.het_pct ?? 50) : null });
       return onDraft(n); }
@@ -84,7 +103,7 @@ export function GeneEditor({ open, onClose, animalId, species, draft, onDraft }:
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={[s.row, { padding: 14, paddingBottom: 4 }]}><Text style={[s.h, { flex: 1 }]}>Genes</Text><Btn solid t="Done" onPress={onClose} /></View>
       <ScrollView style={{ paddingHorizontal: 14 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        <GenePicker genes={genes} value={value} onSet={set} />
+        <GenePicker genes={genes} value={value} onSet={set} combos={lib.combos} />
         <Text style={[s.h, { marginTop: 18 }]}>Add your own gene</Text>
         <Text style={s.mu}>For genes not listed here. It's private to your account and available for all your animals.</Text>
         <Input label="Gene name" value={newName} onChangeText={setNewName} />

@@ -55,7 +55,7 @@ function ParentCard({ title, p }: { title: string; p: Parent }) {
         <View style={[s.row, { marginTop: 6 }]}><Text style={{ flex: 1, fontWeight: '600' }} accessibilityLabel={`${title} genes`}>{p.morph}</Text>
           <Btn t={open ? 'Hide genes' : 'Choose genes'} onPress={() => setOpen(!open)} />
           {p.made.size > 0 && <Btn t="Clear" onPress={p.clear} />}</View>
-        {open && <GenePicker genes={p.lib.genes} value={p.made} onSet={p.set} />}
+        {open && <GenePicker genes={p.lib.genes} value={p.made} onSet={p.set} combos={p.lib.combos} />}
       </View>}
   </Card>);
 }
