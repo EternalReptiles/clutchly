@@ -65,12 +65,11 @@ export function DateField({ label, value, onChange, mode = 'date', optional }:
   const shown = value ? (mode === 'monthDay' ? fmtMD(value) : fmt(value)) : 'Not set';
 
   let control: React.ReactNode;
-  if (Platform.OS === 'web') {
-    // Browser's native date input. For month-day we use a fixed leap year so 29 Feb is allowed.
+  if (Platform.OS === 'web' && mode === 'date') {
+    // Browser's native date input. (Month-day dates use our own chooser below: a browser date box always shows a year.)
     control = React.createElement('input', {
-      type: 'date', 'aria-label': label,
-      value: value ? (mode === 'monthDay' ? '2000-' + value : value) : '',
-      onChange: (e: any) => onChange(e.target.value ? (mode === 'monthDay' ? e.target.value.slice(5) : e.target.value) : null),
+      type: 'date', 'aria-label': label, value: value ?? '',
+      onChange: (e: any) => onChange(e.target.value || null),
       style: { ...StyleSheet.flatten(s.in), fontSize: 15, fontFamily: 'inherit', flex: 1 },
     });
   } else {
@@ -87,7 +86,7 @@ export function DateField({ label, value, onChange, mode = 'date', optional }:
   return (<View style={{ marginTop: 8 }}>
     {label && <Text style={s.mu}>{label}</Text>}
     <View style={s.row}>{control}{optional && value ? <Btn t="Clear" onPress={() => { onChange(null); setOpen(false); }} /> : null}</View>
-    {open && mode === 'monthDay' && Platform.OS !== 'web' && <View style={s.card}>
+    {open && mode === 'monthDay' && <View style={s.card}>
       <MonthDayPicker value={value} onChange={onChange} />
       <View style={{ alignItems: 'center', marginTop: 8 }}><Btn solid t="Done" onPress={() => setOpen(false)} /></View></View>}
     {open && mode === 'date' && Platform.OS === 'ios' && <View style={[s.card, { alignItems: 'center' }]}>

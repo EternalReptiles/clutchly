@@ -19,7 +19,8 @@ const SP = process.argv[2];
 
   await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });
   await step('new user lands on Welcome; hemisphere guessed from timezone (London = Northern)', async () => {
-    await L('Email').fill(email); await L('Password').fill(pw); await B('Create account').click();
+    const btn = await require('./e2eAccount.cjs')(email, pw);
+    await L('Email').fill(email); await L('Password').fill(pw); await B(btn).click();
     await T('Welcome to Clutchly').waitFor({ timeout: 15000 });
     if (await B('Northern').getAttribute('aria-selected') !== 'true') throw new Error('Northern not preselected');
   });
@@ -36,8 +37,8 @@ const SP = process.argv[2];
   await step('apply: Season tab has the northern values; Welcome does not come back', async () => {
     await B('Use these starting values').click(); await pg.getByRole('tab', { name: 'Season' }).waitFor({ timeout: 10000 });
     await pg.getByRole('tab', { name: 'Season' }).click(); await T('Morelia spilota', { exact: true }).waitFor({ timeout: 8000 });
-    const pairs = await pg.getByLabel('Pairing starts', { exact: true }).and(live).evaluateAll(els => els.map(e => e.value));
-    if (pairs.join() !== '2000-12-01,2000-02-01') throw new Error('pairing dates ' + pairs);
+    const pairs = await pg.getByRole('button', { name: 'Pairing starts', exact: true }).and(live).evaluateAll(els => els.map(e => e.textContent));
+    if (pairs.join() !== '1 December,1 February') throw new Error('pairing dates ' + pairs);
     if (await L('Feed males every (days)').inputValue() !== '21') throw new Error('male interval');
     await pg.reload({ waitUntil: 'networkidle' }); await pg.waitForTimeout(2000);
     if (await T('Welcome to Clutchly').count()) throw new Error('welcome shown again');
