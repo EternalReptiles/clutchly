@@ -70,7 +70,8 @@ export function DateField({ label, value, onChange, mode = 'date', optional }:
     control = React.createElement('input', {
       type: 'date', 'aria-label': label, value: value ?? '',
       onChange: (e: any) => onChange(e.target.value || null),
-      style: { ...StyleSheet.flatten(s.in), fontSize: 15, fontFamily: 'inherit', flex: 1 },
+      // minWidth 0: browser date boxes have a minimum width that pushed past the screen edge on phones.
+      style: { ...StyleSheet.flatten(s.in), fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', flex: 1, minWidth: 0, width: '100%', boxSizing: 'border-box', borderStyle: 'solid', WebkitAppearance: 'none', minHeight: 42 },
     });
   } else {
     const press = () => {
@@ -121,6 +122,7 @@ function MonthDayPicker({ value, onChange }: { value?: string | null; onChange: 
 export const s = StyleSheet.create({
   btn: { borderWidth: 1, borderColor: C.bd, borderRadius: 9, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: C.card },
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.bd, borderRadius: 12, padding: 12, marginVertical: 5 },
-  in: { borderWidth: 1, borderColor: C.bd, borderRadius: 8, padding: 10, backgroundColor: C.bg, color: C.ink },
+  // 16px text: an iPhone zooms the page in when you tap a box with smaller text (and doesn't zoom back out).
+  in: { borderWidth: 1, borderColor: C.bd, borderRadius: 8, padding: 10, backgroundColor: C.bg, color: C.ink, fontSize: 16 },
   mu: { color: C.mu, fontSize: 12 }, h: { fontFamily: serif, fontSize: 18, fontWeight: '600', color: C.ink },
   page: { flex: 1, backgroundColor: C.bg, padding: 14 }, row: { flexDirection: 'row', alignItems: 'center', gap: 8 } });
