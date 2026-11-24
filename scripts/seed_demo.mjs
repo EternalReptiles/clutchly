@@ -30,7 +30,7 @@ const day = 864e5, iso = d => new Date(d).toISOString().slice(0, 10), ago = n =>
 const animals = [
   ['Ruby', 'Carpet', 'Female', '2021-01-12'], ['Jag', 'Carpet', 'Male', '2020-12-03'], ['Opal', 'Carpet', 'Female', '2022-02-20'],
   ['Banjo', 'Bredli', 'Male', '2021-03-08'], ['Saffron', 'Bredli', 'Female', '2020-11-30'],
-  ['Shadow', 'Diamond', 'Male', '2019-12-15'], ['Pearl', 'Diamond', 'Female', '2021-01-25'], ['Pip', 'Antaresia', 'Female', '2023-01-04'],
+  ['Shadow', 'Diamond', 'Male', '2019-12-15'], ['Pearl', 'Diamond', 'Female', '2021-01-25'], ['Pip', "Children's python", 'Female', '2023-01-04'],
 ].map(([name, species, sex, dob]) => ({ name, species, sex, dob, status: 'Active' }));
 const ins = await sb.from('animals').insert(animals).select('id,name,sex');
 if (ins.error) die('Adding animals (is the account Pro? see the comment at the top):', ins.error);

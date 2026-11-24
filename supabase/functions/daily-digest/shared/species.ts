@@ -25,8 +25,7 @@ export const SPECIES_INFO: SpeciesInfo[] = [
   py('Jungle', 'Morelia spilota cheynei', [42, 55], [21, 28], [52, 58], ['jungle carpet', 'jungle carpet python', 'jungle python', 'cheynei']),
   py('Diamond', 'Morelia spilota spilota', [42, 55], [21, 28], [52, 58], ['diamond python']),
   py('Bredli', 'Morelia bredli', [50, 65], [25, 35], [55, 65], ["bredl's python", 'bredls python', 'bredl', 'centralian python', 'centralian carpet']),
-  // Antaresia stays for animals saved before the four species below were listed (and when the species isn't known).
-  py('Antaresia', 'Antaresia', [35, 48], [20, 28], [48, 56], ['antaresia python']),
+  // The four Antaresia species ("Antaresia" on its own was taken off the list; see migration 025).
   py("Children's python", 'Antaresia childreni', [35, 48], [20, 28], [48, 56], ["children's", 'childrens python', 'childrens', 'antaresia childreni', 'childreni']),
   py('Spotted python', 'Antaresia maculosa', [35, 48], [20, 28], [48, 56], ['spotted', 'eastern small-blotched python', 'antaresia maculosa', 'maculosa']),
   py("Stimson's python", 'Antaresia stimsoni', [35, 48], [20, 28], [48, 56], ["stimson's", 'stimsons python', 'stimsons', 'large-blotched python', 'antaresia stimsoni', 'stimsoni']),
