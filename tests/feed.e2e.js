@@ -92,7 +92,12 @@ const SP = process.argv[2];
     await B('Create').click(); await T('FD1 × FD5').waitFor({ timeout: 8000 });
     await tab('Overview'); await T(/^Paused: .*FD1 \(in with FD5\).*FD5 \(in with FD1\)/).waitFor();
     if (await pg.getByRole('button', { name: 'Feeds due now', exact: true }).count() || await T('Nothing due today.', { exact: true }).count() === 0) throw new Error('FD5 should not be due while paired');
-    await tab('Pairings'); await T('FD1 × FD5').click(); await L('Male removed').fill(new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10));
+    await tab('Pairings'); await T('FD1 × FD5').click(); await B('Change female').waitFor();
+    // A saved pairing shows just its two animals; Change opens the list, and picking one folds it again.
+    if (await R('FD2').count() || !(await R('FD1').count()) || !(await R('FD5').count())) throw new Error('saved pairing lists other animals');
+    await B('Change female').click(); await R('FD2').waitFor(); await B('Cancel').click(); await R('FD2').waitFor({ state: 'detached' });
+    await pg.screenshot({ path: `${SP}/fd-d-saved-pairing.png` });
+    await L('Male removed').fill(new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10));
     await B('Save').click(); await back2(); await tab('Overview'); await pg.getByRole('button', { name: 'Feed several' }).and(live).first().waitFor({ timeout: 8000 });
     if (await T(/^Paused: /).count()) throw new Error('still paused after the male was removed');
   });
