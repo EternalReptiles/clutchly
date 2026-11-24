@@ -70,8 +70,8 @@ export default function PairingScreen() {
     <Text style={s.mu}>Female</Text>{females.length ? <AnimalChooser label="Female" animals={females} value={p.female_id} morphs={morphs} onChange={id => setP({ ...p, female_id: id })} /> : <Text style={s.mu}>No females yet. Add one on the Animals tab.</Text>}
     <Label t="Male" />{males.length ? <AnimalChooser label="Male" animals={males} value={p.male_id} morphs={morphs} onChange={id => setP({ ...p, male_id: id })} /> : <Text style={s.mu}>No males yet.</Text>}
     {isNew && <DateField label="Introduced" value={p.intro} onChange={v => setP({ ...p, intro: v })} optional />}
-    {female && male && <View style={[s.card, { marginTop: 12 }]}><Text style={s.h}>Morph calculator</Text>
-      <MorphCalculator lib={geneLib} mother={femaleGenes} father={maleGenes} motherName={female.name} fatherName={male.name} /></View>}
+    {female && male && <View style={[s.card, { marginTop: 12 }]}>
+      <MorphCalculator title="Morph calculator" lib={geneLib} mother={femaleGenes} father={maleGenes} motherName={female.name} fatherName={male.name} /></View>}
     {!isNew && <><Text style={[s.h, { marginTop: 14 }]}>{pairStatus(p, female?.species)}{estText}</Text>
       <Text style={[s.h, { marginTop: 14 }]}>{w.locks} ({p.locks?.length || 0})</Text>
       <View style={[s.row, { alignItems: 'flex-end' }]}><View style={{ flex: 1 }}><DateField label={`${w.lock[0].toUpperCase()}${w.lock.slice(1)} date`} value={lockDay} onChange={v => setLockDay(v || today())} /></View>

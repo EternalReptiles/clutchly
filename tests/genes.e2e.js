@@ -74,7 +74,10 @@ const SP = process.argv[2];
   });
   await step('pairing shows the calculator: odds, possible hets, warnings, line-bred note', async () => {
     await tab('Pairings'); await T('+ New pairing').click(); await R('JF').click(); await R('JM').click();
-    await T('Morph calculator', { exact: true }).waitFor();
+    // Folded to one line at first; health warnings still show.
+    await T(/^\d+ possible babies · most likely /).waitFor(); await T(/^Jaguar · 50%: /).waitFor();
+    if (await pg.getByLabel('Possible offspring', { exact: true }).and(live).count()) throw new Error('not folded');
+    await pg.getByRole('button', { name: 'Morph calculator', exact: true }).and(live).first().click();
     // jaguar (ID, one parent) 50/50 · albino het x het 25/50/25 · zebra (ID, one parent) 50/50
     await row('Jaguar Zebra Albino: 1/16, 6.3%'); await row('Jaguar Zebra het Albino: 1/8, 12.5%'); await row('Normal het Albino: 1/8, 12.5%');
     await T("Babies that don't show the gene: 67% possible het Albino.").waitFor();
