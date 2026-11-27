@@ -38,7 +38,7 @@ const SP = process.argv[2];
     await pg.screenshot({ path: `${SP}/hi-a-animal.png`, fullPage: true });
   });
   await step('tap the chart to read a point', async () => {
-    const chart = pg.getByRole('img', { name: /^Weight chart/ }).and(live).first(); const box = await chart.boundingBox();
+    const chart = pg.getByRole('img', { name: /^Weight chart/ }).and(live).first(); await chart.scrollIntoViewIfNeeded(); const box = await chart.boundingBox();
     await pg.mouse.move(box.x + 50, box.y + box.height / 2); await pg.mouse.down();
     await T(/^\d+ \w+ 2026 · 150 g$/).waitFor({ timeout: 3000 }); await pg.mouse.up();
   });

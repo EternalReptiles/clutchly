@@ -43,10 +43,10 @@ const SP = process.argv[2];
     await pg.screenshot({ path: `${SP}/pl-b-paywall.png`, fullPage: true });
     await B('Not now').click(); await back();
   });
-  await step('Account plan card: Free · 10 of 10 animals; photos ask for Pro', async () => {
+  await step('Account plan card: Free · 10 of 10 animals; photos are free', async () => {
     await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click(); await T('Free · 10 of 10 owned animals').waitFor({ timeout: 5000 }); await back();
-    await tab('Animals'); await T('FR01', { exact: true }).click(); await B('Add photo (Pro)').click();
-    await T('Photos are part of Pro. Photos you added before stay visible.').waitFor({ timeout: 5000 }); await B('Not now').click(); await back();
+    await tab('Animals'); await T('FR01', { exact: true }).click(); await B('Add photo').waitFor();
+    if (await B('Add photo (Pro)').count()) throw new Error('photos still marked Pro'); await back();
   });
   await step('server-side purchase (webhook) unlocks Pro in the app', async () => {
     const uid = (await api.auth.getUser()).data.user.id; await makePro(uid);

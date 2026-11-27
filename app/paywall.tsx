@@ -31,7 +31,7 @@ export default function Paywall() {
     const res = await buy(pkg);
     if (res === 'purchased') {
       const ok = await waitForPro(); setBusy(false);
-      if (ok) { notify(`Welcome to ${APP_NAME} Pro`, 'Thank you! Unlimited animals, photos and notifications are unlocked.'); r.back(); }
+      if (ok) { notify(`Welcome to ${APP_NAME} Pro`, 'Thank you! Unlimited animals and notifications are unlocked.'); r.back(); }
       else notify('Purchase received', 'It can take a minute to activate. If Pro is not on soon, tap Restore purchases.');
       return;
     }
@@ -57,10 +57,10 @@ export default function Paywall() {
         {plan.expiresAt && <View style={{ marginTop: 8 }}><Btn t="Manage subscription" onPress={() => Linking.openURL(manageSubscriptionsUrl)} /></View>}</Card>
       : <Text style={{ color: C.ink, marginTop: 4 }}>The free plan includes every record-keeping feature for up to {plan.freeAnimals} owned animals (animals marked Sold don't count). Pro adds:</Text>}
     <Card>
-      {[['Unlimited animals', `Free: up to ${plan.freeAnimals} owned (you have ${plan.count})`], ['Photos', 'A gallery and cover photo for every animal'],
+      {[['Unlimited animals', `Free: up to ${plan.freeAnimals} owned (you have ${plan.count})`],
         ['Morning notifications', 'Feeds due, lays coming up and pairing season']].map(([a, b]) =>
         <View key={a} style={{ marginBottom: 8 }}><Text style={[s.h, { fontSize: 16 }]}>{a}</Text><Text style={s.mu}>{b}</Text></View>)}
-      <Text style={s.mu}>Your data is never deleted. If Pro ends you keep everything and can view, edit and download it; you just can't add more than {plan.freeAnimals} animals or new photos.</Text>
+      <Text style={s.mu}>Your data is never deleted. If Pro ends you keep everything and can view, edit and download it; you just can't add more than {plan.freeAnimals} animals.</Text>
     </Card>
 
     {!plan.isPro && (Platform.OS === 'web'

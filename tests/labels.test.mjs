@@ -31,6 +31,22 @@ const html = Lb.labelsHtml([a, { ...a, id: id.replace('3f', '4f'), name: 'B2' }]
 ok(html.includes('ER&lt;001&gt;') && !html.includes('ER<001>'), 'names are escaped');
 ok(html.includes('@page { size: 210mm 297mm') && (html.match(/class="l"/g) || []).length === 3, 'A4 page with a blank first slot and two labels');
 
+// Text fits: every line within the width beside the QR code and the whole block within the label, on every size.
+const hard = [{ ...a, name: 'ER2024-CLUTCH3-07', species: 'Rough-scaled python', sex: 'Unknown', morph: 'Het Albino Zebra Jaguar Sunglow het Hypo pos het Axanthic' },
+  { ...a, name: 'Princess Buttercup the Second', species: 'Black-headed python' }, { ...a, name: 'WWWWWWWWWWWWWWWWWWWW', species: 'Eastern long-necked turtle', morph: null },
+  { ...a, name: 'ER014', species: "Children's python", morph: null }];
+for (const L of Lb.LAYOUTS) {
+  const { textMm, pad } = Lb.labelMetrics(L); let widest = 0, tallest = 0;
+  for (const x of hard) { const bl = Lb.labelText(x, L, fmtDate);
+    widest = Math.max(widest, ...bl.flatMap(b => b.lines.map(t => Lb.textWidthMm(t, b.pt, b.bold))));
+    tallest = Math.max(tallest, bl.reduce((h, b) => h + Lb.blockHeightMm(b), 0.5)); }
+  ok(widest <= textMm && tallest <= L.label.h - 2 * pad, `${L.key}: long names, genes and species fit (widest ${widest.toFixed(1)} of ${textMm.toFixed(1)} mm)`);
+}
+const t21 = Lb.labelText(hard[0], Lb.layoutOf('a4-21'), fmtDate);
+ok(t21[0].lines.length === 1 && t21[0].lines[0] === 'ER2024-CLUTCH3-07', 'a long ID gets smaller rather than split', t21[0]);
+ok(Lb.labelText(hard[3], Lb.layoutOf('a4-21'), fmtDate)[1].lines.join('|') === "Children's python · Female", 'species and sex stay on one line when a little smaller fits');
+ok(Lb.labelText(a, Lb.layoutOf('a4-14'), fmtDate)[0].pt === 12, 'short names stay at full size');
+
 if (decDir) {
   const { chromium } = require('playwright'); const jsQR = require(path.resolve(decDir, 'node_modules/jsqr')); const { PNG } = require(path.resolve(decDir, 'node_modules/pngjs'));
   // About 290 dpi: a 96-dpi page at 3x.

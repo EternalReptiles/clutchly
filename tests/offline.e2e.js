@@ -110,6 +110,19 @@ const SB = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).host;
     await pg.reload({ waitUntil: 'networkidle' }); await tab('Animals');
     await until(async () => (await pg.getByText('OFF1', { exact: true }).and(d1.live).count()) === 0, 15000, 'OFF1 still shown');
   });
+  await step(pg, 'an animal saved just before the app is closed is kept, and syncs when it reopens', async () => {
+    await tab('Animals'); await T('+ Add').click(); await L('Name / ID').fill('QUICK1'); await pickCarpet(d1);
+    await pg.getByRole('button', { name: 'Save', exact: true }).and(d1.live).first().click(); await T('QUICK1', { exact: true }).waitFor();
+    await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' });   // closed straight away, no time to sync
+    await tab('Animals'); await T('QUICK1', { exact: true }).waitFor({ timeout: 10000 });
+    await until(async () => (await server()).animals.some(a => a.name === 'QUICK1'), 15000, 'QUICK1 never reached the server');
+  });
+  await step(d2.pg, 'signing out leaves no copy of the collection on the device', async () => {
+    await d2.pg.getByRole('button', { name: 'Account', exact: true }).and(d2.live).first().click(); await d2.T('Sign out', { exact: true }).click();
+    await d2.L('Email').waitFor({ timeout: 10000 }); await d2.pg.waitForTimeout(1500);
+    const left = await d2.pg.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('clutchly.v1.')));
+    if (left.length) throw new Error('still stored: ' + left.join(', '));
+  });
   await step(pg, 'cleanup', async () => { await api.rpc('delete_my_account'); });
   console.log(logs.filter(l => !l.startsWith('DIALOG: Delete')).join('\n')); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); await b.close(); process.exit(fails ? 1 : 0);
 })();

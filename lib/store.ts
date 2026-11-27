@@ -6,7 +6,7 @@
 // - Pull: rows the server changed since the last sync (synced_at), plus deletions recorded in deleted_rows.
 // - Conflicts: last write wins by the row's updated_at (enforced on the server; see migration 005 and the README).
 import { useSyncExternalStore } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { setDateFormat } from './logic';
@@ -57,30 +57,47 @@ const CHUNK = 400;
 const prefix = (uid: string) => `clutchly.v1.${uid}`;
 const dirty = new Set<Table | 'meta'>();
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
+/** Chunks of each table already in storage for the signed-in user (so a save needs no read first). */
+let savedChunks: Record<string, number> = {};
+/** Users whose saved copy was cleared (signed out): never written again until they sign in. */
+const forgotten = new Set<string>();
+/** Saves run one after another, in order. */
+let saving: Promise<unknown> = Promise.resolve();
+/** Data that came from the server: saved within 400 ms, a batch at a time. */
 function schedulePersist(...what: (Table | 'meta')[]) {
   what.forEach(w => dirty.add(w)); dirty.add('meta');
   if (persistTimer) return;
   persistTimer = setTimeout(persistNow, 400);
 }
-async function persistNow() {
-  persistTimer = null; const s = state; if (!s.uid) return;
-  const p = prefix(s.uid); const writes: [string, string][] = []; const meta: Row = { lastSync: s.lastSync, lastDeleteId: s.lastDeleteId, queue: s.queue, plan: s.plan, chunks: {} };
-  const prevMeta = JSON.parse((await AsyncStorage.getItem(`${p}.meta`).catch(() => null)) || '{}');
+/** Something the user changed: saved as soon as the current task ends (a loop of changes is one save), so closing the
+ *  app straight after Save doesn't lose it. */
+let soon = false;
+function persistSoon() { if (soon) return; soon = true; Promise.resolve().then(() => { soon = false; flushPersist(); }); }
+/** Save anything waiting now (also when the app goes to the background or the page is closed). */
+export function flushPersist() { if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; } if (dirty.size) persistNow(); }
+function persistNow() {
+  persistTimer = null; const s = state; if (!s.uid || !dirty.size || forgotten.has(s.uid)) return;
+  // Take the list of changed tables now: anything changed after this is saved next time, not dropped.
+  const d = new Set(dirty); dirty.clear();
+  const p = prefix(s.uid); const writes: [string, string][] = []; const chunks: Record<string, number> = {};
   for (const t of TABLES) {
-    const n = Math.ceil(s[t].length / CHUNK); meta.chunks[t] = n;
-    if (dirty.has(t)) for (let i = 0; i < n; i++) writes.push([`${p}.${t}.${i}`, JSON.stringify(s[t].slice(i * CHUNK, (i + 1) * CHUNK))]);
-    else meta.chunks[t] = prevMeta.chunks?.[t] ?? n;
+    const n = Math.ceil(s[t].length / CHUNK);
+    if (d.has(t)) { chunks[t] = n; for (let i = 0; i < n; i++) writes.push([`${p}.${t}.${i}`, JSON.stringify(s[t].slice(i * CHUNK, (i + 1) * CHUNK))]); }
+    else chunks[t] = savedChunks[t] ?? n;
   }
-  writes.push([`${p}.meta`, JSON.stringify(meta)]);
   const stale: string[] = [];
-  for (const t of TABLES) if (dirty.has(t)) for (let i = meta.chunks[t]; i < (prevMeta.chunks?.[t] ?? 0); i++) stale.push(`${p}.${t}.${i}`);
-  dirty.clear();
-  try { await AsyncStorage.multiSet(writes); if (stale.length) await AsyncStorage.multiRemove(stale); } catch { /* storage full: keep going in memory */ }
+  for (const t of TABLES) if (d.has(t)) for (let i = chunks[t]; i < (savedChunks[t] ?? 0); i++) stale.push(`${p}.${t}.${i}`);
+  writes.push([`${p}.meta`, JSON.stringify({ lastSync: s.lastSync, lastDeleteId: s.lastDeleteId, queue: s.queue, plan: s.plan, chunks })]);
+  savedChunks = chunks;
+  // On the web, AsyncStorage writes to localStorage as soon as multiSet is called.
+  const write = () => AsyncStorage.multiSet(writes).then(() => stale.length ? AsyncStorage.multiRemove(stale) : undefined).catch(() => { /* storage full: keep going in memory */ });
+  saving = saving.then(write, write);
 }
 const fullLoad = new Set<Table>();
 async function loadCache(uid: string): Promise<Partial<State>> {
   try {
     const p = prefix(uid); const meta = JSON.parse((await AsyncStorage.getItem(`${p}.meta`)) || 'null');
+    savedChunks = { ...(meta?.chunks ?? {}) };
     if (!meta) return {};
     const out: Partial<State> = { lastSync: meta.lastSync ?? null, lastDeleteId: meta.lastDeleteId ?? 0, queue: meta.queue ?? [], plan: meta.plan ?? DEFAULT_PLAN };
     // A table added in an app update isn't in this cache yet: load all of it on the next sync, not just recent changes.
@@ -94,6 +111,9 @@ async function loadCache(uid: string): Promise<Partial<State>> {
   } catch { return {}; }
 }
 export async function clearCache(uid: string) {
+  // Signing out or deleting the account: nothing more is saved for this user, and a save in progress finishes first.
+  forgotten.add(uid); if (state.uid === uid) { dirty.clear(); if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; } }
+  await saving;
   const keys = (await AsyncStorage.getAllKeys().catch(() => [] as readonly string[])).filter(k => k.startsWith(prefix(uid) + '.'));
   if (keys.length) await AsyncStorage.multiRemove(keys).catch(() => {});
 }
@@ -129,7 +149,7 @@ function applyLocal(t: Table, op: Op, key: string, row?: Row) {
   schedulePersist(t);
 }
 function enqueue(m: Omit<Mutation, 'mid'>) {
-  set({ queue: [...state.queue, { ...m, mid: uuid() }] }); schedulePersist('meta'); kick();
+  set({ queue: [...state.queue, { ...m, mid: uuid() }] }); schedulePersist('meta'); persistSoon(); kick();
 }
 /** Adds a row. Returns it (with its new id). */
 export function insert(t: Exclude<Table, 'season_settings'>, data: Row): Row {
@@ -255,22 +275,29 @@ export async function syncFresh() { await sync(); await sync(); }
 let kickTimer: ReturnType<typeof setTimeout> | null = null;
 function kick() { if (kickTimer) return; kickTimer = setTimeout(() => { kickTimer = null; sync(); }, 300); }
 
+const onHidden = () => { if (document.visibilityState === 'hidden') flushPersist(); };
 let appStateSub: { remove(): void } | null = null; let interval: ReturnType<typeof setInterval> | null = null;
 /** Called when a user signs in: load their cached data, then sync. */
 export async function start(uid: string) {
   if (state.uid === uid) return;
-  stop();
+  stop(); forgotten.delete(uid);
   set({ ...empty(), dateFormat: state.dateFormat, uid });
   const cached = await loadCache(uid);
   if (state.uid !== uid) return;
   set({ ...cached, ready: !!cached.lastSync });
-  appStateSub = AppState.addEventListener('change', s => { if (s === 'active') sync(); });
+  appStateSub = AppState.addEventListener('change', s => { if (s === 'active') sync(); else flushPersist(); });
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Closing the tab or the home-screen app: save first.
+    window.addEventListener('pagehide', flushPersist); document.addEventListener('visibilitychange', onHidden);
+  }
   interval = setInterval(() => sync(), 120_000);
   await sync();
 }
 /** Called on sign out: stop syncing and forget the in-memory data. */
 export function stop() {
+  flushPersist();
   appStateSub?.remove(); appStateSub = null;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') { window.removeEventListener('pagehide', flushPersist); document.removeEventListener('visibilitychange', onHidden); }
   if (interval) clearInterval(interval); interval = null;
   if (retryTimer) clearTimeout(retryTimer); retryTimer = null;
   set({ ...empty(), dateFormat: state.dateFormat });

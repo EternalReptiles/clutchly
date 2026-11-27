@@ -103,7 +103,7 @@ export default function Labels() {
       <Btn t="Tick all shown" onPress={() => setPicked(new Set([...picked, ...shown.map(a => a.id)]))} />
       <Btn t="Clear" onPress={() => setPicked(new Set())} /></View>
     <Check on={sold} set={setSold} t="Show sold animals" />
-    {shown.map(a => <Check key={a.id} on={picked.has(a.id)} set={() => toggle(a.id)} t={`${a.name} · ${morphs[a.id] || a.species} · ${a.sex}`} />)}
+    {shown.map(a => <Check key={a.id} on={picked.has(a.id)} set={() => toggle(a.id)} t={[a.name, a.species, morphs[a.id], a.sex].filter(Boolean).join(' · ')} />)}
     <View style={{ height: 100 }} />
   </ScrollView>
     <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, paddingBottom: 24, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.bd, flexDirection: 'row', gap: 8 }}>
