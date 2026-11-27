@@ -55,7 +55,7 @@ x = await B.rpc('register_device_token', { p_token: tok, p_platform: 'ios' }); o
 x = await A.from('device_tokens').select('*'); ok(x.data?.length === 0, "A no longer gets notifications on B's phone");
 x = await B.from('device_tokens').select('token'); ok(x.data?.length === 1 && x.data[0].token === tok, 'B owns the token now');
 
-// Photos: private bucket, each user limited to the folder named after their user id. (Photos need Pro; see tests/plans.test.mjs.)
+// Photos: private bucket, each user limited to the folder named after their user id. (Photos are free since migration 026.)
 await (await import('./makePro.cjs')).default(r.data.user.id);
 const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]); const uidA = r.data.user.id;
 const pathA = `${uidA}/${f.data.id}/rls-test.jpg`;

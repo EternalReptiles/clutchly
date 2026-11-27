@@ -32,7 +32,7 @@ const jpegSize = buf => { // width/height from the JPEG's SOF marker
     await L('Species').click(); await L('Search species').fill('carpet'); await pg.getByRole('button', { name: 'Carpet', exact: true }).and(live).first().click();
     await T('Save', { exact: true }).click(); await T('PH1', { exact: true }).waitFor({ timeout: 8000 });
     await api.auth.signInWithPassword({ email, password: pw }); uid = (await api.auth.getUser()).data.user.id;
-    await require('./makePro.cjs')(uid); await pg.reload({ waitUntil: 'networkidle' }); await tab('Animals'); // photos are a Pro feature
+    // Photos are free: no Pro needed.
     await until(async () => { animalId = (await api.from('animals').select('id').eq('name', 'PH1').maybeSingle()).data?.id; return !!animalId; }, 15000, 'animal not synced');
   });
   await step('add a 2400x1600 photo: uploaded resized to 1200 on the long edge, becomes cover', async () => {

@@ -40,7 +40,7 @@ EVERY RECORD IN ONE PLACE
 • Feeds and refusals with food type, sheds, and weights on any date
 • Growth chart, average days between sheds and refusal rate for each animal
 • Full history with filters; edit or delete any entry
-• Photos of every animal (Pro)
+• Photos of every animal
 
 BREEDING, START TO FINISH
 • Pairings with locks, ovulation and pre-lay shed
@@ -62,7 +62,7 @@ Your collection is visible only to you. No ads, no tracking, and your data is ne
 entered at any time, or delete your account from inside the app.
 
 FREE AND PRO
-Clutchly is free for up to 10 animals with every record-keeping feature. Clutchly Pro adds unlimited animals, photos
+Clutchly is free for up to 10 animals with every record-keeping feature and photos. Clutchly Pro adds unlimited animals
 and notifications for A$59.99 a year. The subscription renews automatically unless cancelled at least 24 hours before
 the end of the period; manage it in your Apple ID settings. If Pro ends, nothing is deleted.
 
@@ -80,7 +80,7 @@ app has no browser). User-generated content shared with others: **No** (each col
 - Sign-in required: **Yes**. Demo account: the reviewer email and password (see the summary I gave you; not stored in
   this repo). The account is Pro so every feature can be reviewed, and it has sample animals, history and pairings.
 - Notes: "Clutchly is a record-keeping app for reptile keepers. Sign in with the demo account. Pro (unlimited animals,
-  photos, notifications) is an auto-renewing yearly subscription. The non-consumable 'Clutchly Pro (lifetime)' is not
+  notifications) is an auto-renewing yearly subscription. The non-consumable 'Clutchly Pro (lifetime)' is not
   sold in the app; it is only redeemed with offer codes we give to selected people. Account deletion: tap the round
   account button (top right) > Delete account."
 

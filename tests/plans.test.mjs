@@ -48,11 +48,12 @@ try {
   rows = await addN(PRO, 12, 'P'); ok(rows.every(r => !r.error), 'Pro user adds 12 animals');
   const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
   const fa = (await FREE.from('animals').select('id').limit(1).single()).data.id, pa = rows[0].data.id;
-  x = await FREE.storage.from('animal-photos').upload(`${fid}/${fa}/a.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!!x.error, 'free user cannot upload a photo');
-  x = await FREE.from('animal_photos').insert({ animal_id: fa, path: `${fid}/${fa}/a.jpg` }); ok(!!x.error, 'free user cannot record a photo');
+  x = await FREE.storage.from('animal-photos').upload(`${fid}/${fa}/a.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!x.error, 'free user uploads a photo (photos are free)');
+  x = await FREE.from('animal_photos').insert({ animal_id: fa, path: `${fid}/${fa}/a.jpg` }); ok(!x.error, 'free user records a photo');
+  x = await FREE.storage.from('animal-photos').upload(`${pid}/${pa}/x.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!!x.error, 'but not into someone else\'s folder');
   x = await PRO.storage.from('animal-photos').upload(`${pid}/${pa}/a.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!x.error, 'Pro user uploads a photo');
   x = await PRO.from('animal_photos').insert({ animal_id: pa, path: `${pid}/${pa}/a.jpg` }).select('id').single(); ok(!x.error, 'Pro user records a photo'); const photoId = x.data?.id;
-  // Lapse: nothing is lost or locked except adding
+  // Lapse: nothing is lost or locked except adding animals
   res = await (await hook(ev('EXPIRATION', pid, { expiration_at_ms: Date.now() - 1000 }))).json(); ok(res.updated === 1, 'expiration recorded');
   ok((await PRO.rpc('is_pro', { uid: pid })).data === false, 'lapsed user is no longer Pro');
   x = await PRO.from('animals').select('id'); ok(x.data.length === 12, 'lapsed user still sees all 12 animals');
@@ -60,7 +61,7 @@ try {
   x = await PRO.from('events').insert({ animal_id: pa, kind: 'feed', ok: true }); ok(!x.error, 'lapsed user can still log feeds');
   x = await PRO.storage.from('animal-photos').download(`${pid}/${pa}/a.jpg`); ok(!x.error, 'lapsed user can still view photos');
   x = await PRO.from('animals').insert({ name: 'P13', sex: 'Male' }); ok(!!x.error && /free_limit_reached/.test(x.error.message), 'lapsed user cannot add a 13th animal');
-  x = await PRO.storage.from('animal-photos').upload(`${pid}/${pa}/b.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!!x.error, 'lapsed user cannot add photos');
+  x = await PRO.storage.from('animal-photos').upload(`${pid}/${pa}/b.jpg`, jpg, { contentType: 'image/jpeg' }); ok(!x.error, 'lapsed user can still add photos');
   x = await PRO.from('animal_photos').delete().eq('id', photoId).select(); ok(x.data?.length === 1, 'lapsed user can still delete photos');
   x = await PRO.from('animals').delete().eq('id', rows[11].data.id).select(); ok(x.data?.length === 1, 'lapsed user can still delete animals');
   // Lifetime code

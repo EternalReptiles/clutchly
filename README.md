@@ -54,13 +54,13 @@ species later. Users' edits are private and never change the templates. The app 
 
 ## Free and Pro
 - Free: up to `free_animals` owned animals (table `app_limits`, currently 10; animals marked Sold don't count, and
-  marking one back as owned is checked against the limit too) with every record-keeping feature and data export.
-  Pro (RevenueCat entitlement `pro`): unlimited animals, photos and morning notifications.
+  marking one back as owned is checked against the limit too) with every record-keeping feature, photos and data export.
+  Pro (RevenueCat entitlement `pro`): unlimited animals and morning notifications.
 - Pro status lives in `subscriptions`, written **only** by the `revenuecat-webhook` Edge Function (checks the
   `REVENUECAT_WEBHOOK_AUTH` secret; ignores out-of-order events; optional `REVENUECAT_SECRET_API_KEY` to re-read status
   from RevenueCat). Users can read their own row and nothing else. Migration `009_subscriptions.sql`.
 - Enforced by the database, not the app: a trigger refuses animal number 11 for non-Pro users (with a per-user lock so
-  parallel adds can't slip through); adding photos requires Pro in both the table policy and the storage policy; the
+  parallel adds can't slip through); photos are free (migration 026 dropped the Pro check from the table and storage policies); the
   daily-digest function only notifies Pro users. Nothing is ever deleted or locked when Pro ends. Complimentary Pro (your own and the reviewer
   account) is set by hand with `last_event_type = 'MANUAL'` (see migration 010) and is never changed by store events.
 - App: `lib/purchases.ts` (react-native-purchases; logs in with the Supabase user id), `app/paywall.tsx` (yearly
@@ -168,6 +168,11 @@ Supabase's built-in email sender only delivers to your own team's addresses and 
   already exists"), Bulk add skips it, and the unique index `animals_unique_name` (migration 024) backs this up for
   offline adds that sync later. A handover copy whose ID the buyer already uses gets " (2)" etc. Pairing and calculator
   choices (`lib/AnimalChooser.tsx`) show species, genes and hatch date.
+- Label text is laid out before printing (`labelText` in `lib/labels.ts`): measured with Helvetica widths, each line
+  steps down in size (or wraps to a second line) until it fits beside the QR code, so the printer never cuts a name or
+  sex off. The printed page and the PDF use the same lines; `tests/labels.test.mjs` checks long names on every size.
+- Saving on the phone (`lib/store.ts`): a change you make is written to storage straight away (and again when the app
+  goes to the background or the page closes), so closing the app right after Save keeps it. Signing out clears it.
 - Printing labels from the iPhone home-screen web app: iOS ignores print there (and in pages it opens), so Print makes
   the labels as a PDF (`lib/labelsPdf.web.ts`, jsPDF, same sizes as the printed page via `labelMetrics`) and opens
   the share sheet, which has Print. Save PDF on the web downloads the same file.

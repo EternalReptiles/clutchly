@@ -83,9 +83,12 @@ const SP = process.argv[2];
     if (sh.name !== 'Clutchly labels.pdf' || sh.type !== 'application/pdf') throw new Error(JSON.stringify({ name: sh.name, type: sh.type }));
     const i = pdfInfo(Buffer.from(sh.bytes)); if (!i.pdf || i.pages !== 2) throw new Error(JSON.stringify(i));
     if (logs.some(l => /PAGEERROR|Could not make/.test(l))) throw new Error(logs.join(' / '));
-    await pg.reload({ waitUntil: 'networkidle' }); await home(); await tab('Animals');   // back to a normal browser
+    // Back to a normal browser: a fresh load of the app, then the Animals list.
+    await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' }); await tab('Animals'); await T('LB3', { exact: true }).waitFor({ timeout: 15000 });
   });
   await step('Print label on an animal ticks just that animal', async () => {
+    // Right after a fresh load the list redraws once when the first sync finishes: let it settle before tapping.
+    await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(1000);
     await T('LB3', { exact: true }).click(); await B('Print label').click(); await T('Animals (1 ticked)').waitFor();
     if (await pg.getByRole('checkbox', { name: /^LB3 · / }).first().getAttribute('aria-checked') !== 'true') throw new Error('LB3 not ticked');
   });

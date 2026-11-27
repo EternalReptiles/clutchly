@@ -3,8 +3,6 @@ import { Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react
 import { SafeAreaView } from './ModalSafeArea';
 import { addPhoto, byNewest, deletePhoto, setCover, useSignedUrls, type Photo } from './photos';
 import { useStore } from './store';
-import { usePlan } from './plan';
-import { goPro } from './goPro';
 import { Btn, C, confirm, notify, s } from './ui';
 
 /** Photos of one animal: thumbnails, add (library or camera), full-screen view with cover and delete. */
@@ -13,8 +11,7 @@ export function PhotoGallery({ animalId }: { animalId: string }) {
   const photos = useMemo(() => (st.animal_photos.filter(p => p.animal_id === animalId) as Photo[]).sort(byNewest), [st.animal_photos, animalId]);
   const urls = useSignedUrls(photos.map(p => p.path));
   const [busy, setBusy] = useState(false); const [open, setOpen] = useState<Photo | null>(null);
-  const plan = usePlan();
-  const add = async (src: 'library' | 'camera') => { if (!plan.isPro) return goPro('Photos are part of Pro. Photos you added before stay visible.'); setBusy(true); const err = await addPhoto(animalId, src); setBusy(false); if (err) notify('Photo not added', err); };
+  const add = async (src: 'library' | 'camera') => { setBusy(true); const err = await addPhoto(animalId, src); setBusy(false); if (err) notify('Photo not added', err); };
   const del = (p: Photo) => confirm('Delete photo?', 'This cannot be undone.', 'Delete', () => { setOpen(null); deletePhoto(p); });
   return (<View style={{ marginTop: 14 }}>
     <Text style={s.h}>Photos</Text>
@@ -24,7 +21,7 @@ export function PhotoGallery({ animalId }: { animalId: string }) {
         {p.is_cover && <Text style={[s.mu, { textAlign: 'center', marginTop: 2 }]}>Cover</Text>}</Pressable>)}
     </ScrollView>}
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-      <Btn disabled={busy} t={busy ? 'Uploading…' : plan.isPro ? 'Add photo' : 'Add photo (Pro)'} onPress={() => add('library')} />
+      <Btn disabled={busy} t={busy ? 'Uploading…' : 'Add photo'} onPress={() => add('library')} />
       {Platform.OS !== 'web' && <Btn disabled={busy} t="Take photo" onPress={() => add('camera')} />}</View>
     <Modal visible={!!open} animationType={Platform.OS === 'web' ? 'none' : 'fade'} onRequestClose={() => setOpen(null)}>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
