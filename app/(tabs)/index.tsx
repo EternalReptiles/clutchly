@@ -7,6 +7,7 @@ import { speciesInfo, words } from '../../lib/species';
 import { overview } from '../../lib/overview';
 import { EmptyState, Greeting, Loading } from '../../lib/Brand';
 import { useCollection } from '../../lib/derived';
+import { useMorphs } from '../../lib/useGenes';
 import { insert, sync } from '../../lib/store';
 import { Btn, C, Card, notify, s } from '../../lib/ui';
 import { enablePush, pushEnabledHere, pushSupported } from '../../lib/notifications';
@@ -38,6 +39,7 @@ export default function Overview() {
   const dismissPush = () => { setAskPush(false); AsyncStorage.setItem(PROMPT_KEY, '1').catch(() => {}); };
   const turnOnPush = async () => { if (!plan.isPro) return goPro('Morning notifications are part of Pro.'); const res = await enablePush(); if (!res.ok) return notify('Notifications not turned on', res.reason); dismissPush(); notify('Notifications on', 'Change what you get and when in Account.'); };
   const t = today();
+  const morphs = useMorphs();   // genes under each name, to tell look-alike animals apart
   const o = useMemo(() => overview(animals, events, pairings, cfg || [], t), [animals, events, pairings, cfg, t]);
   const log = (id: string, ok: boolean) => { insert('events', { animal_id: id, kind: 'feed', ok, on_date: t }); };
   if (!ready) return <Loading />;
@@ -67,6 +69,7 @@ export default function Overview() {
         <Btn t={o.dueNow.length > 1 ? `Feed all ${o.dueNow.length}` : 'Feed several'} onPress={() => r.push(o.dueNow.length ? '/feed?pre=due' : '/feed')} /></View>
       {o.dueNow.length ? o.dueNow.map(({ a, due }) => <Card key={a.id} onPress={() => r.push(`/animal/${a.id}`)}><View style={s.row}>
         <View style={{ flex: 1 }}><Text style={s.h}>{a.name}</Text>
+          {morphs[a.id] ? <Text style={{ color: C.ink }}>{morphs[a.id]}</Text> : null}
           <Text style={s.mu}>{a.species} · {a.sex} · {due < t ? `${diffDays(t, due)}d overdue` : 'due today'}</Text></View>
         <Btn solid t="Fed" onPress={() => log(a.id, true)} /><Btn t="Refused" onPress={() => log(a.id, false)} /></View></Card>)
         : <Text style={s.mu}>Nothing due today.</Text>}
