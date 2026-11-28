@@ -126,8 +126,19 @@ const SP = process.argv[2];
     await B('Create 2').click(); await T('Hatchlings (2)').waitFor({ timeout: 5000 });
     await T('2026-001', { exact: true }).click(); await T('67% pos het Albino', { exact: true }).waitFor({ timeout: 5000 });
   });
+  await step('Overview and Feed several show each due animal\'s genes under its name', async () => {
+    await pg.goto('http://localhost:8099/', { waitUntil: 'networkidle' }); await T('Feeds due now', { exact: true }).waitFor();
+    // The card for JF: its name, then its genes.
+    const card = pg.getByText('JF', { exact: true }).and(live).first().locator('xpath=..');
+    await card.getByText('Jaguar het Albino', { exact: true }).waitFor({ timeout: 5000 });
+    await pg.screenshot({ path: `${SP}/gn-d-overview-genes.png` });
+    await pg.getByRole('button', { name: /^Feed all \d+$/ }).and(live).first().click(); await T('Food (for everyone fed)').waitFor();
+    await pg.getByText('JF', { exact: true }).and(live).first().locator('xpath=..').getByText('Jaguar het Albino', { exact: true }).waitFor();
+    await pg.screenshot({ path: `${SP}/gn-e-feed-genes.png` });
+    await pg.getByLabel(/back$|^Home$/i).and(live).first().click(); await T('Feeds due now', { exact: true }).waitFor();
+  });
   await step('cleanup', async () => {
-    await back(); await back(); await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
+    await pg.getByRole('button', { name: 'Account', exact: true }).and(live).first().click();
     await B('Delete account').click(); await T('Create account').waitFor({ timeout: 10000 });
   });
   console.log(logs.filter(l => !/^DIALOG: (Delete|\d+ hatchling)/.test(l)).join('\n')); console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); await b.close(); process.exit(fails ? 1 : 0);

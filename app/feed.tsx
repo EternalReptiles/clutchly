@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { diffDays, feedHold, fmt, isPaused, nextFeed, seasonFor, today } from '../lib/logic';
 import { useCollection } from '../lib/derived';
+import { useMorphs } from '../lib/useGenes';
 import { insertMany } from '../lib/store';
 import { Btn, C, Chips, DateField, Input, notify, s } from '../lib/ui';
 import { Loading } from '../lib/Brand';
@@ -16,6 +17,7 @@ const OK: Record<Mark, boolean | null> = { fed: true, refused: false, skip: null
 const ALL = 'All species';
 
 export default function FeedSeveral() {
+  const morphs = useMorphs();   // genes under each name, to tell look-alike animals apart
   const { pre } = useLocalSearchParams<{ pre?: string }>(); const r = useRouter();
   const { ready, animals, seasons, pairings } = useCollection();
   const [day, setDay] = useState(today()); const [food, setFood] = useState(''); const [sp, setSp] = useState(ALL);
@@ -60,6 +62,7 @@ export default function FeedSeveral() {
       <Text style={[s.mu, { marginTop: 10 }]}>Tap Fed, Refused or Not offered for each animal. Tap again to leave it out.</Text>
       {shown.map(({ a, due, paused, next, hold }) => <View key={a.id} style={s.card}>
         <Text style={s.h}>{a.name}</Text>
+        {morphs[a.id] ? <Text style={{ color: C.ink }}>{morphs[a.id]}</Text> : null}
         <Text style={s.mu}>{a.species} · {a.sex} · {paused ? 'feeding pause' : hold ? (hold.kind === 'shed' ? 'in shed' : `in with ${hold.with ?? 'its mate'}`)
           : due ? (next < t ? `${diffDays(t, next)}d overdue` : 'due today') : `next ${fmt(next)}`}</Text>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
